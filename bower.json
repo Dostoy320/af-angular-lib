@@ -1,0 +1,18 @@
+{
+  "name": "Angular Directives",
+  "version": "0.0.2",
+  "homepage": "https://github.com/nawlbergs/angular-directives",
+  "authors": [
+    "Nate Alberg <alberg.nate@gmail.com>"
+  ],
+  "description": "AngularJS directives",
+  "main": "dist/index.coffee",
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
