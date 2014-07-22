@@ -1,6 +1,6 @@
 #
 # Msg Service
-nawlsDir = angular.module('nawlbergs.system')
+nawlsDir = angular.module('nawlbergs.msg', [])
 nawlsDir.service '$msg', ($event, $log) ->
   msg = {
 

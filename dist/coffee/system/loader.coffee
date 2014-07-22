@@ -1,5 +1,5 @@
 ## Loader Service
-nawlsDir = angular.module('nawlbergs.system')
+nawlsDir = angular.module('nawlbergs.loader', [])
 nawlsDir.service '$loader', ($event) ->
   return {
     start: (txt) ->  $event.shout($event.EVENT_loaderStart, txt)

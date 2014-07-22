@@ -1,6 +1,6 @@
 #
 #
-nawlsDir = angular.module('nawlbergs.system')
+nawlsDir = angular.module('nawlbergs.modal', [])
 nawlsDir.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
   service =
     url: null

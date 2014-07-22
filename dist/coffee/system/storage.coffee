@@ -1,6 +1,6 @@
 #
 # storage for our apps
-nawlsDir = angular.module('nawlbergs.system')
+nawlsDir = angular.module('nawlbergs.storage', [])
 nawlsDir.service '$storage', (STORAGE_PREFIX) ->
 
   service =
