@@ -1,7 +1,7 @@
 #
 # storage for our apps
-myApp = angular.module('nawlbergs.system')
-myApp.service '$storage', (STORAGE_PREFIX) ->
+nawlsDir = angular.module('nawlbergs.system')
+nawlsDir.service '$storage', (STORAGE_PREFIX) ->
 
   service =
     _prefix: STORAGE_PREFIX+'_'

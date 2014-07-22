@@ -1,7 +1,7 @@
 #
 # Msg Service
-myApp = angular.module('nawlbergs.system')
-myApp.service '$msg', ($event, $log) ->
+nawlsDir = angular.module('nawlbergs.system')
+nawlsDir.service '$msg', ($event, $log) ->
   msg = {
 
     shownAt:null
@@ -34,7 +34,7 @@ myApp.service '$msg', ($event, $log) ->
 
 
 ## Msg UI
-myApp.directive 'msgHolder', ($timeout, $window, $event, $log) ->
+nawlsDir.directive 'msgHolder', ($timeout, $window, $event, $log) ->
 
   timer = null # growl timer
 
