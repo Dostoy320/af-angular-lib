@@ -1,7 +1,8 @@
 #
 # storage for our apps
-nawlsDir = angular.module('nawlbergs.storage', [])
-nawlsDir.service '$storage', (STORAGE_PREFIX) ->
+myApp = angular.module('af.storage', [])
+myApp.constant('STORAGE_PREFIX', 'myApp')
+myApp.service '$storage', (STORAGE_PREFIX) ->
 
   service =
     _prefix: STORAGE_PREFIX+'_'

@@ -1,9 +1,8 @@
 ##
 ##
 ## config exposed from server
-console.log('nawlbergs.system')
-nawlsDir = angular.module('nawlbergs.config', [])
-nawlsDir.service '$config', ($window) ->
+myApp = angular.module('af.config', [])
+myApp.service '$config', ($window) ->
 
   pluralize = (value) ->
     if not value then return value

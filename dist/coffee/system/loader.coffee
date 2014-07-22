@@ -1,13 +1,13 @@
 ## Loader Service
-nawlsDir = angular.module('nawlbergs.loader', [])
-nawlsDir.service '$loader', ($event) ->
+myApp = angular.module('af.loader', [])
+myApp.service '$loader', ($event) ->
   return {
     start: (txt) ->  $event.shout($event.EVENT_loaderStart, txt)
     stop: () ->      $event.shout($event.EVENT_loaderStop)
   }
 
 ## Loader UI
-nawlsDir.directive 'loaderHolder', ($event) ->
+myApp.directive 'loaderHolder', ($event) ->
   return {
     restrict: 'A'
     scope:{}

@@ -3,8 +3,8 @@
 # :: dispatches events from root of application
 # :: this really just provides a logger around events...
 # :: because events can make things very confusing if you cant see whats going on.
-nawlsDir = angular.module('nawlbergs.event', [])
-nawlsDir.service '$event', ($rootScope, $log) ->
+myApp = angular.module('af.event', [])
+myApp.service '$event', ($rootScope, $log) ->
 
   logEvent = (eventName, data) ->
     # ignore these events cause they fire a lot

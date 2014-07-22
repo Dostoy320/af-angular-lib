@@ -1,7 +1,7 @@
 #
 #
-nawlsDir = angular.module('nawlbergs.modal', [])
-nawlsDir.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
+myApp = angular.module('af.modal', [])
+myApp.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
   service =
     url: null
     ctrl: null
@@ -21,7 +21,7 @@ nawlsDir.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
 
   return service
 
-nawlsDir.directive "modalHolder", ($modal, $timeout) ->
+myApp.directive "modalHolder", ($modal, $timeout) ->
     return {
       restrict: "A"
       scope: {}
