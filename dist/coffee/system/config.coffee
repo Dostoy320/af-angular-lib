@@ -1,6 +1,6 @@
-
-# ::
-# :: config exposed from server
+##
+##
+## config exposed from server
 myApp = angular.module('nawlDirectives')
 myApp.service '$config', ($window) ->
 

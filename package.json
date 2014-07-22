@@ -1,0 +1,10 @@
+{
+  "name": "angular-directives",
+  "version": "0.0.2",
+  "private": false,
+  "devDependencies": {
+    "grunt": "*",
+    "grunt-contrib-coffee": "*",
+    "grunt-contrib-less": "*"
+  }
+}
