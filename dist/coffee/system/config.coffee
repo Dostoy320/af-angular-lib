@@ -2,7 +2,7 @@
 ##
 ## config exposed from server
 console.log('nawlbergs.system')
-nawlsDir = angular.module('nawlbergs.system')
+nawlsDir = angular.module('nawlbergs.system', [])
 nawlsDir.service '$config', ($window) ->
 
   pluralize = (value) ->
