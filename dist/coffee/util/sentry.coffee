@@ -1,5 +1,6 @@
 
-myApp = angular.module('af.sentry')
+
+myApp = angular.module('af.sentry', [])
 myApp.service '$sentry', ($log, authManager) ->
 
     sentryIsLoaded = () ->

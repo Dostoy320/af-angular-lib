@@ -1,7 +1,7 @@
 
 #
 # util/misc functions for our apps
-myApp = angular.module('af.util')
+myApp = angular.module('af.util', [])
 myApp.service '$util', ($window, $location) ->
 
   return service = {

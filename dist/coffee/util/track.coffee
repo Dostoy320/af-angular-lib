@@ -1,6 +1,6 @@
 
 
-myApp = angular.module('af.track')
+myApp = angular.module('af.track', [])
 myApp.service '$track', ($log, authManager) ->
 
     init = () ->
