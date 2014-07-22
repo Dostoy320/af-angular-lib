@@ -1,5 +1,5 @@
 ## Loader Service
-myApp = angular.module('af.loader', [])
+myApp = angular.module('af.loader', ['af.event'])
 myApp.service '$loader', ($event) ->
   return {
     start: (txt) ->  $event.shout($event.EVENT_loaderStart, txt)

@@ -1,6 +1,10 @@
 #
 #
-myApp = angular.module('af.modal', [])
+myApp = angular.module('af.modal', ['af.event'])
+
+# set a default so our service doesnt blow up
+myApp.constant('DEFAULT_MODAL_PATH', 'src/views/templates/generic.modal.view.php')
+
 myApp.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
   service =
     url: null

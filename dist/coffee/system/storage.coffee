@@ -1,7 +1,10 @@
 #
 # storage for our apps
 myApp = angular.module('af.storage', [])
+
+# set a default so our service doesnt blow up
 myApp.constant('STORAGE_PREFIX', 'myApp')
+
 myApp.service '$storage', (STORAGE_PREFIX) ->
 
   service =

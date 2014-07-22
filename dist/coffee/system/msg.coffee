@@ -1,6 +1,6 @@
 #
 # Msg Service
-myApp = angular.module('af.msg', [])
+myApp = angular.module('af.msg', ['af.event'])
 myApp.service '$msg', ($event, $log) ->
   msg = {
 
