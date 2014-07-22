@@ -1,5 +1,5 @@
 ## Loader Service
-myApp = angular.module('nawlDirectives')
+myApp = angular.module('nawlbergs.system')
 myApp.service '$loader', ($event) ->
   return {
     start: (txt) ->  $event.shout($event.EVENT_loaderStart, txt)

@@ -1,6 +1,6 @@
 #
 #
-myApp = angular.module('nawlDirectives')
+myApp = angular.module('nawlbergs.system')
 myApp.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
   service =
     url: null

@@ -1,7 +1,7 @@
 ##
 ##
 ## config exposed from server
-myApp = angular.module('nawlDirectives')
+myApp = angular.module('nawlbergs.system')
 myApp.service '$config', ($window) ->
 
   pluralize = (value) ->

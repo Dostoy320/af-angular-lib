@@ -3,7 +3,7 @@
 # :: dispatches events from root of application
 # :: this really just provides a logger around events...
 # :: because events can make things very confusing if you cant see whats going on.
-myApp = angular.module('nawlDirectives')
+myApp = angular.module('nawlbergs.system')
 myApp.service '$event', ($rootScope, $log) ->
 
   logEvent = (eventName, data) ->

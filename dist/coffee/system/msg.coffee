@@ -1,6 +1,6 @@
 #
 # Msg Service
-myApp = angular.module('nawlDirectives')
+myApp = angular.module('nawlbergs.system')
 myApp.service '$msg', ($event, $log) ->
   msg = {
 

@@ -1,6 +1,6 @@
 #
 # storage for our apps
-myApp = angular.module('nawlDirectives')
+myApp = angular.module('nawlbergs.system')
 myApp.service '$storage', (STORAGE_PREFIX) ->
 
   service =
