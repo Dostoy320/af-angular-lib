@@ -29,6 +29,7 @@ myApp.directive 'loaderHolder', ($event) ->
       scope.loadMask = null
       scope.loaderText = null
 
+
       scope.start = (txt) ->
         scope.loaderText = if _.isString(txt) then txt else null
         scope.loadMask = if _.isBoolean(txt) or scope.loaderText then true else false
@@ -40,4 +41,9 @@ myApp.directive 'loaderHolder', ($event) ->
       scope.$on $event.EVENT_loaderStart, (event, txt) ->
         scope.start(txt)
       scope.$on $event.EVENT_loaderStop, scope.stop
+
+      # quicky makers
+      scope.saving = () -> scope.start('Saving...')
+      scope.loading = () -> scope.start('Loading...')
+
     }
