@@ -1,10 +1,14 @@
 ## Loader Service
 myApp = angular.module('af.loader', ['af.event'])
 myApp.service '$loader', ($event) ->
-  return {
+  srv = {
     start: (txt) ->  $event.shout($event.EVENT_loaderStart, txt)
     stop: () ->      $event.shout($event.EVENT_loaderStop)
+    # quicky makers
+    saving: () -> srv.start('Saving...')
+    loading: () -> srv.start('Loading...')
   }
+  return srv
 
 ## Loader UI
 myApp.directive 'loaderHolder', ($event) ->
@@ -41,9 +45,5 @@ myApp.directive 'loaderHolder', ($event) ->
       scope.$on $event.EVENT_loaderStart, (event, txt) ->
         scope.start(txt)
       scope.$on $event.EVENT_loaderStop, scope.stop
-
-      # quicky makers
-      scope.saving = () -> scope.start('Saving...')
-      scope.loading = () -> scope.start('Loading...')
 
     }
