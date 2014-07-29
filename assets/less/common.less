@@ -1,0 +1,81 @@
+
+// ::
+// :: ANGULAR CLOAK
+// ::
+[ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak {
+  display: none;
+}
+.ng-cloak.ng-cloak-reverse{
+  display:block !important;
+}
+.ng-cloak-reverse{
+  display:none !important;
+}
+
+// ::
+// :: MISC FONT
+// ::
+.uppercase{   text-transform: uppercase;  }
+.capitalize{  text-transform: capitalize; }
+.em, .italic{ font-style: italic; }
+.underline{   text-decoration:underline; }
+.bold{        font-weight:bold; }
+
+.text-muted-more{ color:#ddd; }
+
+
+// ::
+// :: POSITIONING
+// ::
+.clear{ clear:both; }
+.center { margin-left:auto; margin-right:auto;  }
+.posAbs { position: absolute; }
+.posRel { position: relative; }
+
+
+.square{
+  .border-top-radius(0);
+  .border-bottom-radius(0);
+}
+.shadow{
+  border:1px solid #CCC; /* ie7 fallback */
+  .box-shadow(0 2px 5px rgba(0,0,0,0.25));
+}
+
+
+.pointer{ cursor: pointer; }
+
+
+// ::
+// :: PADDING/MARGIN
+// ::
+@padd:10px;
+.pad{     padding:@padd; }
+.padH{    padding:0 @padd; }
+.padV{    padding:@padd 0; }
+.padT{    padding:@padd 0 0; }
+.padR{    padding:0 @padd 0 0; }
+.padB{    padding:0 0 @padd 0; }
+.padL{    padding:0 0 0 @padd; }
+.padNoT{  padding:0 @padd @padd; }
+.padNoR{  padding:@padd 0 @padd @padd; }
+.padNoB{  padding:@padd @padd 0; }
+.padNoL{  padding:@padd @padd @padd 0; }
+.padNone{ padding:0; }
+.padBig{  padding:(@padd * 2); }
+.pad-sm{  padding:(@padd / 2); }
+
+.mar{     margin:@padd;  }
+.marH{    margin:0 @padd; }
+.marV{    margin:@padd 0; }
+.marT{    margin:@padd 0 0; }
+.marR{    margin:0 @padd 0 0; }
+.marB{    margin:0 0 @padd 0; }
+.marL{    margin:0 0 0 @padd; }
+.marNoT{  margin:0 @padd @padd; }
+.marNoR{  margin:@padd 0 @padd @padd; }
+.marNoB{  margin:@padd @padd 0; }
+.marNoL{  margin:@padd @padd @padd 0; }
+.marNone{ margin:0;  }
+.marBig{  margin:(@padd * 2); }
+.mar-sm{  margin:(@padd / 2); }

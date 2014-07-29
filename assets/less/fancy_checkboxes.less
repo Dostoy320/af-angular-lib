@@ -1,0 +1,34 @@
+@fancyRadioDir:     "../img/forms";
+// FANCY RADIOS
+@fancyRadioH:20px;
+@fancyRadioW:23px;
+label.fancy.fancy-checkbox,
+label.fancy.fancy-radio {
+  display:inline-block;
+  cursor: pointer;
+  font-weight:normal;
+  // create area to display label
+  min-height:@fancyRadioH;
+  padding-left: @fancyRadioW + 10px;
+  input{ // hides checkbox
+    margin-right: 5px;
+    position: absolute; left: -9999px;
+  }
+}
+.form-right-column label.fancy.fancy-checkbox,
+.form-right-column label.fancy.fancy-radio{
+  margin:6px 0;
+}
+
+label.fancy.fancy-checkbox {
+  background: url("@{fancyRadioDir}/check-off.png") no-repeat;
+  &.on{
+    background: url("@{fancyRadioDir}/check-on.png") no-repeat;
+  }
+}
+label.fancy.fancy-radio {
+  background: url('@{fancyRadioDir}/radio-off.png') no-repeat;
+  &.on{
+    background: url('@{fancyRadioDir}/radio-on.png') no-repeat;
+  }
+}

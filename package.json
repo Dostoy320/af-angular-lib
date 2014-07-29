@@ -7,7 +7,6 @@
   "devDependencies": {
     "grunt": "*",
     "grunt-contrib-coffee": "*",
-    "grunt-contrib-less": "*",
     "grunt-contrib-watch": "*"
   }
 }
