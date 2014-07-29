@@ -18,6 +18,7 @@ myApp.service 'authManager', ()->
       amplify.store('userId', null)
       amplify.store('userEmail', null)
       amplify.store('authorities', null)
+      amplify.store('sessionToken', null)
       auth.loggedInUser = null
       auth.sessionToken = null
 
