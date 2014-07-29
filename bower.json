@@ -8,11 +8,5 @@
   "description": "AngularJS directives",
   "main": "dist/index.coffee",
   "license": "MIT",
-  "ignore": [
-    "**/.*",
-    "node_modules",
-    "bower_components",
-    "test",
-    "tests"
-  ]
+  "ignore":["!(./dist)"]
 }
