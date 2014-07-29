@@ -2,6 +2,7 @@
   transition:0s all!important;
   -webkit-transition:0s all!important;
 }
+
 /* show the element during a show/hide animation when the
  * animation is ongoing, but the .ng-hide class is active */
 .ng-hide-add-active, .ng-hide-remove {
@@ -13,23 +14,5 @@
   display:block !important; // force visible during animations
   &.ng-show-inline{
     display:inline-block !important; // force visible as inline during animations
-  }
-}
-
-// FADE
-.animate-fade{
-  opacity:1;
-  // on hide
-  &.ng-hide-add {
-    .transition(.3s linear all);
-    opacity:1;
-    &.ng-hide-add-active { opacity:0; }
-  }
-  // on show
-  &.ng-hide-remove{
-    .transition(1s linear all);
-    display:block !important; // force visible during fade in
-    opacity:0;
-    &.ng-hide-remove-active { opacity:1; }
   }
 }
