@@ -6,7 +6,17 @@
     "Nate Alberg <alberg.nate@gmail.com>"
   ],
   "description": "AngularJS directives",
-  "main": "dist/index.coffee",
+  "main": "./dist",
   "license": "MIT",
-  "ignore":["!(./dist)"]
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "bower.json",
+    "Gruntfile.coffee",
+    "package.json",
+    "README.md"
+  ]
 }
