@@ -1,7 +1,9 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('nawlDirectives');
+  myApp = angular.module('af.storage', []);
+
+  myApp.constant('STORAGE_PREFIX', 'myApp');
 
   myApp.service('$storage', function(STORAGE_PREFIX) {
     var service;

@@ -1,10 +1,13 @@
 {
-  "name": "angular-directives",
+  "name": "af-angular-lib",
+  "description":"AcitFi Angular Libraries",
+  "repository": "https://github.com/nawlbergs/angular-directives",
   "version": "0.0.2",
   "private": false,
   "devDependencies": {
     "grunt": "*",
     "grunt-contrib-coffee": "*",
-    "grunt-contrib-less": "*"
+    "grunt-contrib-less": "*",
+    "grunt-contrib-watch": "*"
   }
 }

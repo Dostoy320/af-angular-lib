@@ -1,0 +1,40 @@
+@import 'mixins/border-radius';
+
+@loadBarHeight:8px;
+#app-loader-bar{
+  position:fixed;
+  top:0; left:0; right:0;
+  margin:0 auto;
+  height:@loadBarHeight;
+  z-index: 999999;
+  border-bottom:1px solid white;
+  .border-top-radius(0);
+  .border-bottom-radius(0);
+}
+
+@loadBarMarginTop:150px;
+#app-loader-mask{
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 30001;
+  .loader-mask,
+  .loader-text{
+    position:fixed;
+    z-index: 30000;
+    width:100%;
+    margin:0 auto;
+  }
+  .loader-mask{
+    pointer-events:none;
+    background-color:#FFF;
+    z-index: 30000;
+    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    opacity: 0.4;
+  }
+  .loader-text{
+    z-index: 30002;
+    text-align: center;
+    top:47%;
+    font-weight:bold;
+  }
+
+}

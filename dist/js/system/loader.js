@@ -1,10 +1,11 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('nawlDirectives');
+  myApp = angular.module('af.loader', ['af.event']);
 
   myApp.service('$loader', function($event) {
-    return {
+    var srv;
+    srv = {
       start: function(txt) {
         return $event.shout($event.EVENT_loaderStart, txt);
       },
@@ -12,6 +13,7 @@
         return $event.shout($event.EVENT_loaderStop);
       }
     };
+    return srv;
   });
 
   myApp.directive('loaderHolder', function($event) {

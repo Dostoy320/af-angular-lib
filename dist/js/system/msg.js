@@ -1,7 +1,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('nawlDirectives');
+  myApp = angular.module('af.msg', ['af.event']);
 
   myApp.service('$msg', function($event, $log) {
     var msg;

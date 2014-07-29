@@ -1,7 +1,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('nawlDirectives');
+  myApp = angular.module('af.config', []);
 
   myApp.service('$config', function($window) {
     var getPathValue, pluralize;

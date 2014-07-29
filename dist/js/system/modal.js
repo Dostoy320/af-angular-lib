@@ -1,7 +1,9 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('nawlDirectives');
+  myApp = angular.module('af.modal', ['af.event']);
+
+  myApp.constant('DEFAULT_MODAL_PATH', 'src/views/templates/generic.modal.view.php');
 
   myApp.service("$modal", function($event, DEFAULT_MODAL_PATH) {
     var service;

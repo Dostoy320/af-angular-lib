@@ -1,6 +1,6 @@
 module.exports = (grunt) ->
 
-  grunt.registerTask 'default', ['coffee']
+  grunt.registerTask 'default', ['coffee','watch']
 
   grunt.initConfig({
     coffee: {
@@ -13,15 +13,13 @@ module.exports = (grunt) ->
         ext: '.js'
       }
     }
-    less: {
-      compile: {
-        files: {
-          "src/static/css/app.css": "src/styles/app.less"
-          "src/static/css/ie7.css": "src/styles/ie7.less"
-        }
+    watch: {
+      coffee: {
+        files: ['dist/coffee/**/*.coffee']
+        tasks: ['coffee:glob_to_multiple']
       }
     }
   })
 
   grunt.loadNpmTasks('grunt-contrib-coffee')
-  grunt.loadNpmTasks('grunt-contrib-less')
+  grunt.loadNpmTasks('grunt-contrib-watch')

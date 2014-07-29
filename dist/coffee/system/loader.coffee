@@ -4,9 +4,6 @@ myApp.service '$loader', ($event) ->
   srv = {
     start: (txt) ->  $event.shout($event.EVENT_loaderStart, txt)
     stop: () ->      $event.shout($event.EVENT_loaderStop)
-    # quicky makers
-    saving: () -> srv.start('Saving...')
-    loading: () -> srv.start('Loading...')
   }
   return srv
 
