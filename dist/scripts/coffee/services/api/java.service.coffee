@@ -1,4 +1,4 @@
-myApp = angular.module('myApp')
+myApp = angular.module('af.java', ['af.api'])
 myApp.service 'java', ($http, api, authManager) ->
 
   java = {

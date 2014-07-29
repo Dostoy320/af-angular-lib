@@ -1,4 +1,4 @@
-myApp = angular.module('myApp')
+myApp = angular.module('af.node', ['af.api'])
 myApp.service 'node', ($http, api, authManager) ->
 
   node = {
