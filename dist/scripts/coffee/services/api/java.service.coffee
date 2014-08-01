@@ -41,8 +41,10 @@ myApp.service 'java', ($http, api, authManager) ->
       logout:(onSuccess, onError) ->
         java.AuthService.execute('/logout', {}, onSuccess, onError)
 
-      validatesession:(onSuccess, onError) ->
-        java.AuthService.execute('/validatesession', {}, onSuccess, onError)
+      validatesession:(sessionToken, onSuccess, onError) ->
+        params = {}
+        if sessionToken then params.sessionToken = sessionToken
+        java.AuthService.execute('/validatesession', params, onSuccess, onError)
 
       createtoken:(loginAsUserId, expiresOn, url, onSuccess, onError) ->
         params =
