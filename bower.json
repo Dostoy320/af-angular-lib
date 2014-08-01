@@ -1,11 +1,11 @@
 {
-  "name": "Angular Directives",
+  "name": "ActiFi-Angular-Lib",
   "version": "0.0.2",
-  "homepage": "https://github.com/nawlbergs/angular-directives",
+  "homepage": "https://github.com/nawlbergs/af-angular-lib",
   "authors": [
     "Nate Alberg <alberg.nate@gmail.com>"
   ],
-  "description": "AngularJS directives",
+  "description": "ActiFi AngularJS directives",
   "main": "./dist",
   "license": "MIT",
   "ignore": [
