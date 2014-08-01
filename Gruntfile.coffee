@@ -7,15 +7,15 @@ module.exports = (grunt) ->
       glob_to_multiple: {
         expand: true,
         flatten: false,
-        cwd: 'dist/coffee',
+        cwd: 'dist/scripts/coffee',
         src: '**/*.coffee',
-        dest:'dist/js/',
+        dest:'dist/scripts/js/',
         ext: '.js'
       }
     }
     watch: {
       coffee: {
-        files: ['dist/coffee/**/*.coffee']
+        files: ['dist/**/*.coffee']
         tasks: ['coffee:glob_to_multiple']
       }
     }
