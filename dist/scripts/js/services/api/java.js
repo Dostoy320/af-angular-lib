@@ -1,7 +1,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('myApp');
+  myApp = angular.module('af.java', ['af.api']);
 
   myApp.service('java', function($http, api, authManager) {
     var java;
@@ -37,7 +37,7 @@
               'Content-Type': 'application/x-www-form-urlencoded'
             },
             url: java.AuthService.serviceUrl + method,
-            data: params
+            data: $.param(params)
           };
           return api.execute(req, onSuccess, onError);
         },

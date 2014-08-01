@@ -1,7 +1,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('myApp');
+  myApp = angular.module('af.api', []);
 
   myApp.service('api', function($http, $msg, $window, $log, $loader, $config, $sentry) {
     var api;
