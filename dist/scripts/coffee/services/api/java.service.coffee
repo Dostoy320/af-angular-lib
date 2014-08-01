@@ -28,7 +28,7 @@ myApp.service 'java', ($http, api, authManager) ->
         req =
           headers:{'Content-Type': 'application/x-www-form-urlencoded'}
           url: java.AuthService.serviceUrl + method
-          data: params
+          data: $.param(params)
         api.execute(req, onSuccess, onError)
 
       # services
