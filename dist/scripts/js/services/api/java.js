@@ -52,8 +52,13 @@
         logout: function(onSuccess, onError) {
           return java.AuthService.execute('/logout', {}, onSuccess, onError);
         },
-        validatesession: function(onSuccess, onError) {
-          return java.AuthService.execute('/validatesession', {}, onSuccess, onError);
+        validatesession: function(sessionToken, onSuccess, onError) {
+          var params;
+          params = {};
+          if (sessionToken) {
+            params.sessionToken = sessionToken;
+          }
+          return java.AuthService.execute('/validatesession', params, onSuccess, onError);
         },
         createtoken: function(loginAsUserId, expiresOn, url, onSuccess, onError) {
           var params;
