@@ -12,7 +12,7 @@ myApp.service 'node', ($http, api, authManager) ->
         # all calls require tenant and sessionToken
         params ?= {}
         params.tenant ?= api.getTenantIndex()
-        if node.autoApplySession then params.sessionToken? = authManager.findSessionToken(node.autoApplySessionPriority)
+        if node.autoApplySession then params.sessionToken ?= authManager.findSessionToken(node.autoApplySessionPriority)
         # build request
         req =
           url: node.RoadmapNode.serviceUrl + method
@@ -51,7 +51,7 @@ myApp.service 'node', ($http, api, authManager) ->
         # all calls require index and sessionToken
         params ?= {}
         params.index ?= api.getTenantIndex()
-        if node.autoApplySession then params.sessionToken? = authManager.findSessionToken(node.autoApplySessionPriority)
+        if node.autoApplySession then params.sessionToken ?= authManager.findSessionToken(node.autoApplySessionPriority)
         req =
           url: node.QuickContent.serviceUrl + method
           data: params
@@ -100,7 +100,7 @@ myApp.service 'node', ($http, api, authManager) ->
         # all calls require tenant and sessionToken
         params ?= {}
         params.index ?= api.getTenantIndex()
-        if node.autoApplySession then params.sessionToken? = authManager.findSessionToken(node.autoApplySessionPriority)
+        if node.autoApplySession then params.sessionToken ?= authManager.findSessionToken(node.autoApplySessionPriority)
         req =
           url: node.ExploreDB.serviceUrl + method
           data: params

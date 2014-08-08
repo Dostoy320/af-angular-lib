@@ -36,10 +36,11 @@ myApp.service 'authManager', ($util)->
     findSessionToken:(priority) ->
       # order to look for our token
       token = null
-      if !priority then priority = ['amplify','url','window']
+      if !priority then priority = ['app','amplify','url','window']
       _.each priority, (place) ->
         if token then return
         switch(place)
+          when 'app'     then token = auth.sessionToken
           when 'amplify' then token = amplify.store('sessionToken')
           when 'url'     then token = $util.GET('sessionToken')
           when 'window'  then token = window.sessionToken
