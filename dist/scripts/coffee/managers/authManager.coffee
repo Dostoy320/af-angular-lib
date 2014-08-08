@@ -1,5 +1,5 @@
 myApp = angular.module('af.authManager', [])
-myApp.service 'authManager', ()->
+myApp.service 'authManager', ($util)->
 
   auth =
 
@@ -32,7 +32,19 @@ myApp.service 'authManager', ()->
       _.each fields, (field) ->
         amplify.store(field, user[field])
 
-
+    # looks for our sessionToken
+    findSessionToken:(priority) ->
+      # order to look for our token
+      token = null
+      if !priority then priority = ['amplify','url','window']
+      _.each priority, (place) ->
+        if token then return
+        switch(place)
+          when 'amplify' then token = amplify.store('sessionToken')
+          when 'url'     then token = $util.GET('sessionToken')
+          when 'window'  then token = window.sessionToken
+        return token
+      return token
 
 
 
