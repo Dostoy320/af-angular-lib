@@ -1,16 +1,19 @@
 myApp = angular.module('af.java', ['af.api'])
 myApp.service 'java', ($http, api, authManager) ->
 
+  autoApplySession = true
+  autoApplySessionPriority = null # passing ['amplify','url','window'] will specify the order the api looks for token
+
   java = {
 
-    autoApplySession:true
-    autoApplySessionPriority:null # passing ['amplify','url','window'] will specify the order the api looks for token
+    setAutoApplySession:(value) -> autoApplySession = value
+    setAutoApplySessionPriority:(value) -> autoApplySessionPriority
 
     RoadmapService:{
       serviceUrl:'/RoadmapService'
       execute:(method, params, onSuccess, onError) ->
         # all RoadmapService calls should have a sessionToken
-        if java.autoApplySession then params.sessionToken ?= authManager.findSessionToken(java.autoApplySessionPriority)
+        if autoApplySession then params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
         req =
           url: java.RoadmapService.serviceUrl + method
           data: params
@@ -26,8 +29,8 @@ myApp.service 'java', ($http, api, authManager) ->
       serviceUrl:'/AuthService'
       execute:(method, params, onSuccess, onError) ->
         # all calls should have a sessionToken on them (except some fringe cases)
-        if java.autoApplySession and method isnt 'login' and method isnt 'loadtoken'
-          params.sessionToken ?= authManager.findSessionToken(java.autoApplySessionPriority)
+        if autoApplySession and method isnt 'login' and method isnt 'loadtoken'
+          params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
         req =
           headers:{'Content-Type': 'application/x-www-form-urlencoded'}
           url: java.AuthService.serviceUrl + method
