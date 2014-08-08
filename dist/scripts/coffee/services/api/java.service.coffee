@@ -4,12 +4,13 @@ myApp.service 'java', ($http, api, authManager) ->
   java = {
 
     autoApplySession:true
+    autoApplySessionPriority:null # passing ['amplify','url','window'] will specify the order the api looks for token
 
     RoadmapService:{
       serviceUrl:'/RoadmapService'
       execute:(method, params, onSuccess, onError) ->
         # all RoadmapService calls should have a sessionToken
-        if java.autoApplySession then params.sessionToken ?= authManager.sessionToken
+        if java.autoApplySession then params.sessionToken ?= authManager.findSessionToken(java.autoApplySessionPriority)
         req =
           url: java.RoadmapService.serviceUrl + method
           data: params
@@ -26,7 +27,7 @@ myApp.service 'java', ($http, api, authManager) ->
       execute:(method, params, onSuccess, onError) ->
         # all calls should have a sessionToken on them (except some fringe cases)
         if java.autoApplySession and method isnt 'login' and method isnt 'loadtoken'
-          params.sessionToken ?= authManager.sessionToken
+          params.sessionToken ?= authManager.findSessionToken(java.autoApplySessionPriority)
         req =
           headers:{'Content-Type': 'application/x-www-form-urlencoded'}
           url: java.AuthService.serviceUrl + method
