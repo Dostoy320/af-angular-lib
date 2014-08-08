@@ -3,13 +3,15 @@ myApp.service 'node', ($http, api, authManager) ->
 
   node = {
 
+    autoApplySession:true
+
     RoadmapNode:{
       serviceUrl:'/roadmap-node'
       execute:(method, params, onSuccess, onError) ->
         # all calls require tenant and sessionToken
         params ?= {}
         params.tenant ?= api.getTenantIndex()
-        params.sessionToken ?= authManager.sessionToken
+        if node.autoApplySession then params.sessionToken ?= authManager.sessionToken
         # build request
         req =
           url: node.RoadmapNode.serviceUrl + method
@@ -48,7 +50,7 @@ myApp.service 'node', ($http, api, authManager) ->
         # all calls require index and sessionToken
         params ?= {}
         params.index ?= api.getTenantIndex()
-        params.sessionToken ?= authManager.sessionToken
+        if node.autoApplySession then params.sessionToken ?= authManager.sessionToken
         req =
           url: node.QuickContent.serviceUrl + method
           data: params
@@ -97,7 +99,7 @@ myApp.service 'node', ($http, api, authManager) ->
         # all calls require tenant and sessionToken
         params ?= {}
         params.index ?= api.getTenantIndex()
-        params.sessionToken ?= authManager.sessionToken
+        if node.autoApplySession then params.sessionToken ?= authManager.sessionToken
         req =
           url: node.ExploreDB.serviceUrl + method
           data: params
