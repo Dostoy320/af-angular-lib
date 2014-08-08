@@ -52,14 +52,18 @@ myApp.service 'api', ($http, $msg, $window, $log, $loader, $config, $sentry) ->
     getErrorMessage:(data, status) ->
       # jsend error?
       if data and data.hasOwnProperty('message') and data.hasOwnProperty('code')
-        return data.message + ' - ' + api.getHttpCodeString(data.code)
+        codeStr = api.getHttpCodeString(data.code)
+        if data.message is codeStr
+          return data.message + ' (' + data.code + ')'
+        else
+          return data.message + ' (' + codeStr +')'
       # http code?
       if _.isNumber(status) and api.isHttpCode(status)
         err = api.getHttpCodeString(status)
         if status is 502 then err = 'Unable to communicate with server. Please check your internet connection.'
         return err + ' (' + status + ')'
       # return whatever we can...
-      return data.message or api.getHttpCodeString(data.code) or data or status
+      return data.message or data.code or data or status
 
     # add debugs info to requests (dont do on Java, Java could blow up)
     addDebugInfo:(req) ->
