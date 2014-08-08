@@ -11,7 +11,7 @@ myApp.service 'api', ($http, $msg, $window, $log, $loader, $config, $sentry) ->
       index = api.getTenant() # default to tenant
       subDomain = $window.location.hostname.split('.').shift()
       switch subDomain
-        when 'alpha2', 'localhost' then index = 'alpha2'
+        when 'alpha2', 'dev', 'localhost' then index = 'alpha2'
         when 'alpha'   then index = 'alpha'
         when 'waddell' then index = 'wr'
         when 'tdai'    then index = 'td'
