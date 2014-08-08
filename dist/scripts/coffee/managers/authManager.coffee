@@ -22,6 +22,19 @@ myApp.service 'authManager', ()->
       auth.loggedInUser = null
       auth.sessionToken = null
 
+    setSessionToken:(token) ->
+      amplify.store('sessionToken', token)
+      auth.sessionToken = token
+
+    setLoggedInUser:(user) ->
+      fields = _.pick(user, 'userName','userId','userEmail','authorities')
+      auth.loggedInUser = fields
+      _.each fields, (field) ->
+        amplify.store(field, user[field])
+
+
+
+
 
     # ::
     # :: ROLE CHECKERS
