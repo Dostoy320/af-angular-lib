@@ -1,4 +1,4 @@
-myApp = angular.module('af.api', [])
+myApp = angular.module('af.api', ['af.msg','af.loader','af.config','af.sentry'])
 myApp.service 'api', ($http, $msg, $window, $log, $loader, $config, $sentry) ->
 
   return api =
