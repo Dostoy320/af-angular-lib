@@ -7,7 +7,7 @@ myApp.service 'java', ($http, api, authManager) ->
   java = {
 
     setAutoApplySession:(value) -> autoApplySession = value
-    setAutoApplySessionPriority:(value) -> autoApplySessionPriority
+    setAutoApplySessionPriority:(value) -> autoApplySessionPriority = value
 
     RoadmapService:{
       serviceUrl:'/RoadmapService'
