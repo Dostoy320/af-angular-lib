@@ -78,10 +78,10 @@
           if (!value) {
             return '';
           }
-          if (!format) {
-            format = $config.get('app.dateFormat') || 'MM/DD/YY';
-          }
           if (moment) {
+            if (!format) {
+              format = $config.get('app.dateFormat') || 'MM/DD/YY';
+            }
             if (typeof value === 'string') {
               date = moment(value, "YYYY-MM-DDTHH:mm:ss ZZ");
               return date.format(format);

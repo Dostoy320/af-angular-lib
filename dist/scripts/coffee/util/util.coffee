@@ -81,8 +81,8 @@ myApp.service '$util', ($window, $config, $location) ->
 
       date:(value, format) ->
         if !value then return ''
-        if !format then format = $config.get('app.dateFormat') or 'MM/DD/YY'
-        if moment
+        if moment # requires moment.js
+          if !format then format = $config.get('app.dateFormat') or 'MM/DD/YY'
           if typeof value is 'string'
             date = moment(value, "YYYY-MM-DDTHH:mm:ss ZZ") # utc mode for timeshift
             return date.format(format)
