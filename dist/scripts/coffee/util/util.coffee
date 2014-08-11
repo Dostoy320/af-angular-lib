@@ -51,7 +51,7 @@ myApp.service '$util', ($window, $config, $location) ->
       # create a form to submit our data to a new window
       form = document.createElement("form")
       form.setAttribute("method", method)
-      form.setAttribute("action", action)
+      form.setAttribute("action", url)
 
       # create a hidden form field for all our parameters
       _.each params, (key) ->
