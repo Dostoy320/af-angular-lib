@@ -46,7 +46,7 @@
         method = method || 'post';
         form = document.createElement("form");
         form.setAttribute("method", method);
-        form.setAttribute("action", action);
+        form.setAttribute("action", url);
         _.each(params, function(key) {
           var hiddenField, type;
           type = typeof params[key];
