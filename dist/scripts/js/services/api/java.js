@@ -4,14 +4,24 @@
   myApp = angular.module('af.java', ['af.api']);
 
   myApp.service('java', function($http, api, authManager) {
-    var java;
+    var autoApplySession, autoApplySessionPriority, java;
+    autoApplySession = true;
+    autoApplySessionPriority = null;
     java = {
+      setAutoApplySession: function(value) {
+        return autoApplySession = value;
+      },
+      setAutoApplySessionPriority: function(value) {
+        return autoApplySessionPriority = value;
+      },
       RoadmapService: {
         serviceUrl: '/RoadmapService',
         execute: function(method, params, onSuccess, onError) {
           var req;
-          if (params.sessionToken == null) {
-            params.sessionToken = authManager.sessionToken;
+          if (autoApplySession) {
+            if (params.sessionToken == null) {
+              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
+            }
           }
           req = {
             url: java.RoadmapService.serviceUrl + method,
@@ -27,9 +37,9 @@
         serviceUrl: '/AuthService',
         execute: function(method, params, onSuccess, onError) {
           var req;
-          if (method !== 'login' && method !== 'loadtoken') {
+          if (autoApplySession && method !== 'login' && method !== 'loadtoken') {
             if (params.sessionToken == null) {
-              params.sessionToken = authManager.sessionToken;
+              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
             }
           }
           req = {

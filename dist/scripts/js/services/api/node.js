@@ -4,8 +4,16 @@
   myApp = angular.module('af.node', ['af.api']);
 
   myApp.service('node', function($http, api, authManager) {
-    var node;
+    var autoApplySession, autoApplySessionPriority, node;
+    autoApplySession = true;
+    autoApplySessionPriority = null;
     node = {
+      setAutoApplySession: function(value) {
+        return autoApplySession = value;
+      },
+      setAutoApplySessionPriority: function(value) {
+        return autoApplySessionPriority = value;
+      },
       RoadmapNode: {
         serviceUrl: '/roadmap-node',
         execute: function(method, params, onSuccess, onError) {
@@ -16,8 +24,10 @@
           if (params.tenant == null) {
             params.tenant = api.getTenantIndex();
           }
-          if (params.sessionToken == null) {
-            params.sessionToken = authManager.sessionToken;
+          if (autoApplySession) {
+            if (params.sessionToken == null) {
+              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
+            }
           }
           req = {
             url: node.RoadmapNode.serviceUrl + method,
@@ -41,7 +51,7 @@
         findOne: function(type, query, onSuccess, onError) {
           return node.RoadmapNode.find(type, query, function(data) {
             if (onSuccess) {
-              if (_.isArray(data)) {
+              if (_.isArray(data) && data.length >= 1) {
                 return onSuccess(data[0]);
               }
               return onSuccess(data);
@@ -71,8 +81,10 @@
           if (params.index == null) {
             params.index = api.getTenantIndex();
           }
-          if (params.sessionToken == null) {
-            params.sessionToken = authManager.sessionToken;
+          if (autoApplySession) {
+            if (params.sessionToken == null) {
+              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
+            }
           }
           req = {
             url: node.QuickContent.serviceUrl + method,
@@ -150,8 +162,10 @@
           if (params.index == null) {
             params.index = api.getTenantIndex();
           }
-          if (params.sessionToken == null) {
-            params.sessionToken = authManager.sessionToken;
+          if (autoApplySession) {
+            if (params.sessionToken == null) {
+              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
+            }
           }
           req = {
             url: node.ExploreDB.serviceUrl + method,

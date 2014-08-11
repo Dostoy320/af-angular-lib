@@ -1,7 +1,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.api', []);
+  myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.config', 'af.sentry']);
 
   myApp.service('api', function($http, $msg, $window, $log, $loader, $config, $sentry) {
     var api;
@@ -18,6 +18,7 @@
         subDomain = $window.location.hostname.split('.').shift();
         switch (subDomain) {
           case 'alpha2':
+          case 'dev':
           case 'localhost':
             index = 'alpha2';
             break;
@@ -67,9 +68,14 @@
         return $loader.stop();
       },
       getErrorMessage: function(data, status) {
-        var err;
+        var codeStr, err;
         if (data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
-          return data.message + ' - ' + data.code;
+          codeStr = api.getHttpCodeString(data.code);
+          if (data.message === codeStr) {
+            return data.message + ' (' + data.code + ')';
+          } else {
+            return data.message + ' (' + codeStr(+')');
+          }
         }
         if (_.isNumber(status) && api.isHttpCode(status)) {
           err = api.getHttpCodeString(status);
@@ -115,6 +121,9 @@
             return defer.resolve(data);
           }
         };
+      },
+      standardAsyncErr: function(next, data, status) {
+        return next(api.getErrorMessage(data, status));
       },
       isHttpCode: function(code) {
         return _.isString(api.getHttpCodeString(code));
