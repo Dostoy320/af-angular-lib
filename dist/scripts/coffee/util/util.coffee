@@ -1,12 +1,23 @@
 
 #
 # util/misc functions for our apps
-myApp = angular.module('af.util', [])
+myApp = angular.module('af.util', ['af.config'])
 
 
-myApp.service '$util', ($window, $location) ->
+Number::formatNumber = (precision, decimal, seperator) ->
+  n = this
+  precision = (if isNaN(precision = Math.abs(precision)) then 0 else precision)
+  decimal = (if decimal is `undefined` then "." else decimal)
+  seperator = (if seperator is `undefined` then "," else seperator)
+  s = (if n < 0 then "-" else "")
+  i = parseInt(n = Math.abs(+n or 0).toFixed(precision)) + ""
+  j = (if (j = i.length) > 3 then j % 3 else 0)
+  s + ((if j then i.substr(0, j) + seperator else "")) + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + seperator) + ((if precision then decimal + Math.abs(n - i).toFixed(precision).slice(2) else ""))
 
-  return service = {
+
+myApp.service '$util', ($window, $config, $location) ->
+
+  return util = {
 
     # Get a Search param out of the URL no matter where it is....
     GET : (key, defaultValue) ->
@@ -64,4 +75,29 @@ myApp.service '$util', ($window, $location) ->
       else
         document.body.appendChild(form);
         form.submit();
+
+
+    format:{
+
+      date:(value, format) ->
+        if !value then return ''
+        if !format then format = $config.get('app.dateFormat') or 'MM/DD/YY'
+        if moment
+          if typeof value is 'string'
+            date = moment(value, "YYYY-MM-DDTHH:mm:ss ZZ") # utc mode for timeshift
+            return date.format(format)
+          else
+            return moment(value).format(format)
+        return value
+
+      number:(value, precision) ->
+        return parseFloat(value).formatNumber(precision); # call our custom number formatter (see top of page)
+
+      currency:(value, precision) ->
+        return '$' + util.number(value, precision)
+
+      percent:(value, precision) ->
+        return util.number(value*100, precision)+'%'
+
+    }
   }

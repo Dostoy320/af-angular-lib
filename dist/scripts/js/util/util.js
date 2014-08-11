@@ -1,11 +1,23 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.util', []);
+  myApp = angular.module('af.util', ['af.config']);
 
-  myApp.service('$util', function($window, $location) {
-    var service;
-    return service = {
+  Number.prototype.formatNumber = function(precision, decimal, seperator) {
+    var i, j, n, s;
+    n = this;
+    precision = (isNaN(precision = Math.abs(precision)) ? 0 : precision);
+    decimal = (decimal === undefined ? "." : decimal);
+    seperator = (seperator === undefined ? "," : seperator);
+    s = (n < 0 ? "-" : "");
+    i = parseInt(n = Math.abs(+n || 0).toFixed(precision)) + "";
+    j = ((j = i.length) > 3 ? j % 3 : 0);
+    return s + (j ? i.substr(0, j) + seperator : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + seperator) + (precision ? decimal + Math.abs(n - i).toFixed(precision).slice(2) : "");
+  };
+
+  myApp.service('$util', function($window, $config, $location) {
+    var util;
+    return util = {
       GET: function(key, defaultValue) {
         var params, search, vars;
         vars = $location.search();
@@ -58,6 +70,35 @@
         } else {
           document.body.appendChild(form);
           return form.submit();
+        }
+      },
+      format: {
+        date: function(value, format) {
+          var date;
+          if (!value) {
+            return '';
+          }
+          if (!format) {
+            format = $config.get('app.dateFormat') || 'MM/DD/YY';
+          }
+          if (moment) {
+            if (typeof value === 'string') {
+              date = moment(value, "YYYY-MM-DDTHH:mm:ss ZZ");
+              return date.format(format);
+            } else {
+              return moment(value).format(format);
+            }
+          }
+          return value;
+        },
+        number: function(value, precision) {
+          return parseFloat(value).formatNumber(precision);
+        },
+        currency: function(value, precision) {
+          return '$' + util.number(value, precision);
+        },
+        percent: function(value, precision) {
+          return util.number(value * 100, precision) + '%';
         }
       }
     };
