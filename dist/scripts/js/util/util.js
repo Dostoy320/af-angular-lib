@@ -47,16 +47,16 @@
         form = document.createElement("form");
         form.setAttribute("method", method);
         form.setAttribute("action", url);
-        _.each(params, function(key) {
+        _.each(params, function(value, key) {
           var hiddenField, type;
-          type = typeof params[key];
+          type = typeof value;
           if (type === 'function' || type === 'object') {
             return;
           }
           hiddenField = document.createElement("input");
           hiddenField.setAttribute("type", "hidden");
           hiddenField.setAttribute("name", key);
-          hiddenField.setAttribute("value", params[key]);
+          hiddenField.setAttribute("value", value);
           return form.appendChild(hiddenField);
         });
         if (newWindow) {
