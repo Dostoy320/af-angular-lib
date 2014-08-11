@@ -1,7 +1,11 @@
 
 
 myApp = angular.module('af.sentry', [])
-myApp.service '$sentry', ($log, authManager) ->
+
+# set a default so our service doesnt blow up
+myApp.constant('SENTRY_KEY', '')
+
+myApp.service '$sentry', ($log, authManager, SENTRY_KEY) ->
 
     sentryIsLoaded = () ->
       if typeof Raven is "undefined" then return false

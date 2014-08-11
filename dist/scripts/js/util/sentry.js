@@ -3,7 +3,9 @@
 
   myApp = angular.module('af.sentry', []);
 
-  myApp.service('$sentry', function($log, authManager) {
+  myApp.constant('SENTRY_KEY', '');
+
+  myApp.service('$sentry', function($log, authManager, SENTRY_KEY) {
     var sentryIsLoaded, service;
     sentryIsLoaded = function() {
       if (typeof Raven === "undefined") {

@@ -1,23 +1,32 @@
 myApp = angular.module('af.api', ['af.msg','af.loader','af.config','af.sentry'])
-myApp.service 'api', ($http, $msg, $window, $log, $loader, $config, $sentry) ->
+
+# set a default so our service doesnt blow up
+myApp.constant('DEV_DOMAINS', [localhost:'alpha2','dev':'alpha2'])
+
+myApp.service 'api', ($http, $msg, $window, $log, $util, $loader, $config, $sentry, DEV_DOMAINS) ->
 
   return api =
 
+    ##
     ##
     ## common getters
     getEnv:() -> $config.get('app.env')
     getTenant:() -> $config.get('app.tenant')
     getTenantIndex:() ->
       index = api.getTenant() # default to tenant
-      subDomain = $window.location.hostname.split('.').shift()
+      subDomain = $util.getSubDomain()
       switch subDomain
-        when 'alpha2', 'dev', 'localhost' then index = 'alpha2'
+        when 'alpha2'  then index = 'alpha2'
         when 'alpha'   then index = 'alpha'
         when 'waddell' then index = 'wr'
         when 'tdai'    then index = 'td'
+      # check for other dev domain
+      _.each DEV_DOMAINS, (value, index) ->
+        if subDomain is index then index = value
       return index
 
 
+    ##
     ##
     ## GLOABAL REQUEST EXECUTION
     execute:(req, onSuccess, onError) ->
@@ -36,6 +45,8 @@ myApp.service 'api', ($http, $msg, $window, $log, $loader, $config, $sentry) ->
         .error (data, status) ->
           api.handleApiError(data, status, req)
 
+
+    ##
     ##
     ## ERROR HANDLING
     handleApiError:(data, status, req) ->
@@ -47,6 +58,8 @@ myApp.service 'api', ($http, $msg, $window, $log, $loader, $config, $sentry) ->
       $msg.error(message)
       $loader.stop()
 
+
+    ##
     ##
     ## takes a server resonse and attempts to make it readible
     getErrorMessage:(data, status) ->

@@ -2,6 +2,8 @@
 #
 # util/misc functions for our apps
 myApp = angular.module('af.util', [])
+
+
 myApp.service '$util', ($window, $location) ->
 
   return service = {
@@ -23,6 +25,10 @@ myApp.service '$util', ($window, $location) ->
 
       if key then return vars[key] || defaultValue
       return vars
+
+
+    getSubDomain : () ->
+      return (window.location.host).split('.').shift()
 
 
     # axaj/client side post data to new window

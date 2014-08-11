@@ -3,7 +3,14 @@
 
   myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.config', 'af.sentry']);
 
-  myApp.service('api', function($http, $msg, $window, $log, $loader, $config, $sentry) {
+  myApp.constant('DEV_DOMAINS', [
+    {
+      localhost: 'alpha2',
+      'dev': 'alpha2'
+    }
+  ]);
+
+  myApp.service('api', function($http, $msg, $window, $log, $util, $loader, $config, $sentry, DEV_DOMAINS) {
     var api;
     return api = {
       getEnv: function() {
@@ -15,11 +22,9 @@
       getTenantIndex: function() {
         var index, subDomain;
         index = api.getTenant();
-        subDomain = $window.location.hostname.split('.').shift();
+        subDomain = $util.getSubDomain();
         switch (subDomain) {
           case 'alpha2':
-          case 'dev':
-          case 'localhost':
             index = 'alpha2';
             break;
           case 'alpha':
@@ -31,6 +36,11 @@
           case 'tdai':
             index = 'td';
         }
+        _.each(DEV_DOMAINS, function(value, index) {
+          if (subDomain === index) {
+            return index = value;
+          }
+        });
         return index;
       },
       execute: function(req, onSuccess, onError) {

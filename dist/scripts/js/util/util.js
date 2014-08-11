@@ -23,6 +23,9 @@
         }
         return vars;
       },
+      getSubDomain: function() {
+        return window.location.host.split('.').shift();
+      },
       postToUrl: function(url, params, newWindow, method) {
         var date, form, winName;
         if (!_.isBoolean(newWindow)) {
