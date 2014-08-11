@@ -74,7 +74,7 @@
           if (data.message === codeStr) {
             return data.message + ' (' + data.code + ')';
           } else {
-            return data.message + ' (' + codeStr(+')');
+            return data.message + ' (' + codeStr + ')';
           }
         }
         if (_.isNumber(status) && api.isHttpCode(status)) {

@@ -56,7 +56,7 @@ myApp.service 'api', ($http, $msg, $window, $log, $loader, $config, $sentry) ->
         if data.message is codeStr
           return data.message + ' (' + data.code + ')'
         else
-          return data.message + ' (' + codeStr +')'
+          return data.message + ' (' + codeStr + ')'
       # http code?
       if _.isNumber(status) and api.isHttpCode(status)
         err = api.getHttpCodeString(status)
