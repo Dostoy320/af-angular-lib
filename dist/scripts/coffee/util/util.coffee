@@ -54,13 +54,13 @@ myApp.service '$util', ($window, $config, $location) ->
       form.setAttribute("action", url)
 
       # create a hidden form field for all our parameters
-      _.each params, (key) ->
-        type = typeof params[key]
+      _.each params, (value, key) ->
+        type = typeof value
         if type is 'function' or type is 'object' then return
         hiddenField = document.createElement("input")
         hiddenField.setAttribute("type", "hidden")
         hiddenField.setAttribute("name", key)
-        hiddenField.setAttribute("value", params[key])
+        hiddenField.setAttribute("value", value)
         form.appendChild(hiddenField)
 
       # submit form with a random namey thing
@@ -75,6 +75,7 @@ myApp.service '$util', ($window, $config, $location) ->
       else
         document.body.appendChild(form);
         form.submit();
+
 
 
     format:{
