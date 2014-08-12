@@ -1,7 +1,7 @@
 myApp = angular.module('af.api', ['af.msg','af.loader','af.config','af.sentry'])
 
 # set a default so our service doesnt blow up
-myApp.constant('DEV_DOMAINS', [localhost:'alpha2','dev':'alpha2'])
+myApp.constant('DEV_DOMAINS', {localhost:'alpha2','dev':'alpha2'})
 
 myApp.service 'api', ($http, $msg, $window, $log, $util, $loader, $config, $sentry, DEV_DOMAINS) ->
 
@@ -21,8 +21,8 @@ myApp.service 'api', ($http, $msg, $window, $log, $util, $loader, $config, $sent
         when 'waddell' then index = 'wr'
         when 'tdai'    then index = 'td'
       # check for other dev domain
-      _.each DEV_DOMAINS, (value, index) ->
-        if subDomain is index then index = value
+      _.each DEV_DOMAINS, (value, i) ->
+        if subDomain is i then index = value
       return index
 
 

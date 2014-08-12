@@ -3,12 +3,10 @@
 
   myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.config', 'af.sentry']);
 
-  myApp.constant('DEV_DOMAINS', [
-    {
-      localhost: 'alpha2',
-      'dev': 'alpha2'
-    }
-  ]);
+  myApp.constant('DEV_DOMAINS', {
+    localhost: 'alpha2',
+    'dev': 'alpha2'
+  });
 
   myApp.service('api', function($http, $msg, $window, $log, $util, $loader, $config, $sentry, DEV_DOMAINS) {
     var api;
@@ -36,8 +34,8 @@
           case 'tdai':
             index = 'td';
         }
-        _.each(DEV_DOMAINS, function(value, index) {
-          if (subDomain === index) {
+        _.each(DEV_DOMAINS, function(value, i) {
+          if (subDomain === i) {
             return index = value;
           }
         });
