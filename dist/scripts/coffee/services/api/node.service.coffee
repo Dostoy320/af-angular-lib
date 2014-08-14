@@ -38,9 +38,9 @@ myApp.service 'node', ($http, api, authManager) ->
             onSuccess(data)
         , onError)
 
-      deleteById:(type, id, onSuccess, onError) ->
+      remove:(type, id, onSuccess, onError) ->
         id = api.ensureInt(id)
-        node.RoadmapNode.execute('/api/crud/delete', {_type:type, id:id}, onSuccess, onError)
+        node.RoadmapNode.execute('/api/crud/remove', {_type:type, id:id}, onSuccess, onError)
     }
 
     Batch:{
