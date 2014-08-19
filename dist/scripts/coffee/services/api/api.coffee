@@ -16,8 +16,8 @@ myApp.service 'api', ($http, $msg, $window, $log, $util, $loader, $config, $sent
       index = api.getTenant() # default to tenant
       subDomain = $util.getSubDomain()
       switch subDomain
-        when 'alpha2'  then index = 'alpha2'
-        when 'alpha'   then index = 'alpha'
+        when 'alpha2', 'alpha2-dev', 'dev' then index = 'alpha2'
+        when 'alpha', 'alpha-dev' then index = 'alpha'
         when 'waddell' then index = 'wr'
         when 'tdai'    then index = 'td'
       # check for other dev domain

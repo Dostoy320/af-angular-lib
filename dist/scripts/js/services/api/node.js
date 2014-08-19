@@ -58,9 +58,9 @@
             }
           }, onError);
         },
-        deleteById: function(type, id, onSuccess, onError) {
+        remove: function(type, id, onSuccess, onError) {
           id = api.ensureInt(id);
-          return node.RoadmapNode.execute('/api/crud/delete', {
+          return node.RoadmapNode.execute('/api/crud/remove', {
             _type: type,
             id: id
           }, onSuccess, onError);

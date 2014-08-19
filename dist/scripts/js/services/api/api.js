@@ -23,9 +23,12 @@
         subDomain = $util.getSubDomain();
         switch (subDomain) {
           case 'alpha2':
+          case 'alpha2-dev':
+          case 'dev':
             index = 'alpha2';
             break;
           case 'alpha':
+          case 'alpha-dev':
             index = 'alpha';
             break;
           case 'waddell':
