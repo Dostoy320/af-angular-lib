@@ -5,7 +5,7 @@
 
   myApp.constant('DEV_DOMAINS', {
     localhost: 'alpha2',
-    'dev': 'alpha2'
+    dev: 'alpha2'
   });
 
   myApp.service('api', function($http, $msg, $window, $log, $util, $loader, $config, $sentry, DEV_DOMAINS) {
@@ -22,14 +22,13 @@
         index = api.getTenant();
         subDomain = $util.getSubDomain();
         switch (subDomain) {
-          case 'alpha2':
-          case 'alpha2-dev':
-          case 'dev':
-            index = 'alpha2';
-            break;
           case 'alpha':
           case 'alpha-dev':
             index = 'alpha';
+            break;
+          case 'alpha2':
+          case 'alpha2-dev':
+            index = 'alpha2';
             break;
           case 'waddell':
             index = 'wr';
