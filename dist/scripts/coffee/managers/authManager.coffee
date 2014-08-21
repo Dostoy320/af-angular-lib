@@ -19,7 +19,10 @@ myApp.service 'authManager', ($util)->
       amplify.store('userEmail', null)
       amplify.store('authorities', null)
       amplify.store('sessionToken', null)
-      auth.loggedInUser = null
+      auth.loggedInUser.username = null
+      auth.loggedInUser.userId = null
+      auth.loggedInUser.userEmail = null
+      auth.loggedInUser.authorities = null
       auth.sessionToken = null
 
     setSessionToken:(token) ->
@@ -77,4 +80,4 @@ myApp.service 'authManager', ($util)->
     # ::
     # :: LOGGED IN?
     loggedIn:() ->
-      return (auth.loggedInUser and auth.sessionToken)
+      return (auth.sessionToken and auth.loggedInUser.userId)
