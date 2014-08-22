@@ -34,7 +34,9 @@ myApp.service 'node', ($http, api, authManager) ->
       findOne:(type, query, onSuccess, onError) ->
         node.RoadmapNode.find(type, query, (data) ->
           if onSuccess
-            if _.isArray(data) and data.length >= 1 then return onSuccess(data[0])
+            if _.isArray(data)
+              if data.length >= 1 then return onSuccess(data[0])
+              if data.length is 0 then return null
             onSuccess(data)
         , onError)
 
