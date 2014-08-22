@@ -36,7 +36,7 @@ myApp.service 'node', ($http, api, authManager) ->
           if onSuccess
             if _.isArray(data)
               if data.length >= 1 then return onSuccess(data[0])
-              if data.length is 0 then return null
+              if data.length is 0 then return onSuccess(null)
             onSuccess(data)
         , onError)
 
