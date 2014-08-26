@@ -1,6 +1,6 @@
 module.exports = (grunt) ->
 
-  grunt.registerTask 'default', ['coffee','watch']
+  grunt.registerTask 'default', ['coffee','concat','watch']
 
   grunt.initConfig({
     coffee: {
@@ -13,13 +13,26 @@ module.exports = (grunt) ->
         ext: '.js'
       }
     }
+    concat:{
+      js:{
+        options:{
+          separator:grunt.util.linefeed+';'+grunt.util.linefeed
+        }
+        files:{
+          'dist/scripts/aflib.js':[
+            'dist/scripts/js/**/*'
+          ]
+        }
+      }
+    }
     watch: {
       coffee: {
         files: ['dist/**/*.coffee']
-        tasks: ['coffee:glob_to_multiple']
+        tasks: ['coffee','concat']
       }
     }
   })
 
   grunt.loadNpmTasks('grunt-contrib-coffee')
+  grunt.loadNpmTasks('grunt-contrib-concat')
   grunt.loadNpmTasks('grunt-contrib-watch')

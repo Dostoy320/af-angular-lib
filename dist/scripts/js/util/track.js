@@ -1,11 +1,16 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.track', []);
+  myApp = angular.module('af.track', ['af.authManager']);
 
-  myApp.service('$track', function($log, authManager) {
+  myApp.constant('TRACK_ENABLED', true);
+
+  myApp.service('$track', function($log, authManager, TRACK_ENABLED) {
     var init, service;
     init = function() {
+      if (!TRACK_ENABLED) {
+        return false;
+      }
       if (typeof mixpanel === 'undefined') {
         return false;
       }
