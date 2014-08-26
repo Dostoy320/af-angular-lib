@@ -11,6 +11,12 @@
       },
       stop: function() {
         return $event.shout($event.EVENT_loaderStop);
+      },
+      save: function() {
+        return $event.shout($event.EVENT_loaderStart, 'Saving...');
+      },
+      load: function() {
+        return $event.shout($event.EVENT_loaderStart, 'Loading...');
       }
     };
     return srv;

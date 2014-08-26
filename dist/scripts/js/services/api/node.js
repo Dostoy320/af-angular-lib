@@ -1,9 +1,9 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.node', ['af.api']);
+  myApp = angular.module('af.node', ['af.api', 'af.authManager', 'af.config']);
 
-  myApp.service('node', function($http, api, authManager) {
+  myApp.service('node', function($http, api, authManager, $config) {
     var autoApplySession, autoApplySessionPriority, node;
     autoApplySession = true;
     autoApplySessionPriority = null;
@@ -22,7 +22,7 @@
             params = {};
           }
           if (params.tenant == null) {
-            params.tenant = api.getTenantIndex();
+            params.tenant = $config.getTenantIndex();
           }
           if (autoApplySession) {
             if (params.sessionToken == null) {
@@ -54,7 +54,7 @@
               if (_.isArray(data) && data.length >= 1) {
                 return onSuccess(data[0]);
               }
-              return onSuccess(data);
+              return onSuccess(null);
             }
           }, onError);
         },
@@ -79,7 +79,7 @@
             params = {};
           }
           if (params.index == null) {
-            params.index = api.getTenantIndex();
+            params.index = $config.getTenantIndex();
           }
           if (autoApplySession) {
             if (params.sessionToken == null) {
@@ -160,7 +160,7 @@
             params = {};
           }
           if (params.index == null) {
-            params.index = api.getTenantIndex();
+            params.index = $config.getTenantIndex();
           }
           if (autoApplySession) {
             if (params.sessionToken == null) {

@@ -3,8 +3,14 @@
 
   myApp = angular.module('af.config', []);
 
-  myApp.service('$config', function($window) {
-    var getPathValue, pluralize;
+  myApp.constant('DEV_DOMAINS', {
+    localhost: 'alpha2',
+    dev: 'alpha2'
+  });
+
+  myApp.service('$config', function($window, DEV_DOMAINS) {
+    var app, config, getPathValue, pluralize;
+    app = null;
     pluralize = function(value) {
       var lastChar, lastTwoChar;
       if (!value) {
@@ -32,7 +38,7 @@
       }
       return getPathValue(child, parts.join('.'));
     };
-    return {
+    config = {
       get: function(path, makePlural) {
         var pluralValue, value;
         if (!$window.config) {
@@ -53,8 +59,73 @@
           return pluralize(value);
         }
         return value;
+      },
+      getTenant: function() {
+        return config.get('app.tenant');
+      },
+      getEnv: function() {
+        var env, subDomain;
+        env = 'prod';
+        subDomain = config.getSubDomain();
+        if (subDomain.indexOf('alpha') > -1) {
+          return 'dev';
+        }
+        if (subDomain.indexOf('-dev') > -1) {
+          return 'dev';
+        }
+        _.each(DEV_DOMAINS, function(devNodeIndex, devDomain) {
+          if (subDomain === devDomain) {
+            return env = 'dev';
+          }
+        });
+        return env;
+      },
+      getTenantIndex: function() {
+        var index, subDomain;
+        index = config.getTenant();
+        subDomain = config.getSubDomain();
+        if (subDomain.indexOf('-dev') > -1) {
+          subDomain = subDomain.split("-dev").shift();
+        }
+        switch (subDomain) {
+          case 'alpha':
+            index = 'alpha';
+            break;
+          case 'alpha2':
+            index = 'alpha2';
+            break;
+          case 'waddell':
+            index = 'wr';
+            break;
+          case 'tdai':
+            index = 'td';
+        }
+        _.each(DEV_DOMAINS, function(devNodeIndex, devDomain) {
+          if (subDomain === devDomain) {
+            return index = devNodeIndex;
+          }
+        });
+        return index;
+      },
+      getSubDomain: function() {
+        return window.location.host.split('.').shift().toLowerCase();
+      },
+      setApp: function(app) {
+        return app = app;
+      },
+      getApp: function() {
+        var parts;
+        if (app) {
+          return app;
+        }
+        parts = $window.location.pathname.split('/');
+        if (parts.length >= 2) {
+          app = parts[1].toLowerCase();
+        }
+        return app;
       }
     };
+    return config;
   });
 
 }).call(this);

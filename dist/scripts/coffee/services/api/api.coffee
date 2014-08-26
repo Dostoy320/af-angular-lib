@@ -1,29 +1,9 @@
-myApp = angular.module('af.api', ['af.msg','af.loader','af.config','af.sentry'])
+myApp = angular.module('af.api', ['af.msg','af.loader','af.sentry','af.util','af.config'])
 
-# set a default so our service doesnt blow up
-myApp.constant('DEV_DOMAINS', {localhost:'alpha2', dev:'alpha2'})
 
-myApp.service 'api', ($http, $msg, $window, $log, $util, $loader, $config, $sentry, DEV_DOMAINS) ->
+myApp.service 'api', ($http, $window, $log, $msg, $loader, $sentry, $util, $config) ->
 
   return api =
-
-    ##
-    ##
-    ## common getters
-    getEnv:() -> $config.get('app.env')
-    getTenant:() -> $config.get('app.tenant')
-    getTenantIndex:() ->
-      index = api.getTenant() # default to tenant
-      subDomain = $util.getSubDomain()
-      switch subDomain
-        when 'alpha',  'alpha-dev' then index = 'alpha'
-        when 'alpha2', 'alpha2-dev' then index = 'alpha2'
-        when 'waddell' then index = 'wr'
-        when 'tdai'    then index = 'td'
-      # check for other dev domain
-      _.each DEV_DOMAINS, (value, i) ->
-        if subDomain is i then index = value
-      return index
 
 
     ##
@@ -82,9 +62,9 @@ myApp.service 'api', ($http, $msg, $window, $log, $util, $loader, $config, $sent
     addDebugInfo:(req) ->
       req.data.debug =
         url:$window.location.href
-        index:api.getTenantIndex()
-        tenant:api.getTenant()
-        env:api.getEnv()
+        index:$util.url.getTenantIndex()
+        tenant:$config.getTenant()
+        env:$config.getEnv()
       return req
 
 

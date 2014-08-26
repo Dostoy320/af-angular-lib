@@ -1,5 +1,5 @@
-myApp = angular.module('af.node', ['af.api'])
-myApp.service 'node', ($http, api, authManager) ->
+myApp = angular.module('af.node', ['af.api','af.authManager','af.config'])
+myApp.service 'node', ($http, api, authManager, $config) ->
 
   autoApplySession = true
   autoApplySessionPriority = null # passing ['amplify','url','window'] will specify the order the api looks for token
@@ -14,7 +14,7 @@ myApp.service 'node', ($http, api, authManager) ->
       execute:(method, params, onSuccess, onError) ->
         # all calls require tenant and sessionToken
         params ?= {}
-        params.tenant ?= api.getTenantIndex()
+        params.tenant ?= $config.getTenantIndex()
         if autoApplySession then params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
         # build request
         req =
@@ -53,7 +53,7 @@ myApp.service 'node', ($http, api, authManager) ->
       execute:(method, params, onSuccess, onError) ->
         # all calls require index and sessionToken
         params ?= {}
-        params.index ?= api.getTenantIndex()
+        params.index ?= $config.getTenantIndex()
         if autoApplySession then params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
         req =
           url: node.QuickContent.serviceUrl + method
@@ -102,7 +102,7 @@ myApp.service 'node', ($http, api, authManager) ->
       execute:(method, params, onSuccess, onError) ->
         # all calls require tenant and sessionToken
         params ?= {}
-        params.index ?= api.getTenantIndex()
+        params.index ?= $config.getTenantIndex()
         if autoApplySession then params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
         req =
           url: node.ExploreDB.serviceUrl + method

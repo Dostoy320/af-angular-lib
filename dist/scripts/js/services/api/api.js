@@ -1,48 +1,11 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.config', 'af.sentry']);
+  myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
 
-  myApp.constant('DEV_DOMAINS', {
-    localhost: 'alpha2',
-    dev: 'alpha2'
-  });
-
-  myApp.service('api', function($http, $msg, $window, $log, $util, $loader, $config, $sentry, DEV_DOMAINS) {
+  myApp.service('api', function($http, $window, $log, $msg, $loader, $sentry, $util, $config) {
     var api;
     return api = {
-      getEnv: function() {
-        return $config.get('app.env');
-      },
-      getTenant: function() {
-        return $config.get('app.tenant');
-      },
-      getTenantIndex: function() {
-        var index, subDomain;
-        index = api.getTenant();
-        subDomain = $util.getSubDomain();
-        switch (subDomain) {
-          case 'alpha':
-          case 'alpha-dev':
-            index = 'alpha';
-            break;
-          case 'alpha2':
-          case 'alpha2-dev':
-            index = 'alpha2';
-            break;
-          case 'waddell':
-            index = 'wr';
-            break;
-          case 'tdai':
-            index = 'td';
-        }
-        _.each(DEV_DOMAINS, function(value, i) {
-          if (subDomain === i) {
-            return index = value;
-          }
-        });
-        return index;
-      },
       execute: function(req, onSuccess, onError) {
         if (req.method == null) {
           req.method = 'POST';
@@ -99,9 +62,9 @@
       addDebugInfo: function(req) {
         req.data.debug = {
           url: $window.location.href,
-          index: api.getTenantIndex(),
-          tenant: api.getTenant(),
-          env: api.getEnv()
+          index: $util.url.getTenantIndex(),
+          tenant: $config.getTenant(),
+          env: $config.getEnv()
         };
         return req;
       },

@@ -1,4 +1,4 @@
-myApp = angular.module('af.java', ['af.api'])
+myApp = angular.module('af.java', ['af.api','af.authManager'])
 myApp.service 'java', ($http, api, authManager) ->
 
   autoApplySession = true

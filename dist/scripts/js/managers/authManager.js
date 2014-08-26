@@ -1,7 +1,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.authManager', []);
+  myApp = angular.module('af.authManager', ['af.util']);
 
   myApp.service('authManager', function($util) {
     var auth;
@@ -19,7 +19,10 @@
         amplify.store('userEmail', null);
         amplify.store('authorities', null);
         amplify.store('sessionToken', null);
-        auth.loggedInUser = null;
+        auth.loggedInUser.username = null;
+        auth.loggedInUser.userId = null;
+        auth.loggedInUser.userEmail = null;
+        auth.loggedInUser.authorities = null;
         return auth.sessionToken = null;
       },
       setSessionToken: function(token) {
@@ -94,7 +97,7 @@
         return auth.hasAnyRole(['Role_AccessKeyManager']);
       },
       loggedIn: function() {
-        return auth.loggedInUser && auth.sessionToken;
+        return auth.sessionToken && auth.loggedInUser.userId;
       }
     };
   });

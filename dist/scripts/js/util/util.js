@@ -15,7 +15,7 @@
     return s + (j ? i.substr(0, j) + seperator : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + seperator) + (precision ? decimal + Math.abs(n - i).toFixed(precision).slice(2) : "");
   };
 
-  myApp.service('$util', function($window, $config, $location) {
+  myApp.service('$util', function($window, $location, $config) {
     var util;
     return util = {
       GET: function(key, defaultValue) {
@@ -34,9 +34,6 @@
           return vars[key] || defaultValue;
         }
         return vars;
-      },
-      getSubDomain: function() {
-        return window.location.host.split('.').shift();
       },
       postToUrl: function(url, params, newWindow, method) {
         var date, form, winName;

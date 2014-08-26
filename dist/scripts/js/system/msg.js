@@ -3,7 +3,7 @@
 
   myApp = angular.module('af.msg', ['af.event']);
 
-  myApp.service('$msg', function($event, $log) {
+  myApp.service('$msg', function($event) {
     var msg;
     return msg = {
       shownAt: null,
@@ -51,7 +51,7 @@
     };
   });
 
-  myApp.directive('msgHolder', function($timeout, $window, $event, $log) {
+  myApp.directive('msgHolder', function($timeout, $window, $event) {
     var timer;
     timer = null;
     return {

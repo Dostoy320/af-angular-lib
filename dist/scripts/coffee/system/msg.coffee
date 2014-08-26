@@ -1,7 +1,7 @@
 #
 # Msg Service
 myApp = angular.module('af.msg', ['af.event'])
-myApp.service '$msg', ($event, $log) ->
+myApp.service '$msg', ($event) ->
   msg = {
 
     shownAt:null
@@ -34,7 +34,7 @@ myApp.service '$msg', ($event, $log) ->
 
 
 ## Msg UI
-myApp.directive 'msgHolder', ($timeout, $window, $event, $log) ->
+myApp.directive 'msgHolder', ($timeout, $window, $event) ->
 
   timer = null # growl timer
 

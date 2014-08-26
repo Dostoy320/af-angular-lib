@@ -1,4 +1,4 @@
-myApp = angular.module('af.authManager', [])
+myApp = angular.module('af.authManager', ['af.util'])
 myApp.service 'authManager', ($util)->
 
   auth =

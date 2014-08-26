@@ -15,7 +15,8 @@ Number::formatNumber = (precision, decimal, seperator) ->
   s + ((if j then i.substr(0, j) + seperator else "")) + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + seperator) + ((if precision then decimal + Math.abs(n - i).toFixed(precision).slice(2) else ""))
 
 
-myApp.service '$util', ($window, $config, $location) ->
+
+myApp.service '$util', ($window, $location, $config) ->
 
   return util = {
 
@@ -26,7 +27,6 @@ myApp.service '$util', ($window, $config, $location) ->
       # so we need to look in both
       vars = $location.search() # angualar
       search = $window.location.search # normal
-
       if search
         params = search.split('&')
         _.each params, (param, i) ->
@@ -36,11 +36,6 @@ myApp.service '$util', ($window, $config, $location) ->
 
       if key then return vars[key] || defaultValue
       return vars
-
-
-    getSubDomain : () ->
-      return (window.location.host).split('.').shift()
-
 
     # axaj/client side post data to new window
     postToUrl : (url, params, newWindow, method) ->
