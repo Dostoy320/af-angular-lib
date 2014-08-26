@@ -11,7 +11,7 @@ myApp.service '$track', ($log, authManager, TRACK_ENABLED) ->
       if typeof mixpanel is 'undefined' then return false
       # apply userID if possible
       if authManager.loggedInUser
-        mixpanel.identify(authManager.loggedInUser.userId);
+        mixpanel.identify(authManager.loggedInUser.userId)
       return true
 
     service =
@@ -23,6 +23,12 @@ myApp.service '$track', ($log, authManager, TRACK_ENABLED) ->
       # options to send with all future events for this user
       register:(options) ->
         if not init() then return $log.info('Mixpanel Not loaded. Unable to Register', options)
-        mixpanel.register(options);
+        mixpanel.register(options)
+
+      unregister:(string) ->
+        if not init() then return $log.info('Mixpanel Not loaded. Unable to Unregister: '+string)
+        mixpanel.unregister(string)
+
+
 
     return service

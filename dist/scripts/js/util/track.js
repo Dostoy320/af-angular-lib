@@ -31,6 +31,12 @@
           return $log.info('Mixpanel Not loaded. Unable to Register', options);
         }
         return mixpanel.register(options);
+      },
+      unregister: function(string) {
+        if (!init()) {
+          return $log.info('Mixpanel Not loaded. Unable to Unregister: ' + string);
+        }
+        return mixpanel.unregister(string);
       }
     };
     return service;

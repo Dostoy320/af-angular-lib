@@ -67,9 +67,9 @@ var mixPanelSetup = {
   init : function(){
     var token = mixPanelSetup.prodUrl
     if(sentrySetup.getEnv() === 'dev') token = mixPanelSetup.devUrl
-    mixpanel.init(token);
+    window.mixpanel.init(token);
     // ALL mixPanel events will contain this data...
-    mixpanel.register({
+    window.mixpanel.register({
       domain:sentrySetup.getSubDomain(),
       env:sentrySetup.getEnv()
     });
