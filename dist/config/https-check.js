@@ -1,3 +1,5 @@
+// ensures url is https and has a trailing slash
+
 var href = window.location.href;
 
 if (window.location.host !== 'localhost' &&
