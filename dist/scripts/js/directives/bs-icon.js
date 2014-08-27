@@ -1,7 +1,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.icons', []);
+  myApp = angular.module('af.bsIcons', []);
 
   myApp.directive('bsIcon', function() {
     return {

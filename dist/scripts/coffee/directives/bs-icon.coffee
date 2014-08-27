@@ -1,4 +1,4 @@
-myApp = angular.module('af.icons', [])
+myApp = angular.module('af.bsIcons', [])
 myApp.directive 'bsIcon', ()->
   return {
   scope:
