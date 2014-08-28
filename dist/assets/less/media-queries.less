@@ -3,23 +3,30 @@
 // NOTE :  requires bootstrap or you need to defined these variables
 // bootstrap defaults:
 // @screen-xs : 480px
+// @screen-xs-max : 767px
 // @screen-sm : 768px
 // @screen-sm-max : 991px
 // @screen-md : 992px
+// @screen-md-max : 1199px
+// @screen-lg : 1200px
 
-@media-desktop : ~'min-width: @{screen-md}';      // desktop (lg, md)
-@media-tablet  : ~'(min-width: @{screen-sm}) and (max-width: @{screen-sm-max})';  // tablet (sm)
-@media-phone   : ~'max-width: @{screen-sm-max}';  // phone   (xs)
-@media-gt-phone : ~'min-width: @{screen-sm}';     // everything but phone
 
 // USAGE
 /*
+
 @media (@media-phone) {
-  ...
+  ... blah blah
 }
 
-@media (@media-tablet){
-  ...
+@media (@media-mobile){
+  ... blah blah
 }
 
 */
+
+@media-desktop  : ~'min-width: @{screen-md}';      // desktop (lg, md)
+@media-mobile   : ~'max-width: @{screen-md-max}';  // mobile  (sm, xs)
+
+@media-tablet   : ~'(min-width: @{screen-sm}) and (max-width: @{screen-sm-max})';  // tablet (sm)
+@media-phone    : ~'max-width: @{screen-sm-max}';  // phone (xs)
+@media-gt-phone : ~'min-width: @{screen-sm}';     // everything but phone
