@@ -15,18 +15,22 @@
 /*
 
 @media (@media-phone) {
-  ... blah blah
+  ... phone only
 }
 
 @media (@media-mobile){
   ... blah blah
 }
 
+@media (@media-tablet-min) and (@media-tablet-max){
+  ... tablet only
+}
+
 */
 
 @media-desktop  : ~'min-width: @{screen-md}';      // desktop (lg, md)
-@media-mobile   : ~'max-width: @{screen-md-max}';  // mobile  (sm, xs)
-
-@media-tablet   : ~'(min-width: @{screen-sm}) and (max-width: @{screen-sm-max})';  // tablet (sm)
+@media-mobile   : ~'max-width: @{screen-sm-max}';  // mobile  (sm, xs)
 @media-phone    : ~'max-width: @{screen-sm-max}';  // phone (xs)
-@media-gt-phone : ~'min-width: @{screen-sm}';     // everything but phone
+
+@media-tablet-min   : ~'min-width: @{screen-sm}';     // tablet (sm)
+@media-tablet-max   : ~'max-width: @{screen-sm-max}'; // tablet (sm)
