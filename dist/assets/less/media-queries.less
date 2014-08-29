@@ -28,9 +28,9 @@
 
 */
 
-@media-desktop  : ~'min-width: @{screen-md}';      // desktop (lg, md)
-@media-mobile   : ~'max-width: @{screen-sm-max}';  // mobile  (sm, xs)
-@media-phone    : ~'max-width: @{screen-sm-max}';  // phone (xs)
+@media-desktop  : ~'min-width: @{screen-md}';      // desktop (md or larger) (md, lg)
+@media-mobile   : ~'max-width: @{screen-sm-max}';  // mobile (sm or lower) (sm, xs)
+@media-phone    : ~'max-width: @{screen-xs-max}';  // phone (xs)
 
 @media-tablet-min   : ~'min-width: @{screen-sm}';     // tablet (sm)
 @media-tablet-max   : ~'max-width: @{screen-sm-max}'; // tablet (sm)
