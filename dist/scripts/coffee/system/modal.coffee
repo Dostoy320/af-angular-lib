@@ -11,9 +11,10 @@ myApp.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
     ctrl: null
 
     open: (url, ctrl) ->
-      service.url ?= DEFAULT_MODAL_PATH
+      service.url = url
       service.ctrl = ctrl
-      $event.shout("Modal.open", { url: url, scope: ctrl })
+      if not service.url then service.url = DEFAULT_MODAL_PATH
+      $event.shout("Modal.open", { url: service.url, scope:service.ctrl  })
 
     close: (data) ->
       service.url = null

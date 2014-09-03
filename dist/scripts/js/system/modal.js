@@ -11,13 +11,14 @@
       url: null,
       ctrl: null,
       open: function(url, ctrl) {
-        if (service.url == null) {
+        service.url = url;
+        service.ctrl = ctrl;
+        if (!service.url) {
           service.url = DEFAULT_MODAL_PATH;
         }
-        service.ctrl = ctrl;
         return $event.shout("Modal.open", {
-          url: url,
-          scope: ctrl
+          url: service.url,
+          scope: service.ctrl
         });
       },
       close: function(data) {
