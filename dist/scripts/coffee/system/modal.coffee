@@ -7,25 +7,28 @@ myApp.constant('DEFAULT_MODAL_PATH', 'src/views/templates/generic.modal.view.php
 
 myApp.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
   service =
-    url: null
-    scope: null
 
-    open: (url, scope) ->
+    url: null
+    modalScope: null   # holds ctrl that opened modal
+    parentScope: null  # holds ctrl of modal
+
+    open: (url, parentScope, modalScope) ->
       service.url = url
-      service.scope = scope
+      service.modalScope = modalScope
+      service.parentScope = parentScope
       if not service.url then service.url = DEFAULT_MODAL_PATH
-      $event.shout("Modal.open", { url: service.url, scope:service.scope  })
+      $event.shout("Modal.open", { url: service.url, parentScope:service.parentScope, modalScope:modalScope  })
 
     close: (data) ->
       service.url = null
-      service.scope = null
+      #service.modalScope = null
       $event.shout("Modal.close", data)
 
-    updateScope:(scope) ->
-      service.scope = scope
+    getModalScope: () -> return service.modalScope  # return ctrl of modal
+    getParentScope: -> return service.parentScope    # return ctrl that opened modal
 
-    getScope: ->
-      return service.scope
+    updateModalScope:(scope) -> service.modalScope = scope
+
 
   return service
 
@@ -86,10 +89,10 @@ myApp.GenericModalCtrl = myApp.controller 'GenericModalCtrl', ($scope, $modal) -
 
   init = () ->
     # build the scope
-    _.extend($scope, defaultController, $modal.getScope())
+    _.extend($scope, defaultController, $modal.getModalScope())
     # push scope back into $modal after extended
     # this allows us to grab it from outside of this controller
-    $modal.updateScope($scope)
+    $modal.updateModalScope($scope)
 
   init()
   $scope.run()
