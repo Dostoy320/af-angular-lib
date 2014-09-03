@@ -1,6 +1,48 @@
 
 ;
 (function() {
+  myApp.GenericModalCtrl = myApp.controller('GenericModalCtrl', function($scope, $modal) {
+
+    /*
+    Example usage
+    $modal.open('client/views/analyzers/client.profitability.settings.php', {
+      clickClose:() ->
+        modalScope = $modal.getScope()
+         * do something
+        $modal.close()
+    })
+     */
+    $scope.defaultController = {
+      title: 'Are you sure?',
+      body: 'Are you sure you wish to continue?',
+      closeBtnLabel: 'Close',
+      confirmBtnLabel: null,
+      showbuttons: true,
+      clickClose: function() {
+        return $modal.close();
+      },
+      clickConfirm: function() {
+        return $modal.close();
+      },
+      run: function() {
+        var foo;
+        return foo = 'override this';
+      }
+    };
+    $scope.init = function() {
+      _.extend($scope, $scope.defaultController, $modal.getScope());
+      return $modal.updateScope($scope);
+    };
+    $scope.init();
+    return $scope.run();
+  });
+
+}).call(this);
+
+;
+
+;
+(function() {
   var myApp;
 
   myApp = angular.module('af.bsIcons', []);
@@ -880,25 +922,28 @@
     var service;
     service = {
       url: null,
-      ctrl: null,
-      open: function(url, ctrl) {
+      scope: null,
+      open: function(url, scope) {
         service.url = url;
-        service.ctrl = ctrl;
+        service.scope = scope;
         if (!service.url) {
           service.url = DEFAULT_MODAL_PATH;
         }
         return $event.shout("Modal.open", {
           url: service.url,
-          scope: service.ctrl
+          scope: service.scope
         });
       },
       close: function(data) {
         service.url = null;
-        service.ctrl = null;
+        service.scope = null;
         return $event.shout("Modal.close", data);
       },
-      getController: function() {
-        return service.ctrl;
+      updateScope: function(scope) {
+        return service.scope = scope;
+      },
+      getScope: function() {
+        return service.scope;
       }
     };
     return service;

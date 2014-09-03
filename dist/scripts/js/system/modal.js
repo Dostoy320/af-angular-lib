@@ -9,25 +9,28 @@
     var service;
     service = {
       url: null,
-      ctrl: null,
-      open: function(url, ctrl) {
+      scope: null,
+      open: function(url, scope) {
         service.url = url;
-        service.ctrl = ctrl;
+        service.scope = scope;
         if (!service.url) {
           service.url = DEFAULT_MODAL_PATH;
         }
         return $event.shout("Modal.open", {
           url: service.url,
-          scope: service.ctrl
+          scope: service.scope
         });
       },
       close: function(data) {
         service.url = null;
-        service.ctrl = null;
+        service.scope = null;
         return $event.shout("Modal.close", data);
       },
-      getController: function() {
-        return service.ctrl;
+      updateScope: function(scope) {
+        return service.scope = scope;
+      },
+      getScope: function() {
+        return service.scope;
       }
     };
     return service;

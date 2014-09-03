@@ -8,21 +8,24 @@ myApp.constant('DEFAULT_MODAL_PATH', 'src/views/templates/generic.modal.view.php
 myApp.service "$modal", ($event, DEFAULT_MODAL_PATH) ->
   service =
     url: null
-    ctrl: null
+    scope: null
 
-    open: (url, ctrl) ->
+    open: (url, scope) ->
       service.url = url
-      service.ctrl = ctrl
+      service.scope = scope
       if not service.url then service.url = DEFAULT_MODAL_PATH
-      $event.shout("Modal.open", { url: service.url, scope:service.ctrl  })
+      $event.shout("Modal.open", { url: service.url, scope:service.scope  })
 
     close: (data) ->
       service.url = null
-      service.ctrl = null
+      service.scope = null
       $event.shout("Modal.close", data)
 
-    getController: ->
-      return service.ctrl
+    updateScope:(scope) ->
+      service.scope = scope
+
+    getScope: ->
+      return service.scope
 
   return service
 
