@@ -6,7 +6,7 @@ myApp = angular.module('af.config', [])
 # set a default so our service doesnt blow up
 myApp.constant('DEV_DOMAINS', {localhost:'alpha2', dev:'alpha2'})
 
-myApp.service '$config', ($window, DEV_DOMAINS) ->
+myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
 
   app = null
 
@@ -83,5 +83,29 @@ myApp.service '$config', ($window, DEV_DOMAINS) ->
       parts = $window.location.pathname.split('/')
       if parts.length >= 2 then app = (parts[1]).toLowerCase()
       return app
+
+    getTheme : () ->
+      #<link id="themeCSS" rel="stylesheet" type="text/css" href="client/static/css/app-blue.css" theme="blue" />
+      themeCss = $('#themeCSS')
+      if themeCss.length isnt 1 or not themeCss.attr('theme') then alert 'Cannot find the theme CSS file id="themeCSS" to deterime theme.'
+      return themeCss.attr('theme')
+
+    getThemePrimaryColor : () ->
+      # anyone know a better way to do this?
+      theme = config.getTheme()
+      switch theme
+        when 'blue' then return '#336699'
+        when 'green' then return '#00b624'
+      $log.info '$config.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.'
+      return '#336699'
+
+    getThemeSecondaryColor : () ->
+      # anyone know a better way to do this?
+      theme = config.getTheme()
+      switch theme
+        when 'blue' then return '#666'
+        when 'green' then return '#666'
+      $log.info '$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.'
+      return '#666'
   }
   return config

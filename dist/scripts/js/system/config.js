@@ -8,7 +8,7 @@
     dev: 'alpha2'
   });
 
-  myApp.service('$config', function($window, DEV_DOMAINS) {
+  myApp.service('$config', function($window, $log, DEV_DOMAINS) {
     var app, config, getPathValue, pluralize;
     app = null;
     pluralize = function(value) {
@@ -123,6 +123,38 @@
           app = parts[1].toLowerCase();
         }
         return app;
+      },
+      getTheme: function() {
+        var themeCss;
+        themeCss = $('#themeCSS');
+        if (themeCss.length !== 1 || !themeCss.attr('theme')) {
+          alert('Cannot find the theme CSS file id="themeCSS" to deterime theme.');
+        }
+        return themeCss.attr('theme');
+      },
+      getThemePrimaryColor: function() {
+        var theme;
+        theme = config.getTheme();
+        switch (theme) {
+          case 'blue':
+            return '#336699';
+          case 'green':
+            return '#00b624';
+        }
+        $log.info('$config.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.');
+        return '#336699';
+      },
+      getThemeSecondaryColor: function() {
+        var theme;
+        theme = config.getTheme();
+        switch (theme) {
+          case 'blue':
+            return '#666';
+          case 'green':
+            return '#666';
+        }
+        $log.info('$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.');
+        return '#666';
       }
     };
     return config;

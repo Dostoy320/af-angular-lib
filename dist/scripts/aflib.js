@@ -655,7 +655,7 @@
     dev: 'alpha2'
   });
 
-  myApp.service('$config', function($window, DEV_DOMAINS) {
+  myApp.service('$config', function($window, $log, DEV_DOMAINS) {
     var app, config, getPathValue, pluralize;
     app = null;
     pluralize = function(value) {
@@ -770,6 +770,38 @@
           app = parts[1].toLowerCase();
         }
         return app;
+      },
+      getTheme: function() {
+        var themeCss;
+        themeCss = $('#themeCSS');
+        if (themeCss.length !== 1 || !themeCss.attr('theme')) {
+          alert('Cannot find the theme CSS file id="themeCSS" to deterime theme.');
+        }
+        return themeCss.attr('theme');
+      },
+      getThemePrimaryColor: function() {
+        var theme;
+        theme = config.getTheme();
+        switch (theme) {
+          case 'blue':
+            return '#336699';
+          case 'green':
+            return '#00b624';
+        }
+        $log.info('$config.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.');
+        return '#336699';
+      },
+      getThemeSecondaryColor: function() {
+        var theme;
+        theme = config.getTheme();
+        switch (theme) {
+          case 'blue':
+            return '#666';
+          case 'green':
+            return '#666';
+        }
+        $log.info('$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.');
+        return '#666';
       }
     };
     return config;
@@ -880,28 +912,33 @@
     var service;
     service = {
       url: null,
-      scope: null,
-      open: function(url, scope) {
+      modalScope: null,
+      parentScope: null,
+      open: function(url, parentScope, modalScope) {
         service.url = url;
-        service.scope = scope;
+        service.modalScope = modalScope;
+        service.parentScope = parentScope;
         if (!service.url) {
           service.url = DEFAULT_MODAL_PATH;
         }
         return $event.shout("Modal.open", {
           url: service.url,
-          scope: service.scope
+          parentScope: service.parentScope,
+          modalScope: modalScope
         });
       },
       close: function(data) {
         service.url = null;
-        service.scope = null;
         return $event.shout("Modal.close", data);
       },
-      updateScope: function(scope) {
-        return service.scope = scope;
+      getModalScope: function() {
+        return service.modalScope;
       },
-      getScope: function() {
-        return service.scope;
+      getParentScope: function() {
+        return service.parentScope;
+      },
+      updateModalScope: function(scope) {
+        return service.modalScope = scope;
       }
     };
     return service;
@@ -964,8 +1001,8 @@
       }
     };
     init = function() {
-      _.extend($scope, defaultController, $modal.getScope());
-      return $modal.updateScope($scope);
+      _.extend($scope, defaultController, $modal.getModalScope());
+      return $modal.updateModalScope($scope);
     };
     init();
     return $scope.run();
