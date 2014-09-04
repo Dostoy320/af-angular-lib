@@ -90,10 +90,10 @@ myApp.service '$util', ($window, $location, $config) ->
         return parseFloat(value).formatNumber(precision); # call our custom number formatter (see top of page)
 
       currency:(value, precision) ->
-        return '$' + util.number(value, precision)
+        return '$' + util.format.number(value, precision)
 
       percent:(value, precision) ->
-        return util.number(value*100, precision)+'%'
+        return util.format.number(value*100, precision)+'%'
 
     }
   }

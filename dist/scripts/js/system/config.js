@@ -126,11 +126,12 @@
       },
       getTheme: function() {
         var themeCss;
-        themeCss = $('#themeCSS');
-        if (themeCss.length !== 1 || !themeCss.attr('theme')) {
-          alert('Cannot find the theme CSS file id="themeCSS" to deterime theme.');
+        themeCss = $('head link#themeCSS');
+        if (themeCss.length !== 1) {
+          $log.info('Cannot find the theme CSS file with id="themeCSS" to deterime theme.');
+          return 'blue';
         }
-        return themeCss.attr('theme');
+        return themeCss.attr('href').split('/').pop().slice(0, -4).split('-')[1];
       },
       getThemePrimaryColor: function() {
         var theme;

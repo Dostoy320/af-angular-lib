@@ -92,10 +92,10 @@
           return parseFloat(value).formatNumber(precision);
         },
         currency: function(value, precision) {
-          return '$' + util.number(value, precision);
+          return '$' + util.format.number(value, precision);
         },
         percent: function(value, precision) {
-          return util.number(value * 100, precision) + '%';
+          return util.format.number(value * 100, precision) + '%';
         }
       }
     };
