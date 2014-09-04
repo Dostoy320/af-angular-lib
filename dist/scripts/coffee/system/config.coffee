@@ -85,10 +85,12 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
       return app
 
     getTheme : () ->
-      #<link id="themeCSS" rel="stylesheet" type="text/css" href="client/static/css/app-blue.css" theme="blue" />
-      themeCss = $('#themeCSS')
-      if themeCss.length isnt 1 or not themeCss.attr('theme') then alert 'Cannot find the theme CSS file id="themeCSS" to deterime theme.'
-      return themeCss.attr('theme')
+      #<link id="themeCSS" rel="stylesheet" type="text/css" href="client/static/css/app-blue.css"/>
+      themeCss = $('head link#themeCSS')
+      if themeCss.length isnt 1
+        $log.info 'Cannot find the theme CSS file with id="themeCSS" to deterime theme.'
+        return 'blue'
+      return themeCss.attr('href').split('/').pop().slice(0, -4).split('-')[1]
 
     getThemePrimaryColor : () ->
       # anyone know a better way to do this?
