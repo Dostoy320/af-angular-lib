@@ -33,7 +33,10 @@ var sentrySetup = {
   init:function(){
     // what url?
     var url = sentrySetup.prodUrl
-    if(sentrySetup.getEnv() === 'dev') url = sentrySetup.devUrl
+    if(sentrySetup.getEnv() === 'dev'){
+      url = sentrySetup.devUrl
+      if(typeof console !== 'undefined') console.log('Sentry -> Development Environment');
+    }
     // this NEEDS to be loaded.. important our apps are sending errors.
     if(typeof Raven === "undefined") return alert('Raven/Sentry Setup Failed. Raven undefined.')
     // init
@@ -68,7 +71,10 @@ var mixPanelSetup = {
 
   init : function(){
     var token = mixPanelSetup.prodToken
-    if(sentrySetup.getEnv() === 'dev') token = mixPanelSetup.devToken
+    if(sentrySetup.getEnv() === 'dev'){
+      token = mixPanelSetup.devToken;
+      if(typeof console !== 'undefined') console.log('MixPanel -> Development Environment');
+    }
     window.mixpanel.init(token);
     // ALL mixPanel events will contain this data...
     window.mixpanel.register({
