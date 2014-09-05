@@ -18,13 +18,15 @@ var sentrySetup = {
   // dev or prod?
   getEnv : function(){
     var subDomain = sentrySetup.getSubDomain();
-    if(subDomain.indexOf('alpha') === 0) return 'dev';
-    if(subDomain.indexOf('-dev') > -1) subDomain = subDomain.split("-dev").shift();
+    if(subDomain.indexOf('alpha') === 0) return 'dev'; // alpha, alpha2, alphaAnything
+    if(subDomain.indexOf('-dev') > -1) return 'dev';   // alpha-dev, apps-dev, anything-dev
+    // return dev for specific domains:
     switch(subDomain){
       case 'dev':
       case 'localhost':
         return 'dev'
     }
+    // else... its prod.
     return 'prod';
   },
 
@@ -33,9 +35,9 @@ var sentrySetup = {
     var url = sentrySetup.prodUrl
     if(sentrySetup.getEnv() === 'dev') url = sentrySetup.devUrl
     // this NEEDS to be loaded.. important our apps are sending errors.
-    if(typeof Raven === "undefined") return alert('Raven/Sentry Setup Failed. Raven undefined')
+    if(typeof Raven === "undefined") return alert('Raven/Sentry Setup Failed. Raven undefined.')
     // init
-    Raven.config(url, sentrySetup.options).install()
+    Raven.config(url, sentrySetup.options).install();
     // Attach user data if possible
     if(typeof amplify !== "undefined"){
       var user = {}
