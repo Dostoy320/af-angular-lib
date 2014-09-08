@@ -62,7 +62,7 @@
       addDebugInfo: function(req) {
         req.data.debug = {
           url: $window.location.href,
-          index: $util.url.getTenantIndex(),
+          index: $config.getTenantIndex(),
           tenant: $config.getTenant(),
           env: $config.getEnv()
         };

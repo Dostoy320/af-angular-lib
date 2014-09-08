@@ -62,7 +62,7 @@ myApp.service 'api', ($http, $window, $log, $msg, $loader, $sentry, $util, $conf
     addDebugInfo:(req) ->
       req.data.debug =
         url:$window.location.href
-        index:$util.url.getTenantIndex()
+        index:$config.getTenantIndex()
         tenant:$config.getTenant()
         env:$config.getEnv()
       return req
