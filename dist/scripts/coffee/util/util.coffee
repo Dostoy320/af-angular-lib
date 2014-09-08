@@ -80,7 +80,6 @@ myApp.service '$util', ($window, $location, $config) ->
         if !inputType then inputType = "YYYY-MM-DDTHH:mm:ss ZZ" # utc mode for timeshift
         if moment # requires moment.js
           if !format then format = $config.get('app.dateFormat') or 'MM/DD/YY'
-
           if typeof value is 'string'
             return moment(value, inputType).format(format)
           else
