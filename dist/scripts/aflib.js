@@ -1364,18 +1364,19 @@
         }
       },
       format: {
-        date: function(value, format) {
-          var date;
+        date: function(value, format, inputType) {
           if (!value) {
             return '';
+          }
+          if (!inputType) {
+            inputType = "YYYY-MM-DDTHH:mm:ss ZZ";
           }
           if (moment) {
             if (!format) {
               format = $config.get('app.dateFormat') || 'MM/DD/YY';
             }
             if (typeof value === 'string') {
-              date = moment(value, "YYYY-MM-DDTHH:mm:ss ZZ");
-              return date.format(format);
+              return moment(value, inputType).format(format);
             } else {
               return moment(value).format(format);
             }
