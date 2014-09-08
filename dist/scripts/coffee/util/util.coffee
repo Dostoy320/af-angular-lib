@@ -81,7 +81,6 @@ myApp.service '$util', ($window, $location, $config) ->
         if moment # requires moment.js
           if !format then format = $config.get('app.dateFormat') or 'MM/DD/YY'
           if typeof value is 'string'
-            inputType = null
             switch(inputType.toLowerCase())
               when 'utc' then inputType = "YYYY-MM-DDTHH:mm:ss ZZ"
               when 'asp' then inputType = null # "/Date(1198908717056-0700)/"

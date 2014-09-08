@@ -1376,7 +1376,6 @@
               format = $config.get('app.dateFormat') || 'MM/DD/YY';
             }
             if (typeof value === 'string') {
-              inputType = null;
               switch (inputType.toLowerCase()) {
                 case 'utc':
                   inputType = "YYYY-MM-DDTHH:mm:ss ZZ";
