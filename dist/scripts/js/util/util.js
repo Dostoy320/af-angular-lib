@@ -75,13 +75,21 @@
             return '';
           }
           if (!inputType) {
-            inputType = "YYYY-MM-DDTHH:mm:ss ZZ";
+            inputType = "utc";
           }
           if (moment) {
             if (!format) {
               format = $config.get('app.dateFormat') || 'MM/DD/YY';
             }
             if (typeof value === 'string') {
+              inputType = null;
+              switch (inputType.toLowerCase()) {
+                case 'utc':
+                  inputType = "YYYY-MM-DDTHH:mm:ss ZZ";
+                  break;
+                case 'asp':
+                  inputType = null;
+              }
               return moment(value, inputType).format(format);
             } else {
               return moment(value).format(format);
