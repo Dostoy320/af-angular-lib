@@ -61,13 +61,13 @@ myApp.service 'authManager', ($util)->
     hasAnyRole:(array) ->
       matched = 0
       _.each array, (role) ->
-        if auth.hasRole(role) then matched++
+        if auth.hasRole(role) then matched += 1
       return matched > 0
 
     hasAllRoles:(array) ->
       matched = 0
       _.each array, (role) ->
-        if auth.hasRole(role) then matched++
+        if auth.hasRole(role) then matched += 1
       return array.length is matched
 
     isAdmin:() ->

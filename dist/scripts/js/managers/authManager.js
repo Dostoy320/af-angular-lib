@@ -75,7 +75,7 @@
         matched = 0;
         _.each(array, function(role) {
           if (auth.hasRole(role)) {
-            return matched++;
+            return matched += 1;
           }
         });
         return matched > 0;
@@ -85,7 +85,7 @@
         matched = 0;
         _.each(array, function(role) {
           if (auth.hasRole(role)) {
-            return matched++;
+            return matched += 1;
           }
         });
         return array.length === matched;
