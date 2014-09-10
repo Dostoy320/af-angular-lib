@@ -360,7 +360,7 @@
         }
       },
       AuthService: {
-        serviceUrl: '/AuthService',
+        serviceUrl: '/RoadmapService',
         execute: function(method, params, onSuccess, onError) {
           var req;
           if (autoApplySession && method !== 'login' && method !== 'loadtoken') {
