@@ -26,7 +26,7 @@ myApp.service 'java', ($http, api, authManager) ->
 
 
     AuthService:{
-      serviceUrl:'/RoadmapService'
+      serviceUrl:'/RoadmapService' # '/AuthService'
       execute:(method, params, onSuccess, onError) ->
         # all calls should have a sessionToken on them (except some fringe cases)
         if autoApplySession and method isnt 'login' and method isnt 'loadtoken'
