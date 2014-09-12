@@ -94,7 +94,7 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
 
 
     theme:{
-      textSucces:'#dff0d8'
+      textSuccess:'#dff0d8'
       textWarning:'#fcf8e3'
       textDanger:'#f2dede'
       textInfo:'#d9edf7'

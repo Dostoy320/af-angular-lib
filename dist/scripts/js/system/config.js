@@ -134,7 +134,7 @@
         return themeCss.attr('href').split('/').pop().slice(0, -4).split('-')[1];
       },
       theme: {
-        textSucces: '#dff0d8',
+        textSuccess: '#dff0d8',
         textWarning: '#fcf8e3',
         textDanger: '#f2dede',
         textInfo: '#d9edf7',
