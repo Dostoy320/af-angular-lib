@@ -780,29 +780,35 @@
         }
         return themeCss.attr('href').split('/').pop().slice(0, -4).split('-')[1];
       },
-      getThemePrimaryColor: function() {
-        var theme;
-        theme = config.getTheme();
-        switch (theme) {
-          case 'blue':
-            return '#336699';
-          case 'green':
-            return '#00b624';
+      theme: {
+        textSucces: '#dff0d8',
+        textWarning: '#fcf8e3',
+        textDanger: '#f2dede',
+        textInfo: '#d9edf7',
+        getPrimaryColor: function() {
+          var theme;
+          theme = config.getTheme();
+          switch (theme) {
+            case 'blue':
+              return '#336699';
+            case 'green':
+              return '#00b624';
+          }
+          $log.info('$config.theme.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.');
+          return '#336699';
+        },
+        getSecondaryColor: function() {
+          var theme;
+          theme = config.getTheme();
+          switch (theme) {
+            case 'blue':
+              return '#666';
+            case 'green':
+              return '#666';
+          }
+          $log.info('$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.');
+          return '#666';
         }
-        $log.info('$config.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.');
-        return '#336699';
-      },
-      getThemeSecondaryColor: function() {
-        var theme;
-        theme = config.getTheme();
-        switch (theme) {
-          case 'blue':
-            return '#666';
-          case 'green':
-            return '#666';
-        }
-        $log.info('$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.');
-        return '#666';
       }
     };
     return config;

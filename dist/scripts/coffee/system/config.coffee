@@ -92,22 +92,29 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
         return 'blue'
       return themeCss.attr('href').split('/').pop().slice(0, -4).split('-')[1]
 
-    getThemePrimaryColor : () ->
-      # anyone know a better way to do this?
-      theme = config.getTheme()
-      switch theme
-        when 'blue' then return '#336699'
-        when 'green' then return '#00b624'
-      $log.info '$config.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.'
-      return '#336699'
 
-    getThemeSecondaryColor : () ->
-      # anyone know a better way to do this?
-      theme = config.getTheme()
-      switch theme
-        when 'blue' then return '#666'
-        when 'green' then return '#666'
-      $log.info '$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.'
-      return '#666'
+    theme:{
+      textSucces:'#dff0d8'
+      textWarning:'#fcf8e3'
+      textDanger:'#f2dede'
+      textInfo:'#d9edf7'
+      getPrimaryColor : () ->
+        # anyone know a better way to do this?
+        theme = config.getTheme()
+        switch theme
+          when 'blue' then return '#336699'
+          when 'green' then return '#00b624'
+        $log.info '$config.theme.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.'
+        return '#336699'
+      getSecondaryColor : () ->
+        # anyone know a better way to do this?
+        theme = config.getTheme()
+        switch theme
+          when 'blue' then return '#666'
+          when 'green' then return '#666'
+        $log.info '$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.'
+        return '#666'
+    }
+
   }
   return config
