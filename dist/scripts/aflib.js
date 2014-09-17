@@ -1327,11 +1327,11 @@
           _.each(params, function(param, i) {
             var parts;
             parts = param.replace('#', '').replace('/', '').replace('?', '').split('=');
-            return vars[parts[0]] = decodeURIComponent(parts[1]);
+            return vars[('' + parts[0]).toLowerCase()] = decodeURIComponent(parts[1]);
           });
         }
         if (key) {
-          return vars[key] || defaultValue;
+          return vars[(key + '').toLowerCase()] || defaultValue;
         }
         return vars;
       },
