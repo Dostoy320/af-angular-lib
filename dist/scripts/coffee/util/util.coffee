@@ -32,9 +32,9 @@ myApp.service '$util', ($window, $location, $config) ->
         _.each params, (param, i) ->
           # strip off no-nos
           parts = param.replace('#', '').replace('/','').replace('?','').split('=')
-          vars[(''+parts[0]).toLowerCase()] = decodeURIComponent(parts[1])
+          vars[parts[0]] = decodeURIComponent(parts[1])
 
-      if key then return vars[(key+'').toLowerCase()] || defaultValue
+      if key then return vars[key] || defaultValue
       return vars
 
     # axaj/client side post data to new window
