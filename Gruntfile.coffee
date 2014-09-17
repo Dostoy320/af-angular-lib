@@ -29,6 +29,7 @@ module.exports = (grunt) ->
       coffee: {
         files: ['dist/**/*.coffee']
         tasks: ['coffee','concat']
+        options: { livereload: true }
       }
     }
   })
