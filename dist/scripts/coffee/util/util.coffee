@@ -21,9 +21,9 @@ myApp.service '$util', ($window, $location, $config) ->
   return util = {
 
     # Get a Search param out of the URL no matter where it is....
-    GET : (key, defaultValue) ->
+    GET : (key) ->
       # angular only looks after hash /#/route?foo=bar
-      # php/server needs it before hash ?foo=bar/#/route
+      # php/server needs it before hash ?foo=bar#/route
       # so we need to look in both
       vars = $location.search() # angualar
       search = $window.location.search # normal
@@ -33,8 +33,10 @@ myApp.service '$util', ($window, $location, $config) ->
           # strip off no-nos
           parts = param.replace('#', '').replace('/','').replace('?','').split('=')
           vars[parts[0]] = decodeURIComponent(parts[1])
-
-      if key then return vars[key] || defaultValue
+      if key
+        if vars[key] then return vars[key]
+        if vars[key.toLowerCase()] then return vars[key.toLowerCase()] # check for a lower case version
+        return null
       return vars
 
     # axaj/client side post data to new window
