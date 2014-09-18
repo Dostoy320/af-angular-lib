@@ -18,7 +18,7 @@
   myApp.service('$util', function($window, $location, $config) {
     var util;
     return util = {
-      GET: function(key, defaultValue) {
+      GET: function(key) {
         var params, search, vars;
         vars = $location.search();
         search = $window.location.search;
@@ -27,11 +27,17 @@
           _.each(params, function(param, i) {
             var parts;
             parts = param.replace('#', '').replace('/', '').replace('?', '').split('=');
-            return vars[('' + parts[0]).toLowerCase()] = decodeURIComponent(parts[1]);
+            return vars[parts[0]] = decodeURIComponent(parts[1]);
           });
         }
         if (key) {
-          return vars[(key + '').toLowerCase()] || defaultValue;
+          if (vars[key]) {
+            return vars[key];
+          }
+          if (vars[key.toLowerCase()]) {
+            return vars[key.toLowerCase()];
+          }
+          return null;
         }
         return vars;
       },
