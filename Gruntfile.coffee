@@ -1,6 +1,7 @@
 module.exports = (grunt) ->
 
-  grunt.registerTask 'default', ['coffee','concat','watch']
+  grunt.registerTask 'default', ['coffee','concat']
+  grunt.registerTask 'dev', ['coffee','concat','watch']
 
   grunt.initConfig({
     coffee: {

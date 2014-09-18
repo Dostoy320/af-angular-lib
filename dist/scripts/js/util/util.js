@@ -18,7 +18,7 @@
   myApp.service('$util', function($window, $location, $config) {
     var util;
     return util = {
-      GET: function(key, defaultValue) {
+      GET: function(key) {
         var params, search, vars;
         vars = $location.search();
         search = $window.location.search;
@@ -31,7 +31,13 @@
           });
         }
         if (key) {
-          return vars[key] || defaultValue;
+          if (vars[key]) {
+            return vars[key];
+          }
+          if (vars[key.toLowerCase()]) {
+            return vars[key.toLowerCase()];
+          }
+          return null;
         }
         return vars;
       },
