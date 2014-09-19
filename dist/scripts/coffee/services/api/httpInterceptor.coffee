@@ -1,6 +1,6 @@
 myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry','af.msg'])
 
-myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, api, $window, $config, $msg, $log, $loader, $sentry) ->
+myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, api, $window, $config) ->
 
   # private
   responseIsJsend = (response) ->
@@ -59,12 +59,13 @@ myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, api, $window,
       if ignore is true or (_.isArray(ignore) and _.contains(ignore, response.status))
         return $q.reject(response)
 
+      api.handleApiError(response.data, response.status, response.headers, response.config)
       # handle error
-      message = api.getErrorMessage(response.data, response.status)
-      $sentry.error(message, {extra:'TODO'}) # TODO: used to return req object
-      $msg.error(message)
-      $loader.stop()
-      console.log('ERROR!')
+      #message = api.getErrorMessage(response.data, response.status)
+      #$sentry.error(message, {extra:'TODO'}) # TODO: used to return req object
+      #$msg.error(message)
+      #$loader.stop()
+      #console.log('ERROR!')
       $q.reject(response)
 
   }
