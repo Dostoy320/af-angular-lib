@@ -13,7 +13,7 @@
     "tests"
   ],
   "devDependencies": {
-    "af-angular-lib": "https://github.com/nawlbergs/af-angular-lib.git",
+    "af-angular-lib": "https://github.com/nawlbergs/af-angular-lib.git#master",
     "jquery": "1.11.1",
     "angular": "~1.2",
     "angular-sanitize": "~1.2",

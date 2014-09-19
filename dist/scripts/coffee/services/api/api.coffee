@@ -5,29 +5,6 @@ myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
 
   return api =
 
-
-    ##
-    ##
-    ## GLOABAL REQUEST EXECUTION
-    ###
-    execute:(req, onSuccess, onError) ->
-      req.method ?= 'POST'
-      $http(req)
-        .success (data, status) ->
-          # could still be an error response
-          if status isnt 200 or (data and data.status and data.status isnt 'success')
-            if onError then return onError(data, status, req)
-            return api.handleApiError(data, status, req)
-          # SUCCESS! return it?
-          if onSuccess
-            if data and data.hasOwnProperty('data') and data.hasOwnProperty('status')
-              return onSuccess(data.data, status, req) # JSEND.. return data.data
-            return onSuccess(data, status, req) # return everything
-        .error (data, status) ->
-          api.handleApiError(data, status, req)
-    ###
-
-
     ##
     ##
     ## ERROR HANDLING
