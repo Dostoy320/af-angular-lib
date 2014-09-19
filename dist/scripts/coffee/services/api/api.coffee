@@ -8,11 +8,22 @@ myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
     ##
     ##
     ## ERROR HANDLING
-    handleApiError:(data, status, req) ->
+    handleApiError:(data, status, headers, config) ->
+      request = _.omit(config or {}, 'transformRequest','transformResponse')
       message = api.getErrorMessage(data, status)
-      if req and req.data and req.data.password then req.data.password = '********' # no
+
+      if request.headers and request.headers['Content-Type'] is 'application/x-www-form-urlencoded'
+        newData = {}
+        queries =  (request.data + '').split("&")
+        _.each queries, (part, i) ->
+          temp = queries[i].split('=')
+          if temp.length = 2 then newData[temp[0]] = temp[1]
+        request.data = newData
+
+      if request and request.data and request.data.password then request.data.password = '********' # no
+
       # log it and show to user
-      $sentry.error(message, {extra: req})
+      $sentry.error(message, {extra: config})
       $log.error(message, status)
       $msg.error(message)
       $loader.stop()
