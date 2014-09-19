@@ -43,7 +43,8 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
       return value
 
     # TENANT DATA
-    getTenant:() -> config.get('app.tenant') # passed from php
+    getTenant:() ->
+      config.get('app.tenant') # passed from php
 
     getEnv:() ->
       env = 'prod'

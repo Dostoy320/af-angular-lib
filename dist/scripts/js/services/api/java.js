@@ -16,100 +16,107 @@
       },
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-        execute: function(method, params, onSuccess, onError) {
-          var req;
+        execute: function(method, params, options) {
+          var req, reqDefaults;
           if (autoApplySession) {
             if (params.sessionToken == null) {
               params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
             }
           }
-          req = {
+          reqDefaults = {
+            method: 'POST',
             url: java.RoadmapService.serviceUrl + method,
             data: params
           };
-          return api.execute(req, onSuccess, onError);
+          req = _.defaults(options || {}, reqDefaults);
+          return $http(req);
         },
-        invoke: function(params, onSuccess, onError) {
-          return java.RoadmapService.execute('/invoke', params, onSuccess, onError);
+        invoke: function(params, options) {
+          return this.execute('/invoke', params, options);
         }
       },
       AuthService: {
         serviceUrl: '/RoadmapService',
-        execute: function(method, params, onSuccess, onError) {
-          var req;
-          if (autoApplySession && method !== 'login' && method !== 'loadtoken') {
+        execute: function(method, params, options) {
+          var req, reqDefaults;
+          if (autoApplySession && method !== '/login' && method !== '/loadtoken') {
             if (params.sessionToken == null) {
               params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
             }
           }
-          req = {
+          reqDefaults = {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded'
             },
             url: java.AuthService.serviceUrl + method,
             data: $.param(params)
           };
-          return api.execute(req, onSuccess, onError);
+          req = _.defaults(options || {}, reqDefaults);
+          return $http(req);
         },
-        login: function(username, password, onSuccess, onError) {
+        login: function(username, password) {
           var params;
           params = {
             username: username,
             password: password
           };
-          return java.AuthService.execute('/login', params, onSuccess, onError);
+          return this.execute('/login', params, {
+            ignoreExceptions: true
+          });
         },
-        logout: function(onSuccess, onError) {
-          return java.AuthService.execute('/logout', {}, onSuccess, onError);
+        logout: function() {
+          return this.execute('/logout', null);
         },
-        validatesession: function(sessionToken, onSuccess, onError) {
+        validatesession: function(sessionToken) {
           var params;
           params = {};
           if (sessionToken) {
             params.sessionToken = sessionToken;
           }
-          return java.AuthService.execute('/validatesession', params, onSuccess, onError);
+          return this.execute('/validatesession', params);
         },
-        createtoken: function(loginAsUserId, expiresOn, url, onSuccess, onError) {
+        createtoken: function(loginAsUserId, expiresOn, url) {
           var params;
           params = {
             loginAsUserId: loginAsUserId,
             expiresOn: expiresOn,
             url: url
           };
-          return java.AuthService.execute('/createtoken', params, onSuccess, onError);
+          return this.execute('/createtoken', params);
         },
-        updatetoken: function(tokenString, url, onSuccess, onError) {
+        updatetoken: function(tokenString, url) {
           var params;
           params = {
             tokenString: tokenString,
             url: url
           };
-          return java.AuthService.execute('/updatetoken', params, onSuccess, onError);
+          return this.execute('/updatetoken', params);
         },
-        loadtoken: function(token, onSuccess, onError) {
-          return java.AuthService.execute('/loadtoken', {
+        loadtoken: function(token) {
+          return this.execute('/loadtoken', {
             token: token
-          }, onSuccess, onError);
+          });
         },
-        changepassword: function(userId, currentPassword, newPassword, onSuccess, onError) {
+        changepassword: function(userId, currentPassword, newPassword) {
           var params;
           params = {
             userId: userId,
             currentPassword: currentPassword,
             newPassword: newPassword
           };
-          return java.AuthService.execute('/changepassword', params, onSuccess, onError);
+          return this.execute('/changepassword', params);
         },
-        getuserfromuserid: function(userId, onSuccess, onError) {
-          return java.AuthService.execute('/getuserfromuserid', {
-            userId: userId
-          }, onSuccess, onError);
-        },
-        loadsession: function(sessionToken, onSuccess, onError) {
-          return java.AuthService.execute('/loadsession', {
+        getuserfromuserid: function(userId, sessionToken) {
+          return this.execute('/getuserfromuserid', {
+            userId: userId,
             sessionToken: sessionToken
-          }, onSuccess, onError);
+          });
+        },
+        loadsession: function(sessionToken) {
+          return this.execute('/loadsession', {
+            sessionToken: sessionToken
+          });
         }
       }
     };

@@ -1,7 +1,7 @@
 myApp = angular.module('af.api', ['af.msg','af.loader','af.sentry','af.util','af.config'])
 
 
-myApp.service 'api', ($http, $window, $log, $msg, $loader, $sentry, $util, $config) ->
+myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
 
   return api =
 
@@ -9,6 +9,7 @@ myApp.service 'api', ($http, $window, $log, $msg, $loader, $sentry, $util, $conf
     ##
     ##
     ## GLOABAL REQUEST EXECUTION
+    ###
     execute:(req, onSuccess, onError) ->
       req.method ?= 'POST'
       $http(req)
@@ -24,6 +25,7 @@ myApp.service 'api', ($http, $window, $log, $msg, $loader, $sentry, $util, $conf
             return onSuccess(data, status, req) # return everything
         .error (data, status) ->
           api.handleApiError(data, status, req)
+    ###
 
 
     ##
@@ -57,6 +59,7 @@ myApp.service 'api', ($http, $window, $log, $msg, $loader, $sentry, $util, $conf
         return err + ' (' + status + ')'
       # return whatever we can...
       return data.message or data.code or data or status
+
 
     # add debugs info to requests (dont do on Java, Java could blow up)
     addDebugInfo:(req) ->

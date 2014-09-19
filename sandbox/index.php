@@ -12,6 +12,7 @@
 
   <!-- APP -->
   <div id="app">
+    <h2>Sandbox</h2>
     <div ng-view></div>
   </div>
 
@@ -20,7 +21,12 @@
   <div loader-holder></div>
 
   <!-- LIBS -->
+  <script type="text/javascript" src="../bower_components/jquery/dist/jquery.min.js"></script>
   <script type="text/javascript" src="../bower_components/angular/angular.js"></script>
+  <script type="text/javascript" src="../bower_components/angular-sanitize/angular-sanitize.js"></script>
+  <script type="text/javascript" src="../bower_components/amplify/lib/amplify.core.min.js"></script>
+  <script type="text/javascript" src="../bower_components/amplify/lib/amplify.store.min.js"></script>
+  <script type="text/javascript" src="../bower_components/lodash/dist/lodash.min.js"></script>
   <script type="text/javascript" src="../dist/scripts/aflib.js"></script>
   <script type="text/javascript" src="app.js"></script>
 

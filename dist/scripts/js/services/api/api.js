@@ -3,30 +3,27 @@
 
   myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
 
-  myApp.service('api', function($http, $window, $log, $msg, $loader, $sentry, $util, $config) {
+  myApp.service('api', function($window, $log, $msg, $loader, $sentry, $util, $config) {
     var api;
     return api = {
-      execute: function(req, onSuccess, onError) {
-        if (req.method == null) {
-          req.method = 'POST';
-        }
-        return $http(req).success(function(data, status) {
-          if (status !== 200 || (data && data.status && data.status !== 'success')) {
-            if (onError) {
-              return onError(data, status, req);
-            }
-            return api.handleApiError(data, status, req);
-          }
-          if (onSuccess) {
-            if (data && data.hasOwnProperty('data') && data.hasOwnProperty('status')) {
-              return onSuccess(data.data, status, req);
-            }
-            return onSuccess(data, status, req);
-          }
-        }).error(function(data, status) {
-          return api.handleApiError(data, status, req);
-        });
-      },
+
+      /*
+      execute:(req, onSuccess, onError) ->
+        req.method ?= 'POST'
+        $http(req)
+          .success (data, status) ->
+             * could still be an error response
+            if status isnt 200 or (data and data.status and data.status isnt 'success')
+              if onError then return onError(data, status, req)
+              return api.handleApiError(data, status, req)
+             * SUCCESS! return it?
+            if onSuccess
+              if data and data.hasOwnProperty('data') and data.hasOwnProperty('status')
+                return onSuccess(data.data, status, req) # JSEND.. return data.data
+              return onSuccess(data, status, req) # return everything
+          .error (data, status) ->
+            api.handleApiError(data, status, req)
+       */
       handleApiError: function(data, status, req) {
         var message;
         message = api.getErrorMessage(data, status);

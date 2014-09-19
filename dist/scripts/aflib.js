@@ -156,30 +156,27 @@
 
   myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
 
-  myApp.service('api', function($http, $window, $log, $msg, $loader, $sentry, $util, $config) {
+  myApp.service('api', function($window, $log, $msg, $loader, $sentry, $util, $config) {
     var api;
     return api = {
-      execute: function(req, onSuccess, onError) {
-        if (req.method == null) {
-          req.method = 'POST';
-        }
-        return $http(req).success(function(data, status) {
-          if (status !== 200 || (data && data.status && data.status !== 'success')) {
-            if (onError) {
-              return onError(data, status, req);
-            }
-            return api.handleApiError(data, status, req);
-          }
-          if (onSuccess) {
-            if (data && data.hasOwnProperty('data') && data.hasOwnProperty('status')) {
-              return onSuccess(data.data, status, req);
-            }
-            return onSuccess(data, status, req);
-          }
-        }).error(function(data, status) {
-          return api.handleApiError(data, status, req);
-        });
-      },
+
+      /*
+      execute:(req, onSuccess, onError) ->
+        req.method ?= 'POST'
+        $http(req)
+          .success (data, status) ->
+             * could still be an error response
+            if status isnt 200 or (data and data.status and data.status isnt 'success')
+              if onError then return onError(data, status, req)
+              return api.handleApiError(data, status, req)
+             * SUCCESS! return it?
+            if onSuccess
+              if data and data.hasOwnProperty('data') and data.hasOwnProperty('status')
+                return onSuccess(data.data, status, req) # JSEND.. return data.data
+              return onSuccess(data, status, req) # return everything
+          .error (data, status) ->
+            api.handleApiError(data, status, req)
+       */
       handleApiError: function(data, status, req) {
         var message;
         message = api.getErrorMessage(data, status);
@@ -324,75 +321,58 @@
 }).call(this);
 
 ;
-
-/*
-myApp = angular.module('af.httpInterceptor', ['af.api','af.authManager', 'af.loader', 'af.sentry','af.util','af.config'])
-
-myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, $loader, authManager) ->
-  $modal = undefined
-  request: (config) ->
-    console.log 'request'
-    if !config.loader
-      $loader.start(config.loaderMsg or 'Loading...')
-     *url = config.url
-     *if not url.endsWith(".html") and not url.startsWith("http") and not url.startsWith("//")
-     *  url = APP_CONFIG.baseApiUrl + url
-     *  config.url = url
-    config.url = 'test'
-    return config
-
-
-   * global error handler
-   * to disable = $http.get(url, {ignoreExceptions:true}).success(function(result){})
-  responseError: (response) ->
-     * dont handle error if ignore....
-    ignore = response.config.ignoreExceptions
-    if ignore is true or (_.isArray(ignore) and _.contains(ignore, response.status))
-      return $q.reject(response)
-
-     * display error message...
-    if !$modal then $modal = $injector.get("$modal")
-
-    errorMessage =
-      title: ""
-      subTitle: ""
-      detail: ""
-
-    switch response.status
-      when 500
-        errorMessage.title = "500 - Internal Server Error"
-      when 400
-        errorMessage.title = "400 - Bad Request"
-      when 403
-        errorMessage.title = "403 - Forbidden"
-      when 404
-        errorMessage.title = "404 - Not Found"
-      when 401
-        errorMessage.title = "401 - Unauthorized"
-         *authManager.clearUser()
-      else
-        errorMessage.title = response.status + " - Unknown Error"
-
-    if response.config.action
-      errorMessage.subTitle = "Failed Action: " + response.config.action
-
-    if angular.isObject(response.data)
-      errorMessage.detail = JSON.stringify(response.data)
-    else
-      errorMessage.detail = response.data #.escapeHTML()
-
-    $modal.open
-      templateUrl: "app/modals/error-message.html"
-      controller: "ErrorMessageCtrl"
-      resolve:
-        errorMessage: ->
-          errorMessage
-
-    $q.reject response
- */
-
 (function() {
+  var httpInterceptor, myApp;
 
+  myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
+
+  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, api, $window, $config, $msg, $log, $loader, $sentry) {
+    var interceptor, isObject, responseIsJsend;
+    responseIsJsend = function(response) {
+      return isObject(response) && response.hasOwnProperty('status');
+    };
+    isObject = function(item) {
+      return typeof item === 'object';
+    };
+    interceptor = {
+      request: function(request) {
+        var appendDebug;
+        if (request.method == null) {
+          request.method = 'POST';
+        }
+        appendDebug = request.appendDebug !== false;
+        if (appendDebug && isObject(request.data) && !request.data.debug) {
+          api.addDebugInfo(request);
+        }
+        return request;
+      },
+      response: function(response) {
+        if (response.status !== 200 || (responseIsJsend(response.data) && response.data.status !== 'success')) {
+          return interceptor.responseError(response);
+        }
+        if (responseIsJsend(response) && response.data.data) {
+          response.data = response.data.data;
+        }
+        return response;
+      },
+      responseError: function(response) {
+        var ignore, message;
+        ignore = response.config.ignoreExceptions;
+        if (ignore === true || (_.isArray(ignore) && _.contains(ignore, response.status))) {
+          return $q.reject(response);
+        }
+        message = api.getErrorMessage(response.data, response.status);
+        $sentry.error(message, {
+          extra: 'TODO'
+        });
+        $msg.error(message);
+        $loader.stop();
+        console.log('ERROR!');
+        return $q.reject(response);
+      }
+    };
+    return interceptor;
+  });
 
 }).call(this);
 
@@ -415,100 +395,107 @@ myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, $loader, auth
       },
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-        execute: function(method, params, onSuccess, onError) {
-          var req;
+        execute: function(method, params, options) {
+          var req, reqDefaults;
           if (autoApplySession) {
             if (params.sessionToken == null) {
               params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
             }
           }
-          req = {
+          reqDefaults = {
+            method: 'POST',
             url: java.RoadmapService.serviceUrl + method,
             data: params
           };
-          return api.execute(req, onSuccess, onError);
+          req = _.defaults(options || {}, reqDefaults);
+          return $http(req);
         },
-        invoke: function(params, onSuccess, onError) {
-          return java.RoadmapService.execute('/invoke', params, onSuccess, onError);
+        invoke: function(params, options) {
+          return this.execute('/invoke', params, options);
         }
       },
       AuthService: {
         serviceUrl: '/RoadmapService',
-        execute: function(method, params, onSuccess, onError) {
-          var req;
-          if (autoApplySession && method !== 'login' && method !== 'loadtoken') {
+        execute: function(method, params, options) {
+          var req, reqDefaults;
+          if (autoApplySession && method !== '/login' && method !== '/loadtoken') {
             if (params.sessionToken == null) {
               params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
             }
           }
-          req = {
+          reqDefaults = {
+            method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded'
             },
             url: java.AuthService.serviceUrl + method,
             data: $.param(params)
           };
-          return api.execute(req, onSuccess, onError);
+          req = _.defaults(options || {}, reqDefaults);
+          return $http(req);
         },
-        login: function(username, password, onSuccess, onError) {
+        login: function(username, password) {
           var params;
           params = {
             username: username,
             password: password
           };
-          return java.AuthService.execute('/login', params, onSuccess, onError);
+          return this.execute('/login', params, {
+            ignoreExceptions: true
+          });
         },
-        logout: function(onSuccess, onError) {
-          return java.AuthService.execute('/logout', {}, onSuccess, onError);
+        logout: function() {
+          return this.execute('/logout', null);
         },
-        validatesession: function(sessionToken, onSuccess, onError) {
+        validatesession: function(sessionToken) {
           var params;
           params = {};
           if (sessionToken) {
             params.sessionToken = sessionToken;
           }
-          return java.AuthService.execute('/validatesession', params, onSuccess, onError);
+          return this.execute('/validatesession', params);
         },
-        createtoken: function(loginAsUserId, expiresOn, url, onSuccess, onError) {
+        createtoken: function(loginAsUserId, expiresOn, url) {
           var params;
           params = {
             loginAsUserId: loginAsUserId,
             expiresOn: expiresOn,
             url: url
           };
-          return java.AuthService.execute('/createtoken', params, onSuccess, onError);
+          return this.execute('/createtoken', params);
         },
-        updatetoken: function(tokenString, url, onSuccess, onError) {
+        updatetoken: function(tokenString, url) {
           var params;
           params = {
             tokenString: tokenString,
             url: url
           };
-          return java.AuthService.execute('/updatetoken', params, onSuccess, onError);
+          return this.execute('/updatetoken', params);
         },
-        loadtoken: function(token, onSuccess, onError) {
-          return java.AuthService.execute('/loadtoken', {
+        loadtoken: function(token) {
+          return this.execute('/loadtoken', {
             token: token
-          }, onSuccess, onError);
+          });
         },
-        changepassword: function(userId, currentPassword, newPassword, onSuccess, onError) {
+        changepassword: function(userId, currentPassword, newPassword) {
           var params;
           params = {
             userId: userId,
             currentPassword: currentPassword,
             newPassword: newPassword
           };
-          return java.AuthService.execute('/changepassword', params, onSuccess, onError);
+          return this.execute('/changepassword', params);
         },
-        getuserfromuserid: function(userId, onSuccess, onError) {
-          return java.AuthService.execute('/getuserfromuserid', {
-            userId: userId
-          }, onSuccess, onError);
-        },
-        loadsession: function(sessionToken, onSuccess, onError) {
-          return java.AuthService.execute('/loadsession', {
+        getuserfromuserid: function(userId, sessionToken) {
+          return this.execute('/getuserfromuserid', {
+            userId: userId,
             sessionToken: sessionToken
-          }, onSuccess, onError);
+          });
+        },
+        loadsession: function(sessionToken) {
+          return this.execute('/loadsession', {
+            sessionToken: sessionToken
+          });
         }
       }
     };

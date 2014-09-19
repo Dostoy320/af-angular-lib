@@ -10,76 +10,88 @@ myApp.service 'java', ($http, api, authManager) ->
     setAutoApplySessionPriority:(value) -> autoApplySessionPriority = value
 
     RoadmapService:{
+
       serviceUrl:'/RoadmapService'
-      execute:(method, params, onSuccess, onError) ->
+
+      execute:(method, params, options) ->
         # all RoadmapService calls should have a sessionToken
-        if autoApplySession then params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
-        req =
+        if autoApplySession
+          params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
+        reqDefaults =
+          method:'POST'
           url: java.RoadmapService.serviceUrl + method
           data: params
-        api.execute(req, onSuccess, onError)
+        req = _.defaults(options or {}, reqDefaults)
+        return $http(req)
 
       # services
-      invoke:(params, onSuccess, onError) ->
-        java.RoadmapService.execute('/invoke', params, onSuccess, onError)
+      invoke:(params, options) ->
+        return @execute('/invoke', params, options)
     }
 
 
     AuthService:{
-      serviceUrl:'/RoadmapService' # '/AuthService'
-      execute:(method, params, onSuccess, onError) ->
-        # all calls should have a sessionToken on them (except some fringe cases)
-        if autoApplySession and method isnt 'login' and method isnt 'loadtoken'
-          params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
-        req =
-          headers:{'Content-Type': 'application/x-www-form-urlencoded'}
-          url: java.AuthService.serviceUrl + method
-          data: $.param(params)
-        api.execute(req, onSuccess, onError)
 
-      # services
-      login:(username, password, onSuccess, onError) ->
+      serviceUrl:'/RoadmapService'
+
+      execute:(method, params, options) ->
+        # all calls should have a sessionToken on them (except some fringe cases)
+        if autoApplySession and method isnt '/login' and method isnt '/loadtoken'
+          params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
+        reqDefaults =
+          method:'POST'
+          headers:{ 'Content-Type' : 'application/x-www-form-urlencoded'}
+          url: java.AuthService.serviceUrl + method
+          data:$.param(params)
+        # build request
+        req = _.defaults(options or {}, reqDefaults)
+        return $http(req)
+
+      ##
+      ## HELPERS
+      login:(username, password) ->
         params =
           username:username
           password:password
-        java.AuthService.execute('/login', params, onSuccess, onError)
+        return @execute('/login', params, {ignoreExceptions:true})
 
-      logout:(onSuccess, onError) ->
-        java.AuthService.execute('/logout', {}, onSuccess, onError)
+      logout:() ->
+        return @execute('/logout', null)
 
-      validatesession:(sessionToken, onSuccess, onError) ->
+      validatesession:(sessionToken) ->
         params = {}
+        # if no sessionToken passed in, service just validates logged in user
         if sessionToken then params.sessionToken = sessionToken
-        java.AuthService.execute('/validatesession', params, onSuccess, onError)
+        return @execute('/validatesession', params)
 
-      createtoken:(loginAsUserId, expiresOn, url, onSuccess, onError) ->
+      createtoken:(loginAsUserId, expiresOn, url) ->
         params =
           loginAsUserId:loginAsUserId
           expiresOn:expiresOn # isoDateString
           url:url
-        java.AuthService.execute('/createtoken', params, onSuccess, onError)
+        return @execute('/createtoken', params)
 
-      updatetoken:(tokenString, url, onSuccess, onError) ->
+      updatetoken:(tokenString, url) ->
         params =
           tokenString:tokenString
           url:url
-        java.AuthService.execute('/updatetoken', params, onSuccess, onError)
+        return @execute('/updatetoken', params)
 
-      loadtoken:(token, onSuccess, onError) ->
-        java.AuthService.execute('/loadtoken', {token:token}, onSuccess, onError)
+      loadtoken:(token) ->
+        return @execute('/loadtoken', { token:token })
 
-      changepassword:(userId, currentPassword, newPassword, onSuccess, onError) ->
+      changepassword:(userId, currentPassword, newPassword) ->
         params =
           userId:userId
           currentPassword:currentPassword
           newPassword:newPassword
-        java.AuthService.execute('/changepassword', params, onSuccess, onError)
+        return @execute('/changepassword', params)
 
-      getuserfromuserid:(userId, onSuccess, onError) ->
-        java.AuthService.execute('/getuserfromuserid', {userId:userId}, onSuccess, onError)
+      getuserfromuserid:(userId, sessionToken) ->
+        return @execute('/getuserfromuserid', { userId:userId, sessionToken:sessionToken })
 
-      loadsession:(sessionToken, onSuccess, onError) ->
-        java.AuthService.execute('/loadsession', {sessionToken:sessionToken}, onSuccess, onError)
+      loadsession:(sessionToken) ->
+        return @execute('/loadsession', { sessionToken:sessionToken })
 
     }
 
