@@ -107,10 +107,9 @@
           };
           return this.execute('/changepassword', params);
         },
-        getuserfromuserid: function(userId, sessionToken) {
+        getuserfromuserid: function(userId) {
           return this.execute('/getuserfromuserid', {
-            userId: userId,
-            sessionToken: sessionToken
+            userId: userId
           });
         },
         loadsession: function(sessionToken) {

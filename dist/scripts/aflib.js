@@ -159,32 +159,36 @@
   myApp.service('api', function($window, $log, $msg, $loader, $sentry, $util, $config) {
     var api;
     return api = {
-
-      /*
-      execute:(req, onSuccess, onError) ->
-        req.method ?= 'POST'
-        $http(req)
-          .success (data, status) ->
-             * could still be an error response
-            if status isnt 200 or (data and data.status and data.status isnt 'success')
-              if onError then return onError(data, status, req)
-              return api.handleApiError(data, status, req)
-             * SUCCESS! return it?
-            if onSuccess
-              if data and data.hasOwnProperty('data') and data.hasOwnProperty('status')
-                return onSuccess(data.data, status, req) # JSEND.. return data.data
-              return onSuccess(data, status, req) # return everything
-          .error (data, status) ->
-            api.handleApiError(data, status, req)
-       */
-      handleApiError: function(data, status, req) {
-        var message;
+      addDebugInfo: function(req) {
+        req.data.debug = {
+          url: $window.location.href,
+          index: $config.getTenantIndex(),
+          tenant: $config.getTenant(),
+          env: $config.getEnv()
+        };
+        return req;
+      },
+      handleApiError: function(data, status, headers, config) {
+        var message, newData, queries, request;
+        request = _.omit(config || {}, 'transformRequest', 'transformResponse');
         message = api.getErrorMessage(data, status);
-        if (req && req.data && req.data.password) {
-          req.data.password = '********';
+        if (request.headers && request.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
+          newData = {};
+          queries = (request.data + '').split("&");
+          _.each(queries, function(part, i) {
+            var temp;
+            temp = queries[i].split('=');
+            if (temp.length = 2) {
+              return newData[temp[0]] = temp[1];
+            }
+          });
+          request.data = newData;
+        }
+        if (request && request.data && request.data.password) {
+          request.data.password = '********';
         }
         $sentry.error(message, {
-          extra: req
+          extra: request
         });
         $log.error(message, status);
         $msg.error(message);
@@ -208,15 +212,6 @@
           return err + ' (' + status + ')';
         }
         return data.message || data.code || data || status;
-      },
-      addDebugInfo: function(req) {
-        req.data.debug = {
-          url: $window.location.href,
-          index: $config.getTenantIndex(),
-          tenant: $config.getTenant(),
-          env: $config.getEnv()
-        };
-        return req;
       },
       ensureInt: function(value) {
         if (_.isString(value)) {
@@ -244,9 +239,6 @@
             return defer.resolve(data);
           }
         };
-      },
-      standardAsyncErr: function(next, data, status) {
-        return next(api.getErrorMessage(data, status));
       },
       isHttpCode: function(code) {
         return _.isString(api.getHttpCodeString(code));
@@ -326,25 +318,32 @@
 
   myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
 
-  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, api, $window, $config, $msg, $log, $loader, $sentry) {
-    var interceptor, isObject, responseIsJsend;
+  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, api, $window, $config) {
+    var getExtension, interceptor, isObject, responseIsJsend;
     responseIsJsend = function(response) {
       return isObject(response) && response.hasOwnProperty('status');
     };
     isObject = function(item) {
       return typeof item === 'object';
     };
+    getExtension = function(url) {
+      return url.split('.').pop();
+    };
     interceptor = {
-      request: function(request) {
-        var appendDebug;
-        if (request.method == null) {
-          request.method = 'POST';
+      request: function(config) {
+        var appendDebug, ext;
+        ext = getExtension(config.url);
+        if (ext === 'php' || ext === 'html') {
+          return config;
         }
-        appendDebug = request.appendDebug !== false;
-        if (appendDebug && isObject(request.data) && !request.data.debug) {
-          api.addDebugInfo(request);
+        if (config.method == null) {
+          config.method = 'POST';
         }
-        return request;
+        appendDebug = config.appendDebug !== false;
+        if (appendDebug && isObject(config.data) && !config.data.debug) {
+          api.addDebugInfo(config);
+        }
+        return config;
       },
       response: function(response) {
         if (response.status !== 200 || (responseIsJsend(response.data) && response.data.status !== 'success')) {
@@ -356,18 +355,12 @@
         return response;
       },
       responseError: function(response) {
-        var ignore, message;
+        var ignore;
         ignore = response.config.ignoreExceptions;
         if (ignore === true || (_.isArray(ignore) && _.contains(ignore, response.status))) {
           return $q.reject(response);
         }
-        message = api.getErrorMessage(response.data, response.status);
-        $sentry.error(message, {
-          extra: 'TODO'
-        });
-        $msg.error(message);
-        $loader.stop();
-        console.log('ERROR!');
+        api.handleApiError(response.data, response.status, response.headers, response.config);
         return $q.reject(response);
       }
     };
@@ -486,10 +479,9 @@
           };
           return this.execute('/changepassword', params);
         },
-        getuserfromuserid: function(userId, sessionToken) {
+        getuserfromuserid: function(userId) {
           return this.execute('/getuserfromuserid', {
-            userId: userId,
-            sessionToken: sessionToken
+            userId: userId
           });
         },
         loadsession: function(sessionToken) {

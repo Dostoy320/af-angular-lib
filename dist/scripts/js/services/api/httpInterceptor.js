@@ -3,25 +3,32 @@
 
   myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
 
-  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, api, $window, $config, $msg, $log, $loader, $sentry) {
-    var interceptor, isObject, responseIsJsend;
+  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, api, $window, $config) {
+    var getExtension, interceptor, isObject, responseIsJsend;
     responseIsJsend = function(response) {
       return isObject(response) && response.hasOwnProperty('status');
     };
     isObject = function(item) {
       return typeof item === 'object';
     };
+    getExtension = function(url) {
+      return url.split('.').pop();
+    };
     interceptor = {
-      request: function(request) {
-        var appendDebug;
-        if (request.method == null) {
-          request.method = 'POST';
+      request: function(config) {
+        var appendDebug, ext;
+        ext = getExtension(config.url);
+        if (ext === 'php' || ext === 'html') {
+          return config;
         }
-        appendDebug = request.appendDebug !== false;
-        if (appendDebug && isObject(request.data) && !request.data.debug) {
-          api.addDebugInfo(request);
+        if (config.method == null) {
+          config.method = 'POST';
         }
-        return request;
+        appendDebug = config.appendDebug !== false;
+        if (appendDebug && isObject(config.data) && !config.data.debug) {
+          api.addDebugInfo(config);
+        }
+        return config;
       },
       response: function(response) {
         if (response.status !== 200 || (responseIsJsend(response.data) && response.data.status !== 'success')) {
@@ -33,18 +40,12 @@
         return response;
       },
       responseError: function(response) {
-        var ignore, message;
+        var ignore;
         ignore = response.config.ignoreExceptions;
         if (ignore === true || (_.isArray(ignore) && _.contains(ignore, response.status))) {
           return $q.reject(response);
         }
-        message = api.getErrorMessage(response.data, response.status);
-        $sentry.error(message, {
-          extra: 'TODO'
-        });
-        $msg.error(message);
-        $loader.stop();
-        console.log('ERROR!');
+        api.handleApiError(response.data, response.status, response.headers, response.config);
         return $q.reject(response);
       }
     };
