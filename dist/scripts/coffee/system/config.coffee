@@ -3,7 +3,7 @@
 ## config exposed from server
 myApp = angular.module('af.config', [])
 
-# set a default so our service doesnt blow up
+# set a default so our service doesn't blow up
 myApp.constant('DEV_DOMAINS', {localhost:'alpha2', dev:'alpha2'})
 
 myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
