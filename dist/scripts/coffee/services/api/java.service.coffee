@@ -87,8 +87,8 @@ myApp.service 'java', ($http, api, authManager) ->
           newPassword:newPassword
         return @execute('/changepassword', params)
 
-      getuserfromuserid:(userId, sessionToken) ->
-        return @execute('/getuserfromuserid', { userId:userId, sessionToken:sessionToken })
+      getuserfromuserid:(userId) ->
+        return @execute('/getuserfromuserid', { userId:userId })
 
       loadsession:(sessionToken) ->
         return @execute('/loadsession', { sessionToken:sessionToken })
