@@ -9,8 +9,8 @@ myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, api, $window,
   isObject = (item) ->
     return (typeof item is 'object')
 
-  getExtension = (request) ->
-    return request.split('.').pop();
+  getExtension = (url) ->
+    return url.split('.').pop();
 
 
   # public
@@ -37,7 +37,6 @@ myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, api, $window,
     #
     # global response handler
     response:(response) ->
-      #console.log('RESPONSE!')
       # could still be an error
       if response.status isnt 200 or (responseIsJsend(response.data) and response.data.status isnt 'success')
         #console.log('error status')
@@ -55,7 +54,7 @@ myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, api, $window,
     # to disable = $http.get(url, {ignoreExceptions:true}).success(function(result){})
     # to disable = $http.get(url, {ignoreExceptions:[404,501]}).success(function(result){})
     responseError: (response) ->
-      # dont handle error if ignoreExceptions...
+      # don't handle error if ignoreExceptions...
       ignore = response.config.ignoreExceptions
       if ignore is true or (_.isArray(ignore) and _.contains(ignore, response.status))
         return $q.reject(response)

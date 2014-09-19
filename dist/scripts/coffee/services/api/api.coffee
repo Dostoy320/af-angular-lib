@@ -5,6 +5,16 @@ myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
 
   return api =
 
+    # add debugs info to requests (don't do on Java, Java could blow up)
+    addDebugInfo:(req) ->
+      req.data.debug =
+        url:$window.location.href
+        index:$config.getTenantIndex()
+        tenant:$config.getTenant()
+        env:$config.getEnv()
+      return req
+
+
     ##
     ##
     ## ERROR HANDLING
@@ -12,6 +22,7 @@ myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
       request = _.omit(config or {}, 'transformRequest','transformResponse')
       message = api.getErrorMessage(data, status)
 
+      # convert urlEncoded to json
       if request.headers and request.headers['Content-Type'] is 'application/x-www-form-urlencoded'
         newData = {}
         queries =  (request.data + '').split("&")
@@ -19,19 +30,17 @@ myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
           temp = queries[i].split('=')
           if temp.length = 2 then newData[temp[0]] = temp[1]
         request.data = newData
-
+      # strip password
       if request and request.data and request.data.password then request.data.password = '********' # no
 
       # log it and show to user
-      $sentry.error(message, {extra: config})
+      $sentry.error(message, {extra: request})
       $log.error(message, status)
       $msg.error(message)
       $loader.stop()
 
 
-    ##
-    ##
-    ## takes a server resonse and attempts to make it readible
+    ## takes a server response and attempts to make it readable
     getErrorMessage:(data, status) ->
       # jsend error?
       if data and data.hasOwnProperty('message') and data.hasOwnProperty('code')
@@ -48,15 +57,6 @@ myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
       # return whatever we can...
       return data.message or data.code or data or status
 
-
-    # add debugs info to requests (dont do on Java, Java could blow up)
-    addDebugInfo:(req) ->
-      req.data.debug =
-        url:$window.location.href
-        index:$config.getTenantIndex()
-        tenant:$config.getTenant()
-        env:$config.getEnv()
-      return req
 
 
     ##
@@ -79,8 +79,6 @@ myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
     standardResolve: (defer, data) ->
       return (error) ->
         if error then defer.reject(error) else defer.resolve(data)
-    standardAsyncErr:(next, data, status) ->
-      return next(api.getErrorMessage(data, status))
 
     # determine if code is a common one...
     isHttpCode : (code) -> return _.isString(api.getHttpCodeString(code))
