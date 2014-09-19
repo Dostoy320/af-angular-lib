@@ -20,7 +20,7 @@ myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, api, $window,
     # global request
     request: (request) ->
       ext = getExtension(request.url)
-      if ext is '.php' or ext is '.html'
+      if ext is 'php' or ext is 'html'
         return request
 
       # no method? assume POST
