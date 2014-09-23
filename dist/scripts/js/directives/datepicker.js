@@ -27,7 +27,10 @@
           element.datepicker({
             inline: true,
             onClose: onchange,
-            onSelect: onchange
+            onSelect: onchange,
+            onClick: onChange,
+            changeMonth: true,
+            changeYear: true
           });
           scope.$watch(modelAccessor, function(val) {
             var date;

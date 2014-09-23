@@ -24,6 +24,9 @@ myApp.directive 'datePicker', ($parse)->
           inline:true
           onClose:onchange
           onSelect:onchange
+          onClick:onChange
+          changeMonth:true
+          changeYear:true
         })
 
         # watch for changes
