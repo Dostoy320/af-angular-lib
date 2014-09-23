@@ -5,7 +5,7 @@ myApp.directive 'datePicker', ($parse)->
     restrict:'A'
     replace:true
     transclude:false
-    compile: (scope, element, attrs) ->
+    compile: (element, attrs) ->
       # create ui input
       modelAccessor = $parse(attrs.ngModel)
       html = '<input type="text" id="' + attrs.id + '"></input>'

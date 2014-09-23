@@ -9,7 +9,7 @@
       restrict: 'A',
       replace: true,
       transclude: false,
-      compile: function(scope, element, attrs) {
+      compile: function(element, attrs) {
         var html, modelAccessor, newElm;
         modelAccessor = $parse(attrs.ngModel);
         html = '<input type="text" id="' + attrs.id + '"></input>';
