@@ -8,15 +8,20 @@ myApp.directive 'datePicker', ($parse)->
     compile: (element, attrs) ->
       # create ui input
       modelAccessor = $parse(attrs.ngModel)
-      html = '<input type="text" ng-onclick="open()" id="' + attrs.id + '"></input>'
+      html = '<input type="text" id="' + attrs.id + '"></input>'
       newElm = $(html)
       element.replaceWith(newElm)
 
       return (scope, element, attrs, controller) ->
-        scope.open = () ->
-          element.trigger('focus')
 
-        onchange = () ->
+        onClose = () ->
+          if element.is(':focus')
+            element.trigger('blur')
+          else
+            element.trigger('focus')
+          onChange()
+
+        onChange = () ->
           date = new Date(element.datepicker('getDate'))
           scope.$apply (scope) ->
             modelAccessor.assign(scope, date)
@@ -24,9 +29,8 @@ myApp.directive 'datePicker', ($parse)->
         # init date picker
         element.datepicker({
           inline:true
-          onClose:onchange
-          onSelect:onchange
-          onClick:onchange
+          onClose:onChange
+          onSelect:onClose
           changeMonth:true
           changeYear:true
         })
