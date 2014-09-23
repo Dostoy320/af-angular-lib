@@ -69,10 +69,14 @@
             onClose: onchange,
             onSelect: onchange
           });
-          return scope.$watch(modelAccessor, function(val) {
+          scope.$watch(modelAccessor, function(val) {
             var date;
             date = new Date(val);
             return element.datepicker('setDate', date);
+          });
+          return scope.$on('$destroy', function() {
+            element.datepicker("destroy");
+            return element.removeClass("hasDatepicker").removeAttr('id');
           });
         };
       }

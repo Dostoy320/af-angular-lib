@@ -31,6 +31,8 @@ myApp.directive 'datePicker', ($parse)->
           date = new Date(val)
           element.datepicker('setDate', date)
 
-
+        scope.$on '$destroy', () ->
+          element.datepicker( "destroy" );
+          element.removeClass("hasDatepicker").removeAttr('id');
 
   }
