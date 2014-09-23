@@ -54,7 +54,7 @@
         modelAccessor = $parse(attrs.ngModel);
         html = '<input type="text" id="' + attrs.id + '"></input>';
         newElm = $(html);
-        element.replace(newElm);
+        element.replaceWith(newElm);
         return function(scope, element, attrs, controller) {
           var onchange;
           onchange = function() {

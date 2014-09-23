@@ -10,7 +10,7 @@ myApp.directive 'datePicker', ($parse)->
       modelAccessor = $parse(attrs.ngModel)
       html = '<input type="text" id="' + attrs.id + '"></input>'
       newElm = $(html)
-      element.replace(newElm)
+      element.replaceWith(newElm)
 
       return (scope, element, attrs, controller) ->
 
