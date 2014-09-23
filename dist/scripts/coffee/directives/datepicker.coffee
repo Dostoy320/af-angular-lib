@@ -8,11 +8,13 @@ myApp.directive 'datePicker', ($parse)->
     compile: (element, attrs) ->
       # create ui input
       modelAccessor = $parse(attrs.ngModel)
-      html = '<input type="text" id="' + attrs.id + '"></input>'
+      html = '<input type="text" ng-onclick="open()" id="' + attrs.id + '"></input>'
       newElm = $(html)
       element.replaceWith(newElm)
 
       return (scope, element, attrs, controller) ->
+        scope.open = () ->
+          element.trigger('focus')
 
         onchange = () ->
           date = new Date(element.datepicker('getDate'))
