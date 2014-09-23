@@ -3,7 +3,7 @@
 
   myApp = angular.module('af.datePicker', []);
 
-  myApp.directive('datePicker', function($parse) {
+  myApp.directive('datePicker', function($parse, $timeout) {
     return {
       require: 'ngModel',
       restrict: 'A',
@@ -16,8 +16,8 @@
         newElm = $(html);
         element.replaceWith(newElm);
         return function(scope, element, attrs, controller) {
-          var onchange;
-          onchange = function() {
+          var handleChange;
+          handleChange = function() {
             var date;
             date = new Date(element.datepicker('getDate'));
             return scope.$apply(function(scope) {
@@ -26,16 +26,16 @@
           };
           element.datepicker({
             inline: true,
-            onClose: onchange,
-            onSelect: onchange,
-            onClick: onChange,
+            onClose: handleChange,
             changeMonth: true,
             changeYear: true
           });
-          scope.$watch(modelAccessor, function(val) {
+          scope.$watch(modelAccessor, function(newValue, oldValue) {
             var date;
-            date = new Date(val);
-            return element.datepicker('setDate', date);
+            if ((newValue && !oldValue) || (newValue.getTime() !== oldValue.getTime())) {
+              date = new Date(newValue);
+              return element.datepicker('setDate', date);
+            }
           });
           return scope.$on('$destroy', function() {
             element.datepicker("destroy");
