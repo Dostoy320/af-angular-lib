@@ -7,23 +7,21 @@
     return {
       require: 'ngModel',
       restrict: 'A',
-      replace: true,
       transclude: false,
       compile: function(element, attrs) {
-        var html, modelAccessor, newElm;
+        var modelAccessor;
         modelAccessor = $parse(attrs.ngModel);
-        html = '<input type="text" id="' + attrs.id + '" readonly="true"></input>';
-        newElm = $(html);
-        element.replaceWith(newElm);
+        element.attr('readonly', true);
+        $util.isMo;
         return function(scope, element, attrs, controller) {
-          var config, datePickerConfig, defaultConfig, handleChange, updateUI;
+          var config, datePickerConfig, defaultConfig, handleChange, handleClose, updateUI;
+          element.attr('type', 'date');
+          return;
           config = {};
           if (scope[attrs.datePickerConfig]) {
             config = scope[attrs.datePickerConfig];
           }
-          if (scope[attrs.datePickerFormat]) {
-            config = scope[attrs.datePickerFormat];
-          } else if ($config.get('app.dateFormatDatePicker')) {
+          if (!config.dateFormat && $config.get('app.dateFormatDatePicker')) {
             config.dateFormat = $config.get('app.dateFormatDatePicker');
           }
           handleChange = function() {
@@ -33,12 +31,9 @@
               return modelAccessor.assign(scope, date);
             });
           };
-          updateUI = function() {
-            return $timeout(function() {
-              $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-next span').text('').addClass('glyphicon glyphicon-chevron-right');
-              $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-prev span').text('').addClass('glyphicon glyphicon-chevron-left');
-              return element.blur();
-            }, 5);
+          updateUI = function() {};
+          handleClose = function() {
+            return handleChange();
           };
           defaultConfig = {
             inline: true,
@@ -49,21 +44,16 @@
             onChangeMonthYear: updateUI,
             prevText: '',
             nextText: '',
-            onClose: function() {
-              handleChange();
-              $('.afDateInputModal').unbind('click');
-              return $('.afDateInputModal').remove();
-            },
-            beforeShow: function() {
-              updateUI();
-              $('#ui-datepicker-div').after('<div class="afDateInputModal modal-backdrop fade in"></div>');
-              return $('.afDateInputModal').click(function() {
-                return element.datepicker("show");
-              });
-            }
+            onClose: handleClose,
+            beforeShow: function() {}
           };
           datePickerConfig = _.defaults(config, defaultConfig);
           element.datepicker(datePickerConfig);
+          element.on('click', function(event) {
+            console.log('wtf');
+            event.stopImmediatePropagation();
+            return element.datepicker("show");
+          });
           scope.$watch(modelAccessor, function(newValue, oldValue) {
             var newDate;
             if (!newValue) {
@@ -77,6 +67,7 @@
             return element.datepicker('setDate', newDate);
           });
           return scope.$on('$destroy', function() {
+            $('.afDateInputModal').unbind('click');
             element.datepicker("destroy");
             return element.removeClass("hasDatepicker").removeAttr('id');
           });
