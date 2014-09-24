@@ -1,9 +1,9 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.datePicker', []);
+  myApp = angular.module('af.datePicker', ['af.config']);
 
-  myApp.directive('datePicker', function($parse, $timeout) {
+  myApp.directive('datePicker', function($parse, $timeout, $config) {
     return {
       require: 'ngModel',
       restrict: 'A',
@@ -16,7 +16,17 @@
         newElm = $(html);
         element.replaceWith(newElm);
         return function(scope, element, attrs, controller) {
-          var handleChange;
+          var config, datePickerConfig, defaultConfig, getTime, handleChange, updateUI;
+          if (scope[attrs.datePickerConfig]) {
+            config = scope[attrs.datePickerConfig];
+          } else {
+            config = {};
+          }
+          if (scope[attrs.datePickerFormat]) {
+            config = scope[attrs.datePickerFormat];
+          } else if ($config.get('app.dateFormatDatePicker')) {
+            config.dateFormat = $config.get('app.dateFormatDatePicker');
+          }
           handleChange = function() {
             var date;
             date = new Date(element.datepicker('getDate'));
@@ -24,18 +34,45 @@
               return modelAccessor.assign(scope, date);
             });
           };
-          element.datepicker({
+          updateUI = function() {
+            return $timeout(function() {
+              var next, prev;
+              next = $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-next span').text('').addClass('glyphicon glyphicon-chevron-right');
+              return prev = $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-prev span').text('').addClass('glyphicon glyphicon-chevron-left');
+            }, 5);
+          };
+          defaultConfig = {
             inline: true,
-            onClose: handleChange,
+            onClose: function() {
+              handleChange();
+              return $('.afDateInputModal').remove();
+            },
             changeMonth: true,
-            changeYear: true
-          });
-          scope.$watch(modelAccessor, function(newValue, oldValue) {
-            var date;
-            if ((newValue && !oldValue) || (newValue.getTime() !== oldValue.getTime())) {
-              date = new Date(newValue);
-              return element.datepicker('setDate', date);
+            changeYear: true,
+            selectOtherMonths: true,
+            showOtherMonths: true,
+            onChangeMonthYear: updateUI,
+            prevText: '',
+            nextText: '',
+            beforeShow: function() {
+              updateUI();
+              return element.after('<div class="afDateInputModal modal-backdrop fade in"></div>');
             }
+          };
+          datePickerConfig = _.defaults(config, defaultConfig);
+          element.datepicker(datePickerConfig);
+          getTime = function(value) {};
+          scope.$watch(modelAccessor, function(newValue, oldValue) {
+            var newDate;
+            if (!newValue) {
+              return $.datepicker._clearDate(element);
+            }
+            if (moment && moment.isMoment(newValue)) {
+              newDate = newValue.toDate();
+            } else {
+              newDate = new Date(newValue);
+            }
+            return element.datepicker('setDate', newDate);
           });
           return scope.$on('$destroy', function() {
             element.datepicker("destroy");
