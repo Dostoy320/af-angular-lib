@@ -91,11 +91,15 @@
             nextText: '',
             onClose: function() {
               handleChange();
+              $('.afDateInputModal').unbind('click');
               return $('.afDateInputModal').remove();
             },
             beforeShow: function() {
               updateUI();
-              return element.after('<div class="afDateInputModal modal-backdrop fade in"></div>');
+              element.after('<div class="afDateInputModal modal-backdrop fade in"></div>');
+              return $('.afDateInputModal').click(function() {
+                return element.datepicker("show");
+              });
             }
           };
           datePickerConfig = _.defaults(config, defaultConfig);
