@@ -57,10 +57,9 @@
         element.replaceWith(newElm);
         return function(scope, element, attrs, controller) {
           var config, datePickerConfig, defaultConfig, handleChange, updateUI;
+          config = {};
           if (scope[attrs.datePickerConfig]) {
             config = scope[attrs.datePickerConfig];
-          } else {
-            config = {};
           }
           if (scope[attrs.datePickerFormat]) {
             config = scope[attrs.datePickerFormat];
@@ -76,9 +75,9 @@
           };
           updateUI = function() {
             return $timeout(function() {
-              var next, prev;
-              next = $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-next span').text('').addClass('glyphicon glyphicon-chevron-right');
-              return prev = $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-prev span').text('').addClass('glyphicon glyphicon-chevron-left');
+              $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-next span').text('').addClass('glyphicon glyphicon-chevron-right');
+              $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-prev span').text('').addClass('glyphicon glyphicon-chevron-left');
+              return element.blur();
             }, 5);
           };
           defaultConfig = {
@@ -96,7 +95,6 @@
             },
             beforeShow: function() {
               updateUI();
-              element.blur();
               return element.after('<div class="afDateInputModal modal-backdrop fade in"></div>');
             }
           };

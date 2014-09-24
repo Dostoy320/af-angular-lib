@@ -15,10 +15,9 @@ myApp.directive 'datePicker', ($parse, $timeout, $config)->
 
     return (scope, element, attrs, controller) ->
 
+      config = {}
       if scope[attrs.datePickerConfig]
         config = scope[attrs.datePickerConfig]
-      else
-        config = {}
 
       if scope[attrs.datePickerFormat]
         config = scope[attrs.datePickerFormat]
@@ -32,8 +31,9 @@ myApp.directive 'datePicker', ($parse, $timeout, $config)->
 
       updateUI = () ->
         $timeout () ->
-          next = $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-next span').text('').addClass('glyphicon glyphicon-chevron-right')
-          prev = $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-prev span').text('').addClass('glyphicon glyphicon-chevron-left')
+          $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-next span').text('').addClass('glyphicon glyphicon-chevron-right')
+          $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-prev span').text('').addClass('glyphicon glyphicon-chevron-left')
+          element.blur()
         , 5
 
       # config
@@ -51,7 +51,6 @@ myApp.directive 'datePicker', ($parse, $timeout, $config)->
           $('.afDateInputModal').remove()
         beforeShow:() ->
           updateUI()
-          element.blur()
           element.after('<div class="afDateInputModal modal-backdrop fade in"></div>')
       }
       datePickerConfig = _.defaults(config, defaultConfig)
