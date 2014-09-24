@@ -52,7 +52,7 @@ myApp.directive 'datePicker', ($parse, $timeout, $config)->
           $('.afDateInputModal').remove()
         beforeShow:() ->
           updateUI()
-          element.after('<div class="afDateInputModal modal-backdrop fade in"></div>')
+          $('#ui-datepicker-div').after('<div class="afDateInputModal modal-backdrop fade in"></div>')
           $('.afDateInputModal').click () ->
             element.datepicker("show")
       }

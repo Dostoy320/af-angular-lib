@@ -96,7 +96,7 @@
             },
             beforeShow: function() {
               updateUI();
-              element.after('<div class="afDateInputModal modal-backdrop fade in"></div>');
+              $('#ui-datepicker-div').after('<div class="afDateInputModal modal-backdrop fade in"></div>');
               return $('.afDateInputModal').click(function() {
                 return element.datepicker("show");
               });
