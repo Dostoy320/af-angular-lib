@@ -52,11 +52,11 @@
       compile: function(element, attrs) {
         var html, modelAccessor, newElm;
         modelAccessor = $parse(attrs.ngModel);
-        html = '<input type="text" id="' + attrs.id + '"></input>';
+        html = '<input type="text" id="' + attrs.id + '" readonly="true"></input>';
         newElm = $(html);
         element.replaceWith(newElm);
         return function(scope, element, attrs, controller) {
-          var config, datePickerConfig, defaultConfig, getTime, handleChange, updateUI;
+          var config, datePickerConfig, defaultConfig, handleChange, updateUI;
           if (scope[attrs.datePickerConfig]) {
             config = scope[attrs.datePickerConfig];
           } else {
@@ -83,10 +83,6 @@
           };
           defaultConfig = {
             inline: true,
-            onClose: function() {
-              handleChange();
-              return $('.afDateInputModal').remove();
-            },
             changeMonth: true,
             changeYear: true,
             selectOtherMonths: true,
@@ -94,14 +90,18 @@
             onChangeMonthYear: updateUI,
             prevText: '',
             nextText: '',
+            onClose: function() {
+              handleChange();
+              return $('.afDateInputModal').remove();
+            },
             beforeShow: function() {
               updateUI();
+              element.blur();
               return element.after('<div class="afDateInputModal modal-backdrop fade in"></div>');
             }
           };
           datePickerConfig = _.defaults(config, defaultConfig);
           element.datepicker(datePickerConfig);
-          getTime = function(value) {};
           scope.$watch(modelAccessor, function(newValue, oldValue) {
             var newDate;
             if (!newValue) {

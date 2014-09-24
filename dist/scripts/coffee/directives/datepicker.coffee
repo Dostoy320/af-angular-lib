@@ -9,7 +9,7 @@ myApp.directive 'datePicker', ($parse, $timeout, $config)->
   compile: (element, attrs) ->
     # create ui input
     modelAccessor = $parse(attrs.ngModel)
-    html = '<input type="text" id="' + attrs.id + '"></input>'
+    html = '<input type="text" id="' + attrs.id + '" readonly="true"></input>'
     newElm = $(html)
     element.replaceWith(newElm)
 
@@ -36,12 +36,9 @@ myApp.directive 'datePicker', ($parse, $timeout, $config)->
           prev = $('#ui-datepicker-div .ui-datepicker-header .ui-datepicker-prev span').text('').addClass('glyphicon glyphicon-chevron-left')
         , 5
 
-
+      # config
       defaultConfig = {
         inline:true
-        onClose:() ->
-          handleChange()
-          $('.afDateInputModal').remove()
         changeMonth:true
         changeYear:true
         selectOtherMonths:true
@@ -49,17 +46,18 @@ myApp.directive 'datePicker', ($parse, $timeout, $config)->
         onChangeMonthYear:updateUI
         prevText:''
         nextText:''
+        onClose:() ->
+          handleChange()
+          $('.afDateInputModal').remove()
         beforeShow:() ->
           updateUI()
+          element.blur()
           element.after('<div class="afDateInputModal modal-backdrop fade in"></div>')
       }
       datePickerConfig = _.defaults(config, defaultConfig)
 
       # init date picker
       element.datepicker(datePickerConfig)
-
-      getTime = (value) ->
-
 
         # watch for changes
       scope.$watch modelAccessor, (newValue, oldValue) ->
