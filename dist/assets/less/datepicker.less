@@ -1,0 +1,119 @@
+/* put above bootstrap modal**/
+.afDateInputModal {
+  opacity: .3;
+  z-index: 1060 !important;
+}
+/*
+#afDateInputPopup .afCalendarControlBar {
+  position: absolute;
+  bottom: 5px;
+  left: 55px;
+  right: auto;
+}
+*/
+
+
+.ui-datepicker {
+  display:none;
+  z-index: 1070 !important;
+  margin: auto;
+  position: absolute;
+  padding: 2px;
+  border: 2px solid black;
+  width: 270px;
+  text-align: center;
+  background-color:#FFF;
+  .border-top-radius(4px);
+  .border-bottom-radius(4px);
+
+  .ui-datepicker-header {
+    position: relative;
+    min-height: 32px;
+    a {
+      border-radius: 3px;
+      -moz-border-radius: 3px;
+      -webkit-border-radius: 3px;
+      cursor: pointer;
+      display: block;
+      padding: 10px 10px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      &.ui-datepicker-next {
+        left: auto;
+        right: 0;
+        text-align: right;
+      }
+    }
+    .ui-datepicker-title {
+      width: 170px;
+      margin: 0 auto;
+      position: relative;
+      height: 36px;
+      padding: 0;
+      margin-bottom: 4px;
+
+      /*
+      span {
+        position: absolute;
+        text-align: center;
+        top: 9px;
+        left: 0;
+        width: 75px;
+      }
+      */
+
+      // YEAR/MONTH DROP DOWNS
+      .ui-datepicker-year, .ui-datepicker-month {
+        height:28px;
+        line-height:28px;
+        position: absolute;
+        top: 5px;
+        width: 80px;
+      }
+      .ui-datepicker-year{  right:2px; }
+      .ui-datepicker-month{ left:2px;  }
+    }
+  }
+
+  table.ui-datepicker-calendar {
+    @disabled:#F0F0F0;
+    width: 100%;
+    border-bottom: 1px solid #BFBFBF;
+    border-right: 1px solid #BFBFBF;
+
+    thead {
+      // days of the week across top of calendar:
+      #gradient > .vertical(@start-color:#FFF; @end-color:#DDD);
+      th {
+        padding: 5px;
+      }
+    }
+    td, th{
+      vertical-align: top;
+      border-top: 1px solid #BFBFBF;
+      border-left: 1px solid #BFBFBF;
+      position: relative;
+      text-align: center;
+      padding: 0;
+      width: 14%;
+      a{
+        display: block;
+        padding: 8px 5px;
+        text-decoration: none;
+        &:hover{
+          background: #DCDCDC;
+          color: #444;
+        }
+        &.ui-priority-secondary{
+          background-color: #F0F0F0;
+          color: #939393;
+        }
+        &.ui-state-active{
+          background: #666;
+          color: white;
+        }
+      }
+    }
+  }
+}
