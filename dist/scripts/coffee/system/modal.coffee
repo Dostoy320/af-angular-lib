@@ -67,9 +67,10 @@ myApp.GenericModalCtrl = myApp.controller 'GenericModalCtrl', ($scope, $modal) -
 
   ###
   Example usage
-  $modal.open('client/views/analyzers/client.profitability.settings.php', {
+  $modal.open('client/views/analyzers/client.profitability.settings.php', $scope, {
     clickClose:() ->
-      modalScope = $modal.getScope()
+      parentScope = $modal.getParentScope()
+      modalScope = $modal.getModalScope()
       # do something
       $modal.close()
   })
@@ -85,14 +86,18 @@ myApp.GenericModalCtrl = myApp.controller 'GenericModalCtrl', ($scope, $modal) -
     showbuttons:true
     clickClose: () ->  $modal.close()
     clickConfirm:() -> $modal.close()
+    init:() -> foo = 'override this'
     run:() -> foo = 'override this'
 
-  init = () ->
-    # build the scope
-    _.extend($scope, defaultController, $modal.getModalScope())
-    # push scope back into $modal after extended
-    # this allows us to grab it from outside of this controller
-    $modal.updateModalScope($scope)
+  # build the scope
+  _.extend($scope, defaultController, $modal.getModalScope())
+  # push scope back into $modal after extended
+  # this allows us to grab it from outside of this controller
+  $modal.updateModalScope($scope)
 
-  init()
-  $scope.run()
+  # call init on scope
+  $scope.init()
+
+  # runs after everything has loaded...
+  $scope.$watch 'foobar', () ->
+    $scope.run()

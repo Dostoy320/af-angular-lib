@@ -1111,14 +1111,15 @@
 
     /*
     Example usage
-    $modal.open('client/views/analyzers/client.profitability.settings.php', {
+    $modal.open('client/views/analyzers/client.profitability.settings.php', $scope, {
       clickClose:() ->
-        modalScope = $modal.getScope()
+        parentScope = $modal.getParentScope()
+        modalScope = $modal.getModalScope()
          * do something
         $modal.close()
     })
      */
-    var defaultController, init;
+    var defaultController;
     defaultController = {
       title: 'Are you sure?',
       body: 'Are you sure you wish to continue?',
@@ -1131,17 +1132,21 @@
       clickConfirm: function() {
         return $modal.close();
       },
+      init: function() {
+        var foo;
+        return foo = 'override this';
+      },
       run: function() {
         var foo;
         return foo = 'override this';
       }
     };
-    init = function() {
-      _.extend($scope, defaultController, $modal.getModalScope());
-      return $modal.updateModalScope($scope);
-    };
-    init();
-    return $scope.run();
+    _.extend($scope, defaultController, $modal.getModalScope());
+    $modal.updateModalScope($scope);
+    $scope.init();
+    return $scope.$watch('foobar', function() {
+      return $scope.run();
+    });
   });
 
 }).call(this);
