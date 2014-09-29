@@ -37,8 +37,8 @@ myApp.factory "httpInterceptor", httpInterceptor = ($q, $injector, api, $window,
       # could still be an error
       if response.status isnt 200 or (responseIsJsend(response.data) and response.data.status isnt 'success')
         return interceptor.responseError(response)
-      # if jsend.... just return the data
-      if responseIsJsend(response) and response.data.data
+      # if jsend, just return the data
+      if responseIsJsend(response) and isObject(response.data) and response.data.hasOwnProperty('data')
         response.data = response.data.data
       return response
 
