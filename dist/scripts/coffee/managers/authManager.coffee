@@ -9,22 +9,17 @@ myApp.service 'authManager', ($util)->
     sessionToken: amplify.store('sessionToken')
 
     clearUser:() ->
-      amplify.store('username', null)
-      amplify.store('userId', null)
-      amplify.store('userEmail', null)
-      amplify.store('authorities', null)
+      amplify.store('loggedInUser', null)
       amplify.store('sessionToken', null)
-      auth.loggedInUser.username = null
-      auth.loggedInUser.userId = null
-      auth.loggedInUser.userEmail = null
-      auth.loggedInUser.authorities = null
+      auth.loggedInUser = null
       auth.sessionToken = null
 
-    setSessionToken:(token) ->
-      amplify.store('sessionToken', token)
-      auth.sessionToken = token
+    setSessionToken:(sessionToken) ->
+      auth.sessionToken = sessionToken
+      amplify.store('sessionToken', sessionToken)
 
-    setLoggedInUser:(userId, userName, userEmail, authorities) ->
+    setLoggedInUser:(sessionToken, userId, userName, userEmail, authorities) ->
+      auth.setSessionToken(sessionToken) = sessionToken
       auth.loggedInUser =
         userId:userId
         userName:userName
