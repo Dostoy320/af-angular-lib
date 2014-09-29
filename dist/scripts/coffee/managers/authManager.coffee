@@ -19,7 +19,7 @@ myApp.service 'authManager', ($util)->
       amplify.store('sessionToken', sessionToken)
 
     setLoggedInUser:(sessionToken, userId, userName, userEmail, authorities) ->
-      auth.setSessionToken(sessionToken) = sessionToken
+      auth.setSessionToken(sessionToken)
       auth.loggedInUser =
         userId:userId
         userName:userName
