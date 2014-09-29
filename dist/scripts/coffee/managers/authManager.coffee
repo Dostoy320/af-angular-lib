@@ -5,12 +5,7 @@ myApp.service 'authManager', ($util)->
 
     # ::
     # :: CACHED DATA
-    loggedInUser: {
-      userName:   amplify.store("userName"),
-      userId:     amplify.store("userId"),
-      userEmail:  amplify.store("userEmail"),
-      authorities:amplify.store("authorities")
-    }
+    loggedInUser: amplify.store("loggedInUser")
     sessionToken: amplify.store('sessionToken')
 
     clearUser:() ->
@@ -29,11 +24,13 @@ myApp.service 'authManager', ($util)->
       amplify.store('sessionToken', token)
       auth.sessionToken = token
 
-    setLoggedInUser:(user) ->
-      fields = _.pick(user, 'userName','userId','userEmail','authorities')
-      auth.loggedInUser = fields
-      _.each fields, (field) ->
-        amplify.store(field, user[field])
+    setLoggedInUser:(userId, userName, userEmail, authorities) ->
+      auth.loggedInUser =
+        userId:userId
+        userName:userName
+        userEmail:userEmail
+        authorities:authorities
+      amplify.store('loggedInUser', auth.loggedInUser)
 
     # looks for our sessionToken
     findSessionToken:(priority) ->
