@@ -4,7 +4,7 @@
 myApp = angular.module('af.config', [])
 
 
-myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
+myApp.service '$config', ($window, $log) ->
 
   app = null
 
@@ -28,6 +28,9 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
   # service
   config = {
 
+    setApp : (app) ->
+      app = app
+
     # eg ('label.goal', true)
     get:(path, makePlural) ->
       if !$window.config then return null # does it even exist?
@@ -45,75 +48,20 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
 
     getEnv:() ->
       return appEnv.getEnv()
-      env = 'prod'
-      subDomain = config.getSubDomain()
-      if subDomain.indexOf('alpha') > -1 then return 'dev'
-      if subDomain.indexOf('-dev') > -1 then return 'dev'
-      # check dev domains
-      _.each DEV_DOMAINS, (devNodeIndex, devDomain) ->
-        if subDomain is devDomain then env = 'dev'
-      return env;
 
     getTenantIndex:() ->
-      index = config.getTenant() # default to tenant
-      subDomain = config.getSubDomain()
-      # strip dev to get indexes...
-      if subDomain.indexOf('-dev') > -1 then subDomain = subDomain.split("-dev").shift()
-      switch subDomain
-        when 'alpha'   then index = 'alpha'
-        when 'alpha2'  then index = 'alpha2'
-        when 'waddell' then index = 'wr'
-        when 'tdai'    then index = 'td'
-      # check dev domains
-      _.each DEV_DOMAINS, (devNodeIndex, devDomain) ->
-        if subDomain is devDomain then index = devNodeIndex
-      return index
-
+      return appEnv.getTenantIndex()
 
     # DOMAIN / URL DATA
     getSubDomain : () ->
-      return (window.location.host).split('.').shift().toLowerCase()
+      return appEnv.getSubDomain()
 
-    setApp : (app) ->
-      app = app
 
     getApp : () ->
       if app then return app
       parts = $window.location.pathname.split('/')
       if parts.length >= 2 then app = (parts[1]).toLowerCase()
       return app
-
-    getTheme : () ->
-      #<link id="themeCSS" rel="stylesheet" type="text/css" href="client/static/css/app-blue.css"/>
-      themeCss = $('head link#themeCSS')
-      if themeCss.length isnt 1
-        $log.info 'Cannot find the theme CSS file with id="themeCSS" to deterime theme.'
-        return 'blue'
-      return themeCss.attr('href').split('/').pop().slice(0, -4).split('-')[1]
-
-
-    theme:{
-      textSuccess:'#dff0d8'
-      textWarning:'#fcf8e3'
-      textDanger:'#f2dede'
-      textInfo:'#d9edf7'
-      getPrimaryColor : () ->
-        # anyone know a better way to do this?
-        theme = config.getTheme()
-        switch theme
-          when 'blue' then return '#336699'
-          when 'green' then return '#00b624'
-        $log.info '$config.theme.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.'
-        return '#336699'
-      getSecondaryColor : () ->
-        # anyone know a better way to do this?
-        theme = config.getTheme()
-        switch theme
-          when 'blue' then return '#666'
-          when 'green' then return '#666'
-        $log.info '$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.'
-        return '#666'
-    }
 
   }
   return config
