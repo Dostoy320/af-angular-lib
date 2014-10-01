@@ -1,4 +1,32 @@
 //
+//  BASIC APP SETUP NEEDS
+//
+window.appEnv = {
+  getSubDomain : function(){
+    return (window.location.host).split('.').shift().toLowerCase();
+  },
+  getEnv : function(){
+    var subDomain = appEnv.getSubDomain();
+    if(subDomain === 'localhost') return 'dev';
+    if(subDomain === 'dev') return 'dev';
+    if(subDomain.indexOf('alpha') === 0) return 'dev';
+    if(subDomain.indexOf('-dev') > -1) return 'dev';
+    return 'prod';
+  },
+  getTenant : function() {
+    var subDomain = appEnv.getSubDomain();
+    if(appEnv.getEnv() === 'dev') return 'td';
+    switch (subDomain) {
+      case 'tdai': return 'td';
+    }
+    return subDomain;
+  }
+}
+
+
+
+
+//
 // SENTRY
 //
 var sentrySetup = {
@@ -11,40 +39,22 @@ var sentrySetup = {
     ignoreUrls: [ /extensions\//i, /^chrome:\/\//i ]
   },
 
-  getSubDomain : function(){
-    return (window.location.host).split('.').shift().toLowerCase();
-  },
-
-  // dev or prod?
-  getEnv : function(){
-    var subDomain = sentrySetup.getSubDomain();
-    if(subDomain.indexOf('alpha') === 0) return 'dev'; // alpha, alpha2, alphaAnything
-    if(subDomain.indexOf('-dev') > -1) return 'dev';   // alpha-dev, apps-dev, anything-dev
-    // return dev for specific domains:
-    switch(subDomain){
-      case 'dev':
-      case 'localhost':
-        return 'dev'
-    }
-    // else... its prod.
-    return 'prod';
-  },
-
   init:function(){
     // what url?
     var url = sentrySetup.prodUrl
-    if(sentrySetup.getEnv() === 'dev'){
-      url = sentrySetup.devUrl
-      if(typeof console !== 'undefined') console.log('Sentry -> Development Environment');
+    if(appEnv.getEnv() === 'dev'){
+      url = sentrySetup.devUrl;
+      console.log('Sentry - Dev Environment')
     }
+
     // this NEEDS to be loaded.. important our apps are sending errors.
-    if(typeof Raven === "undefined") return alert('Raven/Sentry Setup Failed. Raven undefined.')
+    if(typeof Raven === "undefined") return;
     // init
     Raven.config(url, sentrySetup.options).install();
     // Attach user data if possible
     if(typeof amplify !== "undefined"){
       var user = {}
-      if(amplify.store('userId')) user.id = amplify.store('userId');
+      if(amplify.store('userId'))    user.id = amplify.store('userId');
       if(amplify.store('userEmail')) user.email = amplify.store('userEmail');
       Raven.setUser(user);
     }
@@ -58,11 +68,10 @@ sentrySetup.init();
 //
 // MIX PANEL
 //
-
-//<!-- start Mixpanel --><script type="text/javascript">
+// start mixpanel lib
 (function(f,b){if(!b.__SV){var a,e,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.track_charge people.clear_charges people.delete_user".split(" ");
 for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=f.createElement("script");a.type="text/javascript";a.async=!0;a.src="//cdn.mxpnl.com/libs/mixpanel-2.2.min.js";e=f.getElementsByTagName("script")[0];e.parentNode.insertBefore(a,e)}})(document,window.mixpanel||[]);
-//mixpanel.init("YOUR TOKEN");</script><!-- end Mixpanel -->
+// end mixpanel lib
 
 var mixPanelSetup = {
 
@@ -71,15 +80,16 @@ var mixPanelSetup = {
 
   init : function(){
     var token = mixPanelSetup.prodToken
-    if(sentrySetup.getEnv() === 'dev'){
+    if(appEnv.getEnv() === 'dev'){
       token = mixPanelSetup.devToken;
-      if(typeof console !== 'undefined') console.log('MixPanel -> Development Environment');
+      console.log('MixPanel - Dev Environment')
     }
+
     window.mixpanel.init(token);
     // ALL mixPanel events will contain this data...
     window.mixpanel.register({
-      domain:sentrySetup.getSubDomain(),
-      env:sentrySetup.getEnv()
+      domain:appEnv.getSubDomain(),
+      env:appEnv.getEnv()
     });
   }
 }
