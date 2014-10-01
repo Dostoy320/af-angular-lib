@@ -28,10 +28,7 @@ myApp.service '$config', ($window, $log) ->
   # service
   config = {
 
-    setApp : (app) ->
-      app = app
-
-    # eg ('label.goal', true)
+    # eg ('labels.goal', true)
     get:(path, makePlural) ->
       if !$window.config then return null # does it even exist?
       if !path then return $window.config # return everything.
@@ -42,21 +39,17 @@ myApp.service '$config', ($window, $log) ->
         return pluralize(value)
       return value
 
-    # TENANT DATA
-    getTenant:() ->
-      config.get('app.tenant') # passed from php
+    #
+    # Environment
+    # - this got moved to a non-angular object  because we needed it before angular loaded a lot)
+    # - see 'app-env.js'
+    getTenant:() ->       config.get('tenant')
+    getEnv:() ->          return appEnv.getEnv()
+    getTenantIndex:() ->  return appEnv.getTenantIndex()
+    getSubDomain : () ->  return appEnv.getSubDomain()
 
-    getEnv:() ->
-      return appEnv.getEnv()
-
-    getTenantIndex:() ->
-      return appEnv.getTenantIndex()
-
-    # DOMAIN / URL DATA
-    getSubDomain : () ->
-      return appEnv.getSubDomain()
-
-
+    # App (portal, assessment, etc)
+    setApp : (newValue) -> app = newValue
     getApp : () ->
       if app then return app
       parts = $window.location.pathname.split('/')

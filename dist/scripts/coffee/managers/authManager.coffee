@@ -31,7 +31,7 @@ myApp.service 'authManager', ($util)->
     findSessionToken:(priority) ->
       # order to look for our token
       token = null
-      if !priority then priority = ['app','amplify','url','window']
+      if !priority then priority = ['app','url','amplify','window']
       _.each priority, (place) ->
         if token then return
         switch(place)
@@ -72,4 +72,4 @@ myApp.service 'authManager', ($util)->
     # ::
     # :: LOGGED IN?
     loggedIn:() ->
-      return (auth.sessionToken and auth.loggedInUser.userId)
+      return (auth.sessionToken and auth.loggedInUser and auth.loggedInUser.userId)
