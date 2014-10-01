@@ -3,8 +3,6 @@
 ## config exposed from server
 myApp = angular.module('af.config', [])
 
-# set a default so our service doesn't blow up
-myApp.constant('DEV_DOMAINS', {localhost:'alpha2', dev:'alpha2'})
 
 myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
 
@@ -34,7 +32,6 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
     get:(path, makePlural) ->
       if !$window.config then return null # does it even exist?
       if !path then return $window.config # return everything.
-      if path.indexOf('.') is -1 then path = 'label.'+path # if no parent... default to label object
       value = getPathValue($window.config, path)
       if makePlural
         pluralValue = getPathValue($window.config, path+'_plural') # does config contain plural value?
@@ -47,6 +44,7 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
       config.get('app.tenant') # passed from php
 
     getEnv:() ->
+      return appEnv.getEnv()
       env = 'prod'
       subDomain = config.getSubDomain()
       if subDomain.indexOf('alpha') > -1 then return 'dev'

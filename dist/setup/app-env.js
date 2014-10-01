@@ -6,7 +6,7 @@ window.appEnv = {
   // tenant/index for development
   dev:{
     localhost:{
-      tenant:'td',
+      tenant:'actifi',
       index:'alpha2'
     },
     alpha:{
