@@ -39,10 +39,11 @@ window.appEnv = {
   //
   getEnv : function(){
     var subDomain = appEnv.getSubDomain();
-    if(subDomain === 'localhost')         return 'dev';
-    if(subDomain === 'dev')               return 'dev';
-    if(subDomain.indexOf('alpha') === 0)  return 'dev';
-    if(subDomain.indexOf('-dev') > -1)    return 'dev';
+    if(subDomain === 'localhost')           return 'dev';
+    if(subDomain === 'dev')                 return 'dev';
+    if(subDomain.indexOf('192.168.') === 0) return 'dev';
+    if(subDomain.indexOf('alpha') === 0)    return 'dev';
+    if(subDomain.indexOf('-dev') > -1)      return 'dev';
     return 'prod';
   },
   // is development quickie
@@ -54,7 +55,10 @@ window.appEnv = {
   //
   getTenant : function() {
     var subDomain = appEnv.getCleanSubDomain();
+
     // check for special cases
+    if(subDomain.indexOf('192.168.' === 0))
+      return appEnv.dev.localhost.tenant;
     switch (subDomain) {
       case 'dev':
       case 'localhost': return appEnv.dev.localhost.tenant;
@@ -69,6 +73,8 @@ window.appEnv = {
     var index = appEnv.getTenant();
     var subDomain = appEnv.getCleanSubDomain();
     // check for special cases
+    if(subDomain.indexOf('192.168.' === 0))
+      return appEnv.dev.localhost.index;
     switch(subDomain){
       case 'dev':
       case 'localhost': return appEnv.dev.localhost.index;
