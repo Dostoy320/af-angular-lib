@@ -80,6 +80,10 @@ myApp.service 'api', ($window, $log, $msg, $loader, $sentry, $util, $config) ->
       return (error) ->
         if error then defer.reject(error) else defer.resolve(data)
 
+    standardReject: (defer) ->
+      return (data, status, headers, config) ->
+        defer.reject(api.getErrorMessage(data, status))
+
     # determine if code is a common one...
     isHttpCode : (code) -> return _.isString(api.getHttpCodeString(code))
     # common error codes
