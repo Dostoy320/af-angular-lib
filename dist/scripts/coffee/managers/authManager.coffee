@@ -65,6 +65,7 @@ myApp.service 'authManager', ($util)->
     isAdmin:() ->
       return auth.hasAnyRole(['Role_Admin', 'Role_RoadmapUserAdmin', 'Role_RoadmapContentAdmin'])
 
+    isCoach:() -> return auth.isManager()
     isManager:() ->
       return auth.hasAnyRole(['Role_AccessKeyManager'])
 
