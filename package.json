@@ -6,7 +6,7 @@
   "private": false,
   "devDependencies": {
     "grunt": "*",
-    "grunt-contrib-coffee": "*",
+    "grunt-contrib-less": "*",
     "grunt-contrib-concat": "*",
     "grunt-contrib-watch": "*"
   }
