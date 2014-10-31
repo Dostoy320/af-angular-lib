@@ -3,12 +3,7 @@
 
   myApp = angular.module('af.config', []);
 
-  myApp.constant('DEV_DOMAINS', {
-    localhost: 'alpha2',
-    dev: 'alpha2'
-  });
-
-  myApp.service('$config', function($window, $log, DEV_DOMAINS) {
+  myApp.service('$config', function($window, $log) {
     var app, config, getPathValue, pluralize;
     app = null;
     pluralize = function(value) {
@@ -47,9 +42,6 @@
         if (!path) {
           return $window.config;
         }
-        if (path.indexOf('.') === -1) {
-          path = 'label.' + path;
-        }
         value = getPathValue($window.config, path);
         if (makePlural) {
           pluralValue = getPathValue($window.config, path + '_plural');
@@ -61,57 +53,19 @@
         return value;
       },
       getTenant: function() {
-        return config.get('app.tenant');
+        return config.get('tenant');
       },
       getEnv: function() {
-        var env, subDomain;
-        env = 'prod';
-        subDomain = config.getSubDomain();
-        if (subDomain.indexOf('alpha') > -1) {
-          return 'dev';
-        }
-        if (subDomain.indexOf('-dev') > -1) {
-          return 'dev';
-        }
-        _.each(DEV_DOMAINS, function(devNodeIndex, devDomain) {
-          if (subDomain === devDomain) {
-            return env = 'dev';
-          }
-        });
-        return env;
+        return appEnv.getEnv();
       },
       getTenantIndex: function() {
-        var index, subDomain;
-        index = config.getTenant();
-        subDomain = config.getSubDomain();
-        if (subDomain.indexOf('-dev') > -1) {
-          subDomain = subDomain.split("-dev").shift();
-        }
-        switch (subDomain) {
-          case 'alpha':
-            index = 'alpha';
-            break;
-          case 'alpha2':
-            index = 'alpha2';
-            break;
-          case 'waddell':
-            index = 'wr';
-            break;
-          case 'tdai':
-            index = 'td';
-        }
-        _.each(DEV_DOMAINS, function(devNodeIndex, devDomain) {
-          if (subDomain === devDomain) {
-            return index = devNodeIndex;
-          }
-        });
-        return index;
+        return appEnv.getTenantIndex();
       },
       getSubDomain: function() {
-        return window.location.host.split('.').shift().toLowerCase();
+        return appEnv.getSubDomain();
       },
-      setApp: function(app) {
-        return app = app;
+      setApp: function(newValue) {
+        return app = newValue;
       },
       getApp: function() {
         var parts;
@@ -123,45 +77,6 @@
           app = parts[1].toLowerCase();
         }
         return app;
-      },
-      getTheme: function() {
-        var themeCss;
-        themeCss = $('head link#themeCSS');
-        if (themeCss.length !== 1) {
-          $log.info('Cannot find the theme CSS file with id="themeCSS" to deterime theme.');
-          return 'blue';
-        }
-        return themeCss.attr('href').split('/').pop().slice(0, -4).split('-')[1];
-      },
-      theme: {
-        textSuccess: '#dff0d8',
-        textWarning: '#fcf8e3',
-        textDanger: '#f2dede',
-        textInfo: '#d9edf7',
-        getPrimaryColor: function() {
-          var theme;
-          theme = config.getTheme();
-          switch (theme) {
-            case 'blue':
-              return '#336699';
-            case 'green':
-              return '#00b624';
-          }
-          $log.info('$config.theme.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.');
-          return '#336699';
-        },
-        getSecondaryColor: function() {
-          var theme;
-          theme = config.getTheme();
-          switch (theme) {
-            case 'blue':
-              return '#666';
-            case 'green':
-              return '#666';
-          }
-          $log.info('$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.');
-          return '#666';
-        }
       }
     };
     return config;

@@ -48,42 +48,33 @@
   myApp.service('authManager', function($util) {
     var auth;
     return auth = {
-      loggedInUser: {
-        userName: amplify.store("userName"),
-        userId: amplify.store("userId"),
-        userEmail: amplify.store("userEmail"),
-        authorities: amplify.store("authorities")
-      },
+      loggedInUser: amplify.store("loggedInUser"),
       sessionToken: amplify.store('sessionToken'),
       clearUser: function() {
-        amplify.store('username', null);
-        amplify.store('userId', null);
-        amplify.store('userEmail', null);
-        amplify.store('authorities', null);
+        amplify.store('loggedInUser', null);
         amplify.store('sessionToken', null);
-        auth.loggedInUser.username = null;
-        auth.loggedInUser.userId = null;
-        auth.loggedInUser.userEmail = null;
-        auth.loggedInUser.authorities = null;
+        auth.loggedInUser = null;
         return auth.sessionToken = null;
       },
-      setSessionToken: function(token) {
-        amplify.store('sessionToken', token);
-        return auth.sessionToken = token;
+      setSessionToken: function(sessionToken) {
+        auth.sessionToken = sessionToken;
+        return amplify.store('sessionToken', sessionToken);
       },
-      setLoggedInUser: function(user) {
-        var fields;
-        fields = _.pick(user, 'userName', 'userId', 'userEmail', 'authorities');
-        auth.loggedInUser = fields;
-        return _.each(fields, function(field) {
-          return amplify.store(field, user[field]);
-        });
+      setLoggedInUser: function(sessionToken, userId, userName, userEmail, authorities) {
+        auth.setSessionToken(sessionToken);
+        auth.loggedInUser = {
+          userId: userId,
+          userName: userName,
+          userEmail: userEmail,
+          authorities: authorities
+        };
+        return amplify.store('loggedInUser', auth.loggedInUser);
       },
       findSessionToken: function(priority) {
         var token;
         token = null;
         if (!priority) {
-          priority = ['app', 'amplify', 'url', 'window'];
+          priority = ['app', 'url', 'amplify', 'window'];
         }
         _.each(priority, function(place) {
           if (token) {
@@ -135,11 +126,14 @@
       isAdmin: function() {
         return auth.hasAnyRole(['Role_Admin', 'Role_RoadmapUserAdmin', 'Role_RoadmapContentAdmin']);
       },
+      isCoach: function() {
+        return auth.isManager();
+      },
       isManager: function() {
         return auth.hasAnyRole(['Role_AccessKeyManager']);
       },
       loggedIn: function() {
-        return auth.sessionToken && auth.loggedInUser.userId;
+        return auth.sessionToken && auth.loggedInUser && auth.loggedInUser.userId;
       }
     };
   });
@@ -238,6 +232,11 @@
           } else {
             return defer.resolve(data);
           }
+        };
+      },
+      standardReject: function(defer) {
+        return function(data, status, headers, config) {
+          return defer.reject(api.getErrorMessage(data, status));
         };
       },
       isHttpCode: function(code) {
@@ -349,7 +348,7 @@
         if (response.status !== 200 || (responseIsJsend(response.data) && response.data.status !== 'success')) {
           return interceptor.responseError(response);
         }
-        if (responseIsJsend(response) && response.data.data) {
+        if (responseIsJsend(response) && isObject(response.data) && response.data.hasOwnProperty('data')) {
           response.data = response.data.data;
         }
         return response;
@@ -702,12 +701,7 @@
 
   myApp = angular.module('af.config', []);
 
-  myApp.constant('DEV_DOMAINS', {
-    localhost: 'alpha2',
-    dev: 'alpha2'
-  });
-
-  myApp.service('$config', function($window, $log, DEV_DOMAINS) {
+  myApp.service('$config', function($window, $log) {
     var app, config, getPathValue, pluralize;
     app = null;
     pluralize = function(value) {
@@ -746,9 +740,6 @@
         if (!path) {
           return $window.config;
         }
-        if (path.indexOf('.') === -1) {
-          path = 'label.' + path;
-        }
         value = getPathValue($window.config, path);
         if (makePlural) {
           pluralValue = getPathValue($window.config, path + '_plural');
@@ -760,57 +751,19 @@
         return value;
       },
       getTenant: function() {
-        return config.get('app.tenant');
+        return config.get('tenant');
       },
       getEnv: function() {
-        var env, subDomain;
-        env = 'prod';
-        subDomain = config.getSubDomain();
-        if (subDomain.indexOf('alpha') > -1) {
-          return 'dev';
-        }
-        if (subDomain.indexOf('-dev') > -1) {
-          return 'dev';
-        }
-        _.each(DEV_DOMAINS, function(devNodeIndex, devDomain) {
-          if (subDomain === devDomain) {
-            return env = 'dev';
-          }
-        });
-        return env;
+        return appEnv.getEnv();
       },
       getTenantIndex: function() {
-        var index, subDomain;
-        index = config.getTenant();
-        subDomain = config.getSubDomain();
-        if (subDomain.indexOf('-dev') > -1) {
-          subDomain = subDomain.split("-dev").shift();
-        }
-        switch (subDomain) {
-          case 'alpha':
-            index = 'alpha';
-            break;
-          case 'alpha2':
-            index = 'alpha2';
-            break;
-          case 'waddell':
-            index = 'wr';
-            break;
-          case 'tdai':
-            index = 'td';
-        }
-        _.each(DEV_DOMAINS, function(devNodeIndex, devDomain) {
-          if (subDomain === devDomain) {
-            return index = devNodeIndex;
-          }
-        });
-        return index;
+        return appEnv.getTenantIndex();
       },
       getSubDomain: function() {
-        return window.location.host.split('.').shift().toLowerCase();
+        return appEnv.getSubDomain();
       },
-      setApp: function(app) {
-        return app = app;
+      setApp: function(newValue) {
+        return app = newValue;
       },
       getApp: function() {
         var parts;
@@ -822,45 +775,6 @@
           app = parts[1].toLowerCase();
         }
         return app;
-      },
-      getTheme: function() {
-        var themeCss;
-        themeCss = $('head link#themeCSS');
-        if (themeCss.length !== 1) {
-          $log.info('Cannot find the theme CSS file with id="themeCSS" to deterime theme.');
-          return 'blue';
-        }
-        return themeCss.attr('href').split('/').pop().slice(0, -4).split('-')[1];
-      },
-      theme: {
-        textSuccess: '#dff0d8',
-        textWarning: '#fcf8e3',
-        textDanger: '#f2dede',
-        textInfo: '#d9edf7',
-        getPrimaryColor: function() {
-          var theme;
-          theme = config.getTheme();
-          switch (theme) {
-            case 'blue':
-              return '#336699';
-            case 'green':
-              return '#00b624';
-          }
-          $log.info('$config.theme.getThemePrimaryColor(): Theme Not Found. Default Primary Color Used.');
-          return '#336699';
-        },
-        getSecondaryColor: function() {
-          var theme;
-          theme = config.getTheme();
-          switch (theme) {
-            case 'blue':
-              return '#666';
-            case 'green':
-              return '#666';
-          }
-          $log.info('$config.getThemeSecondaryColor(): Theme Not Found. Default Secondary Color Used.');
-          return '#666';
-        }
       }
     };
     return config;

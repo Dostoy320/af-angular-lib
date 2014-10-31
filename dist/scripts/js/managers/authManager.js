@@ -6,42 +6,33 @@
   myApp.service('authManager', function($util) {
     var auth;
     return auth = {
-      loggedInUser: {
-        userName: amplify.store("userName"),
-        userId: amplify.store("userId"),
-        userEmail: amplify.store("userEmail"),
-        authorities: amplify.store("authorities")
-      },
+      loggedInUser: amplify.store("loggedInUser"),
       sessionToken: amplify.store('sessionToken'),
       clearUser: function() {
-        amplify.store('username', null);
-        amplify.store('userId', null);
-        amplify.store('userEmail', null);
-        amplify.store('authorities', null);
+        amplify.store('loggedInUser', null);
         amplify.store('sessionToken', null);
-        auth.loggedInUser.username = null;
-        auth.loggedInUser.userId = null;
-        auth.loggedInUser.userEmail = null;
-        auth.loggedInUser.authorities = null;
+        auth.loggedInUser = null;
         return auth.sessionToken = null;
       },
-      setSessionToken: function(token) {
-        amplify.store('sessionToken', token);
-        return auth.sessionToken = token;
+      setSessionToken: function(sessionToken) {
+        auth.sessionToken = sessionToken;
+        return amplify.store('sessionToken', sessionToken);
       },
-      setLoggedInUser: function(user) {
-        var fields;
-        fields = _.pick(user, 'userName', 'userId', 'userEmail', 'authorities');
-        auth.loggedInUser = fields;
-        return _.each(fields, function(field) {
-          return amplify.store(field, user[field]);
-        });
+      setLoggedInUser: function(sessionToken, userId, userName, userEmail, authorities) {
+        auth.setSessionToken(sessionToken);
+        auth.loggedInUser = {
+          userId: userId,
+          userName: userName,
+          userEmail: userEmail,
+          authorities: authorities
+        };
+        return amplify.store('loggedInUser', auth.loggedInUser);
       },
       findSessionToken: function(priority) {
         var token;
         token = null;
         if (!priority) {
-          priority = ['app', 'amplify', 'url', 'window'];
+          priority = ['app', 'url', 'amplify', 'window'];
         }
         _.each(priority, function(place) {
           if (token) {
@@ -93,11 +84,14 @@
       isAdmin: function() {
         return auth.hasAnyRole(['Role_Admin', 'Role_RoadmapUserAdmin', 'Role_RoadmapContentAdmin']);
       },
+      isCoach: function() {
+        return auth.isManager();
+      },
       isManager: function() {
         return auth.hasAnyRole(['Role_AccessKeyManager']);
       },
       loggedIn: function() {
-        return auth.sessionToken && auth.loggedInUser.userId;
+        return auth.sessionToken && auth.loggedInUser && auth.loggedInUser.userId;
       }
     };
   });

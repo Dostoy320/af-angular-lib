@@ -87,6 +87,11 @@
           }
         };
       },
+      standardReject: function(defer) {
+        return function(data, status, headers, config) {
+          return defer.reject(api.getErrorMessage(data, status));
+        };
+      },
       isHttpCode: function(code) {
         return _.isString(api.getHttpCodeString(code));
       },

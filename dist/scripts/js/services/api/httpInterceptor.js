@@ -34,7 +34,7 @@
         if (response.status !== 200 || (responseIsJsend(response.data) && response.data.status !== 'success')) {
           return interceptor.responseError(response);
         }
-        if (responseIsJsend(response) && response.data.data) {
+        if (responseIsJsend(response) && isObject(response.data) && response.data.hasOwnProperty('data')) {
           response.data = response.data.data;
         }
         return response;
