@@ -13,7 +13,7 @@ var mixPanelSetup = {
 
   init : function(){
     var token = mixPanelSetup.prodToken
-    if(appEnv.getEnv() === 'dev'){
+    if(appEnv.env() === 'dev'){
       token = mixPanelSetup.devToken;
       if(typeof console !== 'undefined') console.log('MixPanel - Dev Environment')
     }
@@ -21,8 +21,8 @@ var mixPanelSetup = {
     window.mixpanel.init(token);
     // ALL mixPanel events will contain this data...
     window.mixpanel.register({
-      domain:appEnv.getSubDomain(),
-      env:appEnv.getEnv()
+      domain:appEnv.subDomain(),
+      env:appEnv.env()
     });
   }
 }

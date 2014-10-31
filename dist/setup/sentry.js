@@ -14,7 +14,7 @@ var sentrySetup = {
   init:function(){
     // what url?
     var url = sentrySetup.prodUrl
-    if(appEnv.getEnv() === 'dev'){
+    if(appEnv.env() === 'dev'){
       url = sentrySetup.devUrl;
       if(typeof console !== 'undefined') console.log('Sentry - Dev Environment')
     }
