@@ -1,9 +1,12 @@
+
 //
-//  BASIC APP SETUP NEEDS
+//  THIS FILE CONTAINS ALL THE INFORMATION
+//  NEEDED TO PROVIDE THE CLIENT WITH INFORMATION ABOUT ITS ENVIRONMENT
 //
 window.appEnv = {
 
-  // tenant/index for development
+  // DEVELOPMENT OVERRIDES
+  // index essentially provides node with the database
   dev:{
     localhost:{
       tenant:'actifi',
@@ -26,6 +29,7 @@ window.appEnv = {
   getSubDomain : function(){
     return (window.location.host).split('.').shift().toLowerCase();
   },
+
   // strips -dev off off sub domains
   getCleanSubDomain:function(){
     var subDomain = appEnv.getSubDomain();
@@ -41,9 +45,9 @@ window.appEnv = {
     var subDomain = appEnv.getSubDomain();
     if(subDomain === 'localhost')           return 'dev';
     if(subDomain === 'dev')                 return 'dev';
-    if(subDomain.indexOf('192.168.') === 0) return 'dev';
+    if(subDomain.indexOf('192.168.') === 0) return 'dev'; // phone testing
     if(subDomain.indexOf('alpha') === 0)    return 'dev';
-    if(subDomain.indexOf('-dev') > -1)      return 'dev';
+    if(subDomain.indexOf('-dev') >= 0)      return 'dev';
     return 'prod';
   },
   // is development quickie
@@ -55,7 +59,6 @@ window.appEnv = {
   //
   getTenant : function() {
     var subDomain = appEnv.getCleanSubDomain();
-
     // check for special cases
     if(subDomain.indexOf('192.168.' === 0))
       return appEnv.dev.localhost.tenant;

@@ -9,10 +9,8 @@ module.exports = function(grunt) {
       js: {
         options: {separator: grunt.util.linefeed + ';' + grunt.util.linefeed },
         files: {
-          'dist/scripts/af-angular-lib.js':[
-            'dist/scripts/**/*',
-            '!dist/scripts/af-angular-lib.js'
-          ]
+          'dist/af-angular-lib.js':['dist/scripts/**/*'],
+          'dist/af-angular-lib.js':['dist/scripts/**/*']
         }
       }
     },
