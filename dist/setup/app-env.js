@@ -5,6 +5,8 @@
 //
 window.appEnv = {
 
+  cache:null,
+
   // DEVELOPMENT OVERRIDES
   // index essentially provides node with the database
   dev:{
@@ -23,70 +25,73 @@ window.appEnv = {
   },
 
 
-  //
-  //  SUB DOMAIN
-  //
-  getSubDomain : function(){
-    return (window.location.host).split('.').shift().toLowerCase();
+  // init
+  init:function(){
+    appEnv.cache = {}
+    // subDomain
+    appEnv.cache.subDomain = (window.location.host).split('.').shift().toLowerCase()
+    // clean subDomain (with no -dev on it)
+    appEnv.cache.subDomainClean = appEnv.cache.subDomain.split('-').shift()
+    // isLocal?
+    appEnv.cache.isLocal = false;
+    if(appEnv.cache.subDomainClean === 'localhost')           appEnv.cache.isLocal = true;
+    if(appEnv.cache.subDomainClean === 'dev')                 appEnv.cache.isLocal = true;
+    if(appEnv.cache.subDomainClean.indexOf('192.168.') === 0) appEnv.cache.isLocal = true;
+    // environment
+    appEnv.cache.env = 'prod';
+    if(appEnv.cache.isLocal)                            appEnv.cache.env = 'dev';
+    if(appEnv.cache.subDomain.indexOf('alpha') === 0)   appEnv.cache.env = 'dev';
+    if(appEnv.cache.subDomain.indexOf('-dev') >= 0)     appEnv.cache.env = 'dev';
+
+    // load tenant
+    if(appEnv.cache.isLocal)                        appEnv.cache.tenant = appEnv.dev.localhost.tenant;
+    if(appEnv.cache.subDomainClean == 'alpha')      appEnv.cache.tenant = appEnv.dev.alpha.tenant;
+    if(appEnv.cache.subDomainClean == 'alpha2')     appEnv.cache.tenant = appEnv.dev.alpha2.tenant;
+    if(appEnv.cache.subDomainClean == 'tdai')       appEnv.cache.tenant = 'td';     // special case
+    if(appEnv.cache.subDomainClean == 'apps')       appEnv.cache.tenant = 'actifi'; // special case
+    if(!appEnv.cache.tenant)  appEnv.cache.tenant = appEnv.cache.subDomainClean;    // defaults to subDomain
+
+    // load tenant index (db uid)
+    if(appEnv.isLocal())                            appEnv.cache.index = appEnv.dev.localhost.index;
+    if(appEnv.cache.subDomainClean == 'alpha')      appEnv.cache.index = appEnv.dev.alpha.index;
+    if(appEnv.cache.subDomainClean == 'alpha2')     appEnv.cache.index = appEnv.dev.alpha2.index;
+    if(appEnv.cache.subDomainClean == 'tdai')       appEnv.cache.index = 'td'; // special case
+    if(appEnv.cache.subDomainClean == 'waddell')    appEnv.cache.index = 'wr'; // special case
+    if(!appEnv.cache.tenant)  appEnv.cache.index =  appEnv.cache.tenant; // defaults to tenant
+
+    console.log(appEnv.cache)
   },
 
-  // strips -dev off off sub domains
-  getCleanSubDomain:function(){
-    var subDomain = appEnv.getSubDomain();
-    if(subDomain.indexOf('-dev') > -1) return subDomain.split('-').shift();
-    return subDomain;
+
+  //
+  // GETTERS
+  //
+  isDev : function(){
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.env === 'dev';
   },
-
-
-  //
-  //  ENVIRONMENT
-  //
-  getEnv : function(){
-    var subDomain = appEnv.getSubDomain();
-    if(subDomain === 'localhost')           return 'dev';
-    if(subDomain === 'dev')                 return 'dev';
-    if(subDomain.indexOf('192.168.') === 0) return 'dev'; // phone testing
-    if(subDomain.indexOf('alpha') === 0)    return 'dev';
-    if(subDomain.indexOf('-dev') >= 0)      return 'dev';
-    return 'prod';
+  isLocal : function(){
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.isLocal;
   },
-  // is development quickie
-  isDev : function(){ return appEnv.getEnv() === 'dev' },
-
-
-  //
-  //  TENANT
-  //
-  getTenant : function() {
-    var subDomain = appEnv.getCleanSubDomain();
-    // check for special cases
-    if(subDomain.indexOf('192.168.' === 0))
-      return appEnv.dev.localhost.tenant;
-    switch (subDomain) {
-      case 'dev':
-      case 'localhost': return appEnv.dev.localhost.tenant;
-      case 'alpha':     return appEnv.dev.alpha.tenant;
-      case 'alpha2':    return appEnv.dev.alpha2.tenant;
-      case 'tdai':      return 'td';
-    }
-    return subDomain;
+  subDomain : function(){
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.subDomain;
   },
-
-  getTenantIndex : function() {
-    var index = appEnv.getTenant();
-    var subDomain = appEnv.getCleanSubDomain();
-    // check for special cases
-    if(subDomain.indexOf('192.168.' === 0))
-      return appEnv.dev.localhost.index;
-    switch(subDomain){
-      case 'dev':
-      case 'localhost': return appEnv.dev.localhost.index;
-      case 'alpha':     return appEnv.dev.alpha.index;
-      case 'alpha2':    return appEnv.dev.alpha2.index;
-      case 'tdai':      return 'td';
-      case 'waddell':   return 'wr';
-    }
-    return index;
+  subDomainClean:function(){
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.subDomainClean; // returns domain with -dev stripped off
+  },
+  env : function(){
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.env;
+  },
+  tenant : function() {
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.tenant;
+  },
+  index : function() {
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.index;
   }
-
 }

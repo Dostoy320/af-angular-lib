@@ -1,11 +1,13 @@
 (function() {
+
   var myApp;
 
   myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
 
   myApp.service('api', function($window, $log, $msg, $loader, $sentry, $util, $config) {
-    var api;
-    return api = {
+    var api = {
+
+      // add debugs info to requests (don't do on Java, Java could blow up)
       addDebugInfo: function(req) {
         req.data.debug = {
           url: $window.location.href,
@@ -15,10 +17,16 @@
         };
         return req;
       },
+
+
+      //
+      //
+      // ERROR HANDLING
       handleApiError: function(data, status, headers, config) {
         var message, newData, queries, request;
         request = _.omit(config || {}, 'transformRequest', 'transformResponse');
         message = api.getErrorMessage(data, status);
+        // convert urlEncoded to json
         if (request.headers && request.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
           newData = {};
           queries = (request.data + '').split("&");
@@ -31,16 +39,18 @@
           });
           request.data = newData;
         }
-        if (request && request.data && request.data.password) {
-          request.data.password = '********';
-        }
-        $sentry.error(message, {
-          extra: request
-        });
+
+        // strip password
+        if (request && request.data && request.data.password) request.data.password = '********';
+
+        // log and display to user
+        $sentry.error(message, { extra: request });
         $log.error(message, status);
         $msg.error(message);
         return $loader.stop();
       },
+
+
       getErrorMessage: function(data, status) {
         var codeStr, err;
         if (data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
@@ -160,6 +170,10 @@
         return code;
       }
     };
+
+
+    return api
+
   });
 
 }).call(this);

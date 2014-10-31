@@ -1,7 +1,6 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.authManager', ['af.util']);
+  var myApp = angular.module('af.authManager', ['af.util']);
 
   myApp.service('authManager', function($util) {
     var auth;
