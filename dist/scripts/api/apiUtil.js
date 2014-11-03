@@ -172,7 +172,7 @@
     };
 
 
-    return api
+    return apiUtil
 
   });
 
