@@ -6,23 +6,34 @@
 
     var java = {
 
+      // so you don't have to inject api in your controllers...
+      execute: function(request, onSuccess, onError) {
+        api.execute(request, onSuccess, onError)
+      },
 
+
+      //
+      // ROADMAP SERVICE
+      //
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-        // BASE CALL
-        call: function(url, params, onSuccess, onError) {
+
+        // BASE
+        // execute shortcut, when you have no options...
+        call:function(url, params, onSuccess, onError){
           var request = java.RoadmapService.createRequest(url, params)
-          api.call(request, onSuccess, onError);
+          java.call(request, onSuccess, onError);
         },
 
+        // creates standard request object for this service
         createRequest:function(url, params, options){
-          params = api.applyParamDefaults(params, options)
+          params = api.autoAddSessionTokenToParams(params, options)
           var defaultRequest = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + url,
             data: params || {}
           }
-          return _.defaults(options || {}, defaultRequest)
+          return _.extend(defaultRequest, options || {})
         },
 
         // METHODS
@@ -33,67 +44,83 @@
 
 
 
+
+
+
+      //
+      // AUTH SERVICE
+      //
       AuthService: {
         serviceUrl: '/RoadmapService',
-        // BASE CALL
-        call: function(url, params, onSuccess, onError) {
-          var request = java.AuthService.createRequest(url, params)
-          api.call(request, onSuccess, onError);
+
+        // BASE
+        // execute shortcut for basic calls
+        call:function(url, params, onSuccess, onError){
+          java.execute(this.createRequest(url, params), onSuccess, onError);
         },
-        createRequest:function(url, params, options){
-          // slap sessionToken onto params?
-          params = api.autoAddSessionTokenToParams(params, options)
-          var defaultRequest = {
+
+        // creates standard request object for this service
+        createRequest:function(url, params, overrides){
+          var request = {
             method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded'  },
             url: java.AuthService.serviceUrl + url,
-            data: $.param(params)
+            data: params,
+            // options
+            urlEncode:true
           }
-          // merge other options onto request
-          return _.extend(defaultRequest, options || {})
+          return _.extend(api.defaultRequest, request , overrides)
         },
 
 
         // METHODS
-        login: function(username, password, request, onSuccess, onError) {
-          this.call('/login', { username: username, password: password }, request, onSuccess, onError);
+        login: function(username, password, onSuccess, onError) {
+          var request = this.createRequest('/login', { username: username, password: password })
+          request.autoApplySession = false;
+          java.execute(request, onSuccess, onError);
+        }
+        /*
+
+        UNTESTED
+
+        ,
+        logout: function(onSuccess, onError) {
+          this.call('/logout', onSuccess, onError);
         },
-        logout: function(request, onSuccess, onError) {
-          this.call('/logout', null, request, onSuccess, onError);
-        },
-        validatesession: function(sessionToken, options) {
+        validatesession:function(sessionToken) {
           var params = {};
           if (sessionToken) params.sessionToken = sessionToken;
-          return this.call('/validatesession', params, options);
+          this.call('/validatesession', params);
         },
-        createtoken: function(loginAsUserId, expiresOn, url, options) {
+        createtoken: function(loginAsUserId, expiresOn, url) {
           var params = {
             loginAsUserId: loginAsUserId,
             expiresOn: expiresOn,
             url: url
           };
-          return this.call('/createtoken', params, options);
+          this.call('/createtoken', params);
         },
-        updatetoken: function(tokenString, url, options) {
-          return this.call('/updatetoken', {tokenString: tokenString, url: url}, options);
+        updatetoken: function(tokenString, url) {
+          this.call('/updatetoken', {tokenString: tokenString, url: url});
         },
-        loadtoken: function(token, options) {
-          return this.call('/loadtoken', {token: token}, options);
+        loadtoken: function(token) {
+          var request = java.AuthService.createRequest('/loadtoken', {token: token}, {autoApplySession:false})
+          api.call(request, {token: token});
         },
-        changepassword: function(userId, currentPassword, newPassword, options) {
+        changepassword: function(userId, currentPassword, newPassword) {
           var params = {
             userId: userId,
             currentPassword: currentPassword,
             newPassword: newPassword
           };
-          return this.call('/changepassword', params, options);
+          this.call('/changepassword', params);
         },
-        getuserfromuserid: function(userId, options) {
-          return this.call('/getuserfromuserid', {userId: userId}, options);
+        getuserfromuserid: function(userId) {
+          this.call('/getuserfromuserid', {userId: userId});
         },
-        loadsession: function(sessionToken, options) {
-          return this.call('/loadsession', {sessionToken: sessionToken}, options);
+        loadsession: function(sessionToken) {
+          this.call('/loadsession', {sessionToken: sessionToken});
         }
+        */
       }
     };
     return java;

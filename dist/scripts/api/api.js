@@ -9,8 +9,14 @@
     var api = {
 
       // request options
-      defaultRequestOptions:{
+      defaultRequest:{
+        method:'POST',
+        url:'',
+        // options
         autoApplySession:true,  // should a sessionToken be added to all api calls automatically?
+        autoApplyIndex:false,   // should the node db index to api calls automatically?
+        urlEncode:false,        // send as application/x-www-form-urlencoded
+        // response options
         logErrors:true,         // on error, log to sentry (or whatever)
         displayError:true,      // on error, display error to user
         loaderStop:true         // on error, stop loader
@@ -21,12 +27,41 @@
       // BASE CALL
       //
       // ALL api calls run through this function
-      call: function(request, onSuccess, onError) {
+      execute: function(request, onSuccess, onError) {
         request.method = request.method || 'POST';
+
+        // slap some stuff on our requests
+        request.debug = api.getDebugInfo();
+
+        // auto add session?
+        if(api.optionEnabled(request, 'autoApplySession')){
+          request.data = request.data || {}
+          request.data.sessionToken = authManager.findSessionToken()
+        }
+
+        // auto add index?
+        if(api.optionEnabled(request, 'autoApplyIndex')){
+          request.data = request.data || {}
+          request.data.tenant = $config.index();
+        }
+
+        // if we want urlEncoded... deal with that
+        if(api.optionEnabled(request, 'urlEncode')){
+          // add urlencoded header
+          request.headers = request.headers || {}
+          if(!request.headers.hasOwnProperty('Content-Type'))
+            request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+          // data needs to be in string format
+          if(request.data && !_.isString(request.data))
+            request.data = $.param(request.data)
+        }
+
+        // execute the call
         $http(request)
           .success(function(data, status, headers, config) { api.responseHandler(data, status, request, onSuccess, onError); })
           .error(function(data, status, headers, config) {   api.responseHandler(data, status, request, onSuccess, onError); })
       },
+
 
       // ALL api responses pass through this function
       responseHandler:function(data, status, request, onSuccess, onError) {
@@ -54,22 +89,29 @@
       },
 
 
+      optionEnabled:function(request, optionName){
+        if(request.options && request.options.hasOwnProperty(optionName))
+          return request.options[optionName]
+        return api.defaultRequest[optionName]
+      },
 
       //
-      // AUTO ADD...
+      // PARAMETERS ADDED TO REQUEST
       //
       // add debugs info to requests (don't do on Java, Java could blow up)
-      autoApplyDebugInfo: function(request) {
-        request.debug = request.debug || {}
-        var defaultDebugInfo = {
+      getDebugInfo: function() {
+        return {
           url:    $window.location.href,
           index:  $config.index(),
           tenant: $config.tenant(),
           env:    $config.env()
-        };
-        return _.extend(defaultDebugInfo, request.debug)
+        }
+      },
+      getOptions:function(options){
+        return _.extend(api.defaultRequest, options || {})
       },
 
+      /*
       // method to automatically add the users sessionToken to all calls
       autoAddSessionTokenToParams:function(params, options){
         var params = params || {}
@@ -79,10 +121,26 @@
         // slap on a sessionToken?
         var userRequestedOn = options.autoApplySession === true
         var userRequestedOff = options.autoApplySession === false
-        if (userRequestedOn || (api.defaultRequestOptions.autoApplySession && !userRequestedOff))
+        if (userRequestedOn || (api.defaultRequest.autoApplySession && !userRequestedOff))
           params.sessionToken = authManager.findSessionToken()
         return params
       },
+      */
+      /*
+      // method to automatically add the users sessionToken to all calls
+      autoAddIndexToParams:function(params, options){
+        var params = params || {}
+        var options = options || {}
+        if(params.tenant != null) return params; // do nothing if already passed
+
+        // slap on a sessionToken?
+        var userRequestedOn = options.autoApplyIndex === true
+        var userRequestedOff = options.autoApplyIndex === false
+        if (userRequestedOn || (api.defaultRequest.autoApplyIndex && !userRequestedOff))
+          params.tenant = $config.index()
+        return params
+      },
+      */
 
 
       //
@@ -90,15 +148,15 @@
       //
       handleApiError: function(data, status, request) {
         // log error unless told not to
-        if((request.hasOwnProperty('logError') && request.logErrors === true) || api.defaultRequestOptions.logErrors)
+        if((request.hasOwnProperty('logError') && request.logErrors === true) || api.defaultRequest.logErrors)
           api.logApiError(data, status, request);
 
         // display message unless told not to
-        if((request.hasOwnProperty('displayError') && request.displayError === true) || api.defaultRequestOptions.displayError)
+        if((request.hasOwnProperty('displayError') && request.displayError === true) || api.defaultRequest.displayError)
           $msg.error(api.getErrorMessage(data, status));
 
         // stop loaders unless told not to
-        if((request.hasOwnProperty('loaderStop') && request.loaderStop === true) || api.defaultRequestOptions.loaderStop)
+        if((request.hasOwnProperty('loaderStop') && request.loaderStop === true) || api.defaultRequest.loaderStop)
           $loader.stop();
       },
 
@@ -112,7 +170,6 @@
         $sentry.error(message, { extra: request });
         $log.error(message, status);
       },
-
 
       getErrorMessage: function(data, status) {
         // was this JSEND ERROR?

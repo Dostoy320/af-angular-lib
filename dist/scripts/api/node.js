@@ -7,30 +7,31 @@
 
     var node = {
 
+      // so you don't have to inject api in your controllers...
+      execute: function(request, onSuccess, onError) {
+        request.autoApplyIndex = true; // ALL NODE CALLS HAVE INDEX APPLIED (so it knows what DB to hit)
+        api.execute(request, onSuccess, onError)
+      },
+
       RoadmapNode: {
 
         serviceUrl: '/roadmap-node',
 
-        // BASE CALL
-        call: function(method, params, options) {
-          params = params || {}
-          options = options || {}
-
-          // auto apply index to params
-          if(!params.tenant && options.autoApplyIndex !== false)
-            params.tenant = $config.index();
-
-          // auto apply sessionToken to params
-          params = api.autoApplySessionToken(params, options)
-
-          var req = {
-            url: node.RoadmapNode.serviceUrl + method,
-            data: params
-          };
-          // auto apply debug information
-          req = api.autoApplyDebugInfo(req);
-          return $http(req)
+        // execute shortcut for basic calls
+        call:function(url, params, onSuccess, onError){
+          var request = this.createRequest(url, params)
+          node.call(request, onSuccess, onError);
         },
+        // creates standard request object for this service
+        createRequest:function(url, params, overrides){
+          var request = {
+            method: 'POST',
+            url: node.RoadmapNode.serviceUrl + url,
+            data: params
+          }
+          return _.extend(api.defaultRequest, request , overrides)
+        },
+
 
 
         // METHODS
