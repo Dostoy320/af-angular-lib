@@ -1,121 +1,101 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.java', ['af.authManager']);
+  var myApp = angular.module('af.java', ['af.apiUtil', 'af.authManager']);
 
-  myApp.service('java', function($http, authManager) {
-    var autoApplySession, autoApplySessionPriority, java;
-    autoApplySession = true;
-    autoApplySessionPriority = null;
-    java = {
-      setAutoApplySession: function(value) {
-        return autoApplySession = value;
-      },
-      setAutoApplySessionPriority: function(value) {
-        return autoApplySessionPriority = value;
-      },
+  myApp.service('java', function($http, apiUtil, authManager) {
+
+
+    var java = {
+
+      setAutoApplySession: function(value) {         return autoApplySession = value; },
+      setAutoApplySessionPriority: function(value) { return autoApplySessionPriority = value; },
+
+
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-        execute: function(method, params, options) {
-          var req, reqDefaults;
-          if (autoApplySession) {
-            if (params.sessionToken == null) {
-              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
-            }
-          }
-          reqDefaults = {
+        // BASE CALL
+        call: function(method, params, options) {
+          // slap on a sessionToken?
+          params = apiUtil.autoApplySession(params, options)
+          var requestDefaults = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + method,
             data: params
-          };
-          req = _.defaults(options || {}, reqDefaults);
+          }
+          // merge default options into our request
+          var req = _.defaults(options || {}, requestDefaults);
           return $http(req);
         },
+
+        // METHODS
         invoke: function(params, options) {
-          return this.execute('/invoke', params, options);
+          return this.call('/invoke', params, options);
         }
       },
+
+
+
       AuthService: {
+
         serviceUrl: '/RoadmapService',
-        execute: function(method, params, options) {
-          var req, reqDefaults;
-          if (autoApplySession && method !== '/login' && method !== '/loadtoken') {
-            if (params.sessionToken == null) {
-              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
-            }
-          }
-          reqDefaults = {
+
+        // BASE CALL
+        call: function(method, params, options) {
+          // slap on a sessionToken?
+          params = apiUtil.autoApplySession(params, options)
+
+          // AuthService expects urlEncoded
+          var requestDefaults = {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded'  },
             url: java.AuthService.serviceUrl + method,
             data: $.param(params)
           };
-          req = _.defaults(options || {}, reqDefaults);
+          // merge default options into our request
+          var req = _.defaults(options || {}, requestDefaults);
           return $http(req);
         },
-        login: function(username, password) {
-          var params;
-          params = {
-            username: username,
-            password: password
-          };
-          return this.execute('/login', params, {
-            ignoreExceptions: true
-          });
+
+
+        // METHODS
+        login: function(username, password, options) {
+          return this.execute('/login', {username: username, password: password}, options);
         },
-        logout: function() {
-          return this.execute('/logout', null);
+        logout: function(options) {
+          return this.execute('/logout', null, options);
         },
-        validatesession: function(sessionToken) {
-          var params;
-          params = {};
-          if (sessionToken) {
-            params.sessionToken = sessionToken;
-          }
-          return this.execute('/validatesession', params);
+        validatesession: function(sessionToken, options) {
+          var params = {};
+          if (sessionToken) params.sessionToken = sessionToken;
+          return this.execute('/validatesession', params, options);
         },
-        createtoken: function(loginAsUserId, expiresOn, url) {
-          var params;
-          params = {
+        createtoken: function(loginAsUserId, expiresOn, url, options) {
+          var params = {
             loginAsUserId: loginAsUserId,
             expiresOn: expiresOn,
             url: url
           };
-          return this.execute('/createtoken', params);
+          return this.execute('/createtoken', params, options);
         },
-        updatetoken: function(tokenString, url) {
-          var params;
-          params = {
-            tokenString: tokenString,
-            url: url
-          };
-          return this.execute('/updatetoken', params);
+        updatetoken: function(tokenString, url, options) {
+          return this.execute('/updatetoken', {tokenString: tokenString, url: url}, options);
         },
-        loadtoken: function(token) {
-          return this.execute('/loadtoken', {
-            token: token
-          });
+        loadtoken: function(token, options) {
+          return this.execute('/loadtoken', {token: token}, options);
         },
-        changepassword: function(userId, currentPassword, newPassword) {
-          var params;
-          params = {
+        changepassword: function(userId, currentPassword, newPassword, options) {
+          var params = {
             userId: userId,
             currentPassword: currentPassword,
             newPassword: newPassword
           };
-          return this.execute('/changepassword', params);
+          return this.execute('/changepassword', params, options);
         },
-        getuserfromuserid: function(userId) {
-          return this.execute('/getuserfromuserid', {
-            userId: userId
-          });
+        getuserfromuserid: function(userId, options) {
+          return this.execute('/getuserfromuserid', {userId: userId}, options);
         },
-        loadsession: function(sessionToken) {
-          return this.execute('/loadsession', {
-            sessionToken: sessionToken
-          });
+        loadsession: function(sessionToken, options) {
+          return this.execute('/loadsession', {sessionToken: sessionToken}, options);
         }
       }
     };

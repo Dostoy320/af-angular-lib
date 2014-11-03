@@ -4,8 +4,11 @@
 
   myApp = angular.module('af.apiUtil', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
 
-  myApp.service('apiUtil', function($window, $log, $msg, $loader, $sentry, $util, $config) {
+  myApp.service('apiUtil', function($window, $log, $msg, authManager, $loader, $sentry, $util, $config) {
     var apiUtil = {
+
+      autoApplySession:true, // should a sessionToken be added to all api calls automatically?
+      autoApplySessionPriority:null,  // priority.. ['app','url','amplify','window']
 
       // add debugs info to requests (don't do on Java, Java could blow up)
       addDebugInfo: function(req) {
@@ -18,6 +21,18 @@
         return req;
       },
 
+      // method to automatically add the users sessionToken to all calls
+      autoApplySessionToken:function(params, options){
+        var params = params || {}
+        var options = options || {}
+        // slap on a sessionToken?
+        var forceSessionToken = options.autoApplySession === true
+        var forceNoSessionToken = options.autoApplySession === false
+        if(params.sessionToken == null)
+          if(forceSessionToken || (autoApplySession && !forceNoSessionToken))
+            params.sessionToken = authManager.findSessionToken(autoApplySessionPriority)
+        return params
+      },
 
       //
       //
