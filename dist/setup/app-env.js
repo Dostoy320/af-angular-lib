@@ -59,7 +59,7 @@ window.appEnv = {
     if(appEnv.cache.subDomainClean == 'waddell')    appEnv.cache.index = 'wr'; // special case
     if(!appEnv.cache.tenant)  appEnv.cache.index =  appEnv.cache.tenant; // defaults to tenant
 
-    console.log(appEnv.cache)
+    if(typeof console !== 'undefined') console.log(appEnv.cache.env+' Env Loaded', appEnv.cache)
   },
 
 
