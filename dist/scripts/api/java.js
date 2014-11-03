@@ -9,30 +9,25 @@
 
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-        call: function(method, params, onSuccess, onError) {
-          // auto apply sessionToken?
-          params = api.autoApplySessionToken(params, options)
-          var requestDefaults = {
-            method: 'POST',
-            url: java.RoadmapService.serviceUrl + method,
-            data: params
-          };
-          // merge defaults into user request
-          request = _.defaults(request || {}, requestDefaults);
+        // BASE CALL
+        call: function(url, params, onSuccess, onError) {
+          var request = java.RoadmapService.createRequest(url, params)
           api.call(request, onSuccess, onError);
-        },
-        invoke: function(params, request, onSuccess, onError) {
-          return java.RoadmapService.call('/invoke', params, request, onSuccess, onError);
         },
 
         createRequest:function(url, params, options){
-          params = api.autoApplySessionToken(params, options)
-          return {
+          params = api.applyParamDefaults(params, options)
+          var defaultRequest = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + url,
-            data: params || {},
-            options:options || {}
+            data: params || {}
           }
+          return _.defaults(options || {}, defaultRequest)
+        },
+
+        // METHODS
+        invoke: function(params, request, onSuccess, onError) {
+          return java.RoadmapService.call('/invoke', params, request, onSuccess, onError);
         }
       },
 
@@ -41,30 +36,21 @@
       AuthService: {
         serviceUrl: '/RoadmapService',
         // BASE CALL
-        call: function(method, params, onSuccess, onError, request) {
-          // slap on a sessionToken?
-          params = api.autoApplySessionToken(params, request)
-          // AuthService expects urlEncoded
-          var requestDefaults = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded'  },
-            url: java.AuthService.serviceUrl + method,
-            data: $.param(params)
-          };
-          // merge defaults into user request
-          request = _.defaults(request || {}, requestDefaults);
+        call: function(url, params, onSuccess, onError) {
+          var request = java.AuthService.createRequest(url, params)
           api.call(request, onSuccess, onError);
         },
-
         createRequest:function(url, params, options){
-          params = api.autoApplySessionToken(params, options)
-          return {
+          // slap sessionToken onto params?
+          params = api.autoAddSessionTokenToParams(params, options)
+          var defaultRequest = {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded'  },
             url: java.AuthService.serviceUrl + url,
-            data: $.param(params) || {},
-            options:options || {}
+            data: $.param(params)
           }
+          // merge other options onto request
+          return _.extend(defaultRequest, options || {})
         },
 
 

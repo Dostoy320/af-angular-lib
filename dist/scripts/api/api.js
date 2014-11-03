@@ -8,17 +8,14 @@
 
     var api = {
 
-      // global settings:
-      autoApplySession:true, // should a sessionToken be added to all api calls automatically?
-      autoApplySessionPriority:null,  // priority for grabbing the token ['app','url','amplify','window']
-
-
       // request options
-      // { logExceptions:true/false }
-      // { autoApplySession:true/false }
-      // { logError:true/false }
-      // { displayError:true/false }
-      // { loaderStop:true/false }
+      defaultRequestOptions:{
+        autoApplySession:true,  // should a sessionToken be added to all api calls automatically?
+        logErrors:true,         // on error, log to sentry (or whatever)
+        displayError:true,      // on error, display error to user
+        loaderStop:true         // on error, stop loader
+      },
+
 
       //
       // BASE CALL
@@ -57,6 +54,10 @@
       },
 
 
+
+      //
+      // AUTO ADD...
+      //
       // add debugs info to requests (don't do on Java, Java could blow up)
       autoApplyDebugInfo: function(request) {
         request.debug = request.debug || {}
@@ -66,22 +67,22 @@
           tenant: $config.tenant(),
           env:    $config.env()
         };
-        return _.extend(defaultDebugInfo, req.debug)
+        return _.extend(defaultDebugInfo, request.debug)
       },
 
       // method to automatically add the users sessionToken to all calls
-      autoApplySessionToken:function(params, request){
+      autoAddSessionTokenToParams:function(params, options){
         var params = params || {}
-        var request = request || {}
+        var options = options || {}
+        if(params.sessionToken != null) return params; // do nothing if already passed
+
         // slap on a sessionToken?
-        var forceSessionToken = request.autoApplySession === true
-        var forceNoSessionToken = request.autoApplySession === false
-        if(params.sessionToken == null)
-          if (forceSessionToken || (api.autoApplySession && !forceNoSessionToken))
-            params.sessionToken = authManager.findSessionToken(api.autoApplySessionPriority)
+        var userRequestedOn = options.autoApplySession === true
+        var userRequestedOff = options.autoApplySession === false
+        if (userRequestedOn || (api.defaultRequestOptions.autoApplySession && !userRequestedOff))
+          params.sessionToken = authManager.findSessionToken()
         return params
       },
-
 
 
       //
@@ -89,15 +90,15 @@
       //
       handleApiError: function(data, status, request) {
         // log error unless told not to
-        if(request.hasOwnProperty('logError') && request.logError !== false)
+        if((request.hasOwnProperty('logError') && request.logErrors === true) || api.defaultRequestOptions.logErrors)
           api.logApiError(data, status, request);
 
         // display message unless told not to
-        if(request.hasOwnProperty('displayError') && request.displayError !== false)
+        if((request.hasOwnProperty('displayError') && request.displayError === true) || api.defaultRequestOptions.displayError)
           $msg.error(api.getErrorMessage(data, status));
 
         // stop loaders unless told not to
-        if(request.hasOwnProperty('loaderStop') && request.loaderStop !== false)
+        if((request.hasOwnProperty('loaderStop') && request.loaderStop === true) || api.defaultRequestOptions.loaderStop)
           $loader.stop();
       },
 
@@ -105,6 +106,7 @@
         // remove passwords
         if (request && request.data && request.data.password) request.data.password = '********';
         if (request && request.password) request.password = '********';
+        console.log('LOGGING: ', request)
         // get message
         var message = api.getErrorMessage(data, status);
         $sentry.error(message, { extra: request });

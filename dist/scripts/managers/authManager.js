@@ -8,6 +8,8 @@
 
     return auth = {
 
+      sessionTokenPriority:['app', 'url', 'amplify', 'window'],
+
       //
       // SESSION/USER CACHE
       //
@@ -40,7 +42,7 @@
       // finds sessionToken based on priority
       findSessionToken: function(priority) {
         // default priority, looks in this class first, then URL, then checks amplify and finally window.sessionToken
-        if (!priority) priority = ['app', 'url', 'amplify', 'window'];
+        if (!priority) priority = auth.sessionTokenPriority;
         var token = null;
         _.each(priority, function(place) {
           if (token) return;
