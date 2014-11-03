@@ -1,13 +1,15 @@
 
 ;
 (function() {
+
   var myApp;
 
   myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
 
   myApp.service('api', function($window, $log, $msg, $loader, $sentry, $util, $config) {
-    var api;
-    return api = {
+    var api = {
+
+      // add debugs info to requests (don't do on Java, Java could blow up)
       addDebugInfo: function(req) {
         req.data.debug = {
           url: $window.location.href,
@@ -17,10 +19,16 @@
         };
         return req;
       },
+
+
+      //
+      //
+      // ERROR HANDLING
       handleApiError: function(data, status, headers, config) {
         var message, newData, queries, request;
         request = _.omit(config || {}, 'transformRequest', 'transformResponse');
         message = api.getErrorMessage(data, status);
+        // convert urlEncoded to json
         if (request.headers && request.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
           newData = {};
           queries = (request.data + '').split("&");
@@ -33,16 +41,18 @@
           });
           request.data = newData;
         }
-        if (request && request.data && request.data.password) {
-          request.data.password = '********';
-        }
-        $sentry.error(message, {
-          extra: request
-        });
+
+        // strip password
+        if (request && request.data && request.data.password) request.data.password = '********';
+
+        // log and display to user
+        $sentry.error(message, { extra: request });
         $log.error(message, status);
         $msg.error(message);
         return $loader.stop();
       },
+
+
       getErrorMessage: function(data, status) {
         var codeStr, err;
         if (data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
@@ -162,6 +172,10 @@
         return code;
       }
     };
+
+
+    return api
+
   });
 
 }).call(this);
@@ -592,9 +606,8 @@
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.authManager', ['af.util']);
+  var myApp = angular.module('af.authManager', ['af.util']);
 
   myApp.service('authManager', function($util) {
     var auth;
@@ -695,41 +708,35 @@
 
 ;
 (function() {
-  var myApp;
+  var myApp = angular.module('af.config', []);
 
-  myApp = angular.module('af.config', []);
 
+  //
+  // config exposed from server
+  //
   myApp.service('$config', function($window, $log) {
-    var app, config, getPathValue, pluralize;
-    app = null;
-    pluralize = function(value) {
-      var lastChar, lastTwoChar;
-      if (!value) {
-        return value;
-      }
-      lastChar = value.charAt(value.length - 1).toLowerCase();
-      lastTwoChar = value.slice(value.length - 2).toLowerCase();
-      if (lastChar === 'y') {
-        return value.slice(0, value.length - 1) + 'ies';
-      }
-      if (lastTwoChar === 'ch') {
-        return value + 'es';
-      }
+
+    var app = null;
+
+    var pluralize = function(value) {
+      if (!value) return value;
+      var lastChar = value.charAt(value.length - 1).toLowerCase();
+      var lastTwoChar = value.slice(value.length - 2).toLowerCase();
+      if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
+      if (lastTwoChar === 'ch') return value + 'es';
       return value + 's';
     };
-    getPathValue = function(object, path) {
-      var child, parts;
-      parts = path.split('.');
-      if (parts.length === 1) {
-        return object[parts[0]];
-      }
-      child = object[parts.shift()];
-      if (!child) {
-        return child;
-      }
+
+    var getPathValue = function(object, path) {
+      var parts = path.split('.');
+      if (parts.length === 1) return object[parts[0]];
+      var child = object[parts.shift()];
+      if (!child) return child;
       return getPathValue(child, parts.join('.'));
     };
-    config = {
+
+    // the service
+    var config = {
       get: function(path, makePlural) {
         var pluralValue, value;
         if (!$window.config) {
@@ -748,30 +755,17 @@
         }
         return value;
       },
-      getTenant: function() {
-        return config.get('tenant');
-      },
-      getEnv: function() {
-        return appEnv.getEnv();
-      },
-      getTenantIndex: function() {
-        return appEnv.getTenantIndex();
-      },
-      getSubDomain: function() {
-        return appEnv.getSubDomain();
-      },
-      setApp: function(newValue) {
-        return app = newValue;
-      },
+      getTenant: function() {       return config.get('tenant'); },
+      getEnv: function() {          return appEnv.getEnv(); },
+      getTenantIndex: function() {  return appEnv.getTenantIndex(); },
+      getSubDomain: function() {    return appEnv.getSubDomain(); },
+
+      // App (aka, portal, assessment, reporting, etc...)
+      setApp: function(newValue) { return app = newValue; },
       getApp: function() {
-        var parts;
-        if (app) {
-          return app;
-        }
-        parts = $window.location.pathname.split('/');
-        if (parts.length >= 2) {
-          app = parts[1].toLowerCase();
-        }
+        if (app) return app;
+        var parts = $window.location.pathname.split('/');
+        if (parts.length >= 2) app = parts[1].toLowerCase();
         return app;
       }
     };
