@@ -17,6 +17,8 @@ var sentrySetup = {
     if(appEnv.env() === 'dev'){
       url = sentrySetup.devUrl;
       if(typeof console !== 'undefined') console.log('Sentry - Dev Environment')
+    } else {
+      if(typeof console !== 'undefined') console.log('Sentry - Prod Environment')
     }
 
     // this NEEDS to be loaded.. important our apps are sending errors.
@@ -33,4 +35,4 @@ var sentrySetup = {
   }
 }
 // init sentry
-sentrySetup.init();
+// sentrySetup.init();

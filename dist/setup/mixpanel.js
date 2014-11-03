@@ -16,6 +16,8 @@ var mixPanelSetup = {
     if(appEnv.env() === 'dev'){
       token = mixPanelSetup.devToken;
       if(typeof console !== 'undefined') console.log('MixPanel - Dev Environment')
+    } else {
+      if(typeof console !== 'undefined') console.log('MixPanel - Prod Environment')
     }
 
     window.mixpanel.init(token);
@@ -27,4 +29,4 @@ var mixPanelSetup = {
   }
 }
 // init mixPanel
-mixPanelSetup.init();
+// mixPanelSetup.init();
