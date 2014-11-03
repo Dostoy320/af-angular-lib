@@ -16,7 +16,7 @@
         // BASE CALL
         call: function(method, params, options) {
           // slap on a sessionToken?
-          params = apiUtil.autoApplySession(params, options)
+          params = apiUtil.autoApplySessionToken(params, options)
           var requestDefaults = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + method,
@@ -42,7 +42,7 @@
         // BASE CALL
         call: function(method, params, options) {
           // slap on a sessionToken?
-          params = apiUtil.autoApplySession(params, options)
+          params = apiUtil.autoApplySessionToken(params, options)
 
           // AuthService expects urlEncoded
           var requestDefaults = {
