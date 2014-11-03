@@ -59,15 +59,15 @@
 
         // METHODS
         login: function(username, password, options) {
-          return this.execute('/login', {username: username, password: password}, options);
+          return this.call('/login', {username: username, password: password}, options);
         },
         logout: function(options) {
-          return this.execute('/logout', null, options);
+          return this.call('/logout', null, options);
         },
         validatesession: function(sessionToken, options) {
           var params = {};
           if (sessionToken) params.sessionToken = sessionToken;
-          return this.execute('/validatesession', params, options);
+          return this.call('/validatesession', params, options);
         },
         createtoken: function(loginAsUserId, expiresOn, url, options) {
           var params = {
@@ -75,13 +75,13 @@
             expiresOn: expiresOn,
             url: url
           };
-          return this.execute('/createtoken', params, options);
+          return this.call('/createtoken', params, options);
         },
         updatetoken: function(tokenString, url, options) {
-          return this.execute('/updatetoken', {tokenString: tokenString, url: url}, options);
+          return this.call('/updatetoken', {tokenString: tokenString, url: url}, options);
         },
         loadtoken: function(token, options) {
-          return this.execute('/loadtoken', {token: token}, options);
+          return this.call('/loadtoken', {token: token}, options);
         },
         changepassword: function(userId, currentPassword, newPassword, options) {
           var params = {
@@ -89,13 +89,13 @@
             currentPassword: currentPassword,
             newPassword: newPassword
           };
-          return this.execute('/changepassword', params, options);
+          return this.call('/changepassword', params, options);
         },
         getuserfromuserid: function(userId, options) {
-          return this.execute('/getuserfromuserid', {userId: userId}, options);
+          return this.call('/getuserfromuserid', {userId: userId}, options);
         },
         loadsession: function(sessionToken, options) {
-          return this.execute('/loadsession', {sessionToken: sessionToken}, options);
+          return this.call('/loadsession', {sessionToken: sessionToken}, options);
         }
       }
     };
