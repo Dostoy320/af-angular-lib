@@ -4,92 +4,155 @@
 
   var myApp;
 
-  myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
+  myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager', 'af.sentry', 'af.util', 'af.config']);
 
-  myApp.service('api', function($window, $log, $msg, $loader, $sentry, $util, $config) {
+  myApp.service('api', function($window, $http, $log, $msg, authManager, $loader, $sentry, $util, $config) {
+
     var api = {
 
-      // add debugs info to requests (don't do on Java, Java could blow up)
-      addDebugInfo: function(req) {
-        req.data.debug = {
-          url: $window.location.href,
-          index: $config.getTenantIndex(),
-          tenant: $config.getTenant(),
-          env: $config.getEnv()
-        };
-        return req;
+      // global settings:
+      autoApplySession:true, // should a sessionToken be added to all api calls automatically?
+      autoApplySessionPriority:null,  // priority for grabbing the token ['app','url','amplify','window']
+
+
+      // request options
+      // { logExceptions:true/false }
+      // { autoApplySession:true/false }
+      // { logError:true/false }
+      // { displayError:true/false }
+      // { loaderStop:true/false }
+
+      //
+      // BASE CALL
+      //
+      // ALL api calls run through this function
+      call: function(request, onSuccess, onError) {
+        request.method = request.method || 'POST';
+        $http(request)
+          .success(function(data, status, headers, config) { api.responseHandler(data, status, request, onSuccess, onError); })
+          .error(function(data, status, headers, config) {   api.responseHandler(data, status, request, onSuccess, onError); })
+      },
+
+      // ALL api responses pass through this function
+      responseHandler:function(data, status, request, onSuccess, onError) {
+        // remove passwords
+        if (request && request.data && request.data.password) request.data.password = '********';
+        if (request && request.password) request.password = '********';
+
+        // is this response an error?
+        var isSuccess = true;
+        if (status !== 200) isSuccess = false;
+        if (api.responseIsJSEND(data) && data.data.status !== 'success') isSuccess = false;
+
+        // handle response
+        if (isSuccess) {
+          // SUCCESS!
+          if (onSuccess) {
+            if (api.responseIsJSEND(data)) data = data.data // strip status off response
+            onSuccess(data, status, request)
+          }
+        } else {
+          // ERROR - handle it
+          if (onError) onError(data, status, request)
+          api.handleApiError(data, status, request)
+        }
       },
 
 
-      //
+      // add debugs info to requests (don't do on Java, Java could blow up)
+      autoApplyDebugInfo: function(request) {
+        request.debug = request.debug || {}
+        var defaultDebugInfo = {
+          url:    $window.location.href,
+          index:  $config.index(),
+          tenant: $config.tenant(),
+          env:    $config.env()
+        };
+        return _.extend(defaultDebugInfo, req.debug)
+      },
+
+      // method to automatically add the users sessionToken to all calls
+      autoApplySessionToken:function(params, request){
+        var params = params || {}
+        var request = request || {}
+        // slap on a sessionToken?
+        var forceSessionToken = request.autoApplySession === true
+        var forceNoSessionToken = request.autoApplySession === false
+        if(params.sessionToken == null)
+          if (forceSessionToken || (api.autoApplySession && !forceNoSessionToken))
+            params.sessionToken = authManager.findSessionToken(api.autoApplySessionPriority)
+        return params
+      },
+
+
+
       //
       // ERROR HANDLING
-      handleApiError: function(data, status, headers, config) {
-        var message, newData, queries, request;
-        request = _.omit(config || {}, 'transformRequest', 'transformResponse');
-        message = api.getErrorMessage(data, status);
-        // convert urlEncoded to json
-        if (request.headers && request.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
-          newData = {};
-          queries = (request.data + '').split("&");
-          _.each(queries, function(part, i) {
-            var temp;
-            temp = queries[i].split('=');
-            if (temp.length = 2) {
-              return newData[temp[0]] = temp[1];
-            }
-          });
-          request.data = newData;
-        }
+      //
+      handleApiError: function(data, status, request) {
+        // log error unless told not to
+        if(request.hasOwnProperty('logError') && request.logError !== false)
+          api.logApiError(data, status, request);
 
-        // strip password
+        // display message unless told not to
+        if(request.hasOwnProperty('displayError') && request.displayError !== false)
+          $msg.error(api.getErrorMessage(data, status));
+
+        // stop loaders unless told not to
+        if(request.hasOwnProperty('loaderStop') && request.loaderStop !== false)
+          $loader.stop();
+      },
+
+      logApiError:function(data, status, request){
+        // remove passwords
         if (request && request.data && request.data.password) request.data.password = '********';
-
-        // log and display to user
+        if (request && request.password) request.password = '********';
+        // get message
+        var message = api.getErrorMessage(data, status);
         $sentry.error(message, { extra: request });
         $log.error(message, status);
-        $msg.error(message);
-        return $loader.stop();
       },
 
 
       getErrorMessage: function(data, status) {
-        var codeStr, err;
-        if (data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
-          codeStr = api.getHttpCodeString(data.code);
+        // was this JSEND ERROR?
+        if(data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
+          var codeStr = api.getHttpCodeString(data.code);
           if (data.message === codeStr) {
             return data.message + ' (' + data.code + ')';
           } else {
             return data.message + ' (' + codeStr + ')';
           }
         }
-        if (_.isNumber(status) && api.isHttpCode(status)) {
-          err = api.getHttpCodeString(status);
-          if (status === 502) {
-            err = 'Unable to communicate with server. Please check your internet connection.';
-          }
+        if(_.isNumber(status) && api.isHttpCode(status)) {
+          var err = api.getHttpCodeString(status);
+          if (status === 502) err = 'Unable to communicate with server. Please check your internet connection.';
           return err + ' (' + status + ')';
         }
+        // return whatever info we can
         return data.message || data.code || data || status;
       },
+
+
+
+      //
+      // UTIL
+      //
+      responseIsJSEND:function(data) {
+        return _.isObject(data) && _.isObject(data.data) && data.data.hasOwnProperty('status');
+      },
+
+
       ensureInt: function(value) {
-        if (_.isString(value)) {
-          return parseInt(value);
-        }
+        if (_.isString(value)) return parseInt(value);
         return value;
       },
       ensureBool: function(value) {
-        if (value === 'true' || 1) {
-          return true;
-        }
-        if (value === 'false' || 0) {
-          return false;
-        }
+        if (value === 'true' || 1)  return true;
+        if (value === 'false' || 0) return false;
         return value;
       },
-      ensureString: function(value) {
-        return '' + value;
-      },
+      ensureString: function(value) {  return '' + value; },
       standardResolve: function(defer, data) {
         return function(error) {
           if (error) {
@@ -108,8 +171,7 @@
         return _.isString(api.getHttpCodeString(code));
       },
       getHttpCodeString: function(code) {
-        var http_codes;
-        http_codes = {
+        var http_codes = {
           100: 'Continue',
           101: 'Switching Protocols',
           102: 'Processing',
@@ -166,9 +228,8 @@
           509: 'Bandwidth Limit Exceeded',
           510: 'Not Extended'
         };
-        if (http_codes.hasOwnProperty(code)) {
+        if (http_codes.hasOwnProperty(code))
           return http_codes[code];
-        }
         return code;
       }
     };
@@ -184,9 +245,9 @@
 (function() {
   var httpInterceptor, myApp;
 
-  myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
+  myApp = angular.module('af.httpInterceptor', ['af.apiUtil', 'af.sentry', 'af.msg']);
 
-  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, api, $window, $config) {
+  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, apiUtil, $window, $config) {
     var getExtension, interceptor, isObject, responseIsJsend;
     responseIsJsend = function(response) {
       return isObject(response) && response.hasOwnProperty('status');
@@ -209,7 +270,7 @@
         }
         appendDebug = config.appendDebug !== false;
         if (appendDebug && isObject(config.data) && !config.data.debug) {
-          api.addDebugInfo(config);
+          apiUtil.addDebugInfo(config);
         }
         return config;
       },
@@ -228,7 +289,7 @@
         if (ignore === true || (_.isArray(ignore) && _.contains(ignore, response.status))) {
           return $q.reject(response);
         }
-        api.handleApiError(response.data, response.status, response.headers, response.config);
+        apiUtil.handleApiError(response.data, response.status, response.headers, response.config);
         return $q.reject(response);
       }
     };
@@ -239,123 +300,114 @@
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.java', ['af.api', 'af.authManager']);
+  var myApp = angular.module('af.java', ['af.api']);
 
-  myApp.service('java', function($http, api, authManager) {
-    var autoApplySession, autoApplySessionPriority, java;
-    autoApplySession = true;
-    autoApplySessionPriority = null;
-    java = {
-      setAutoApplySession: function(value) {
-        return autoApplySession = value;
-      },
-      setAutoApplySessionPriority: function(value) {
-        return autoApplySessionPriority = value;
-      },
+  myApp.service('java', function($http, api) {
+
+    var java = {
+
+
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-        execute: function(method, params, options) {
-          var req, reqDefaults;
-          if (autoApplySession) {
-            if (params.sessionToken == null) {
-              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
-            }
-          }
-          reqDefaults = {
+        call: function(method, params, onSuccess, onError) {
+          // auto apply sessionToken?
+          params = api.autoApplySessionToken(params, options)
+          var requestDefaults = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + method,
             data: params
           };
-          req = _.defaults(options || {}, reqDefaults);
-          return $http(req);
+          // merge defaults into user request
+          request = _.defaults(request || {}, requestDefaults);
+          api.call(request, onSuccess, onError);
         },
-        invoke: function(params, options) {
-          return this.execute('/invoke', params, options);
+        invoke: function(params, request, onSuccess, onError) {
+          return java.RoadmapService.call('/invoke', params, request, onSuccess, onError);
+        },
+
+        createRequest:function(url, params, options){
+          params = api.autoApplySessionToken(params, options)
+          return {
+            method: 'POST',
+            url: java.RoadmapService.serviceUrl + url,
+            data: params || {},
+            options:options || {}
+          }
         }
       },
+
+
+
       AuthService: {
         serviceUrl: '/RoadmapService',
-        execute: function(method, params, options) {
-          var req, reqDefaults;
-          if (autoApplySession && method !== '/login' && method !== '/loadtoken') {
-            if (params.sessionToken == null) {
-              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
-            }
-          }
-          reqDefaults = {
+        // BASE CALL
+        call: function(method, params, onSuccess, onError, request) {
+          // slap on a sessionToken?
+          params = api.autoApplySessionToken(params, request)
+          // AuthService expects urlEncoded
+          var requestDefaults = {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-            },
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded'  },
             url: java.AuthService.serviceUrl + method,
             data: $.param(params)
           };
-          req = _.defaults(options || {}, reqDefaults);
-          return $http(req);
+          // merge defaults into user request
+          request = _.defaults(request || {}, requestDefaults);
+          api.call(request, onSuccess, onError);
         },
-        login: function(username, password) {
-          var params;
-          params = {
-            username: username,
-            password: password
-          };
-          return this.execute('/login', params, {
-            ignoreExceptions: true
-          });
-        },
-        logout: function() {
-          return this.execute('/logout', null);
-        },
-        validatesession: function(sessionToken) {
-          var params;
-          params = {};
-          if (sessionToken) {
-            params.sessionToken = sessionToken;
+
+        createRequest:function(url, params, options){
+          params = api.autoApplySessionToken(params, options)
+          return {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded'  },
+            url: java.AuthService.serviceUrl + url,
+            data: $.param(params) || {},
+            options:options || {}
           }
-          return this.execute('/validatesession', params);
         },
-        createtoken: function(loginAsUserId, expiresOn, url) {
-          var params;
-          params = {
+
+
+        // METHODS
+        login: function(username, password, request, onSuccess, onError) {
+          this.call('/login', { username: username, password: password }, request, onSuccess, onError);
+        },
+        logout: function(request, onSuccess, onError) {
+          this.call('/logout', null, request, onSuccess, onError);
+        },
+        validatesession: function(sessionToken, options) {
+          var params = {};
+          if (sessionToken) params.sessionToken = sessionToken;
+          return this.call('/validatesession', params, options);
+        },
+        createtoken: function(loginAsUserId, expiresOn, url, options) {
+          var params = {
             loginAsUserId: loginAsUserId,
             expiresOn: expiresOn,
             url: url
           };
-          return this.execute('/createtoken', params);
+          return this.call('/createtoken', params, options);
         },
-        updatetoken: function(tokenString, url) {
-          var params;
-          params = {
-            tokenString: tokenString,
-            url: url
-          };
-          return this.execute('/updatetoken', params);
+        updatetoken: function(tokenString, url, options) {
+          return this.call('/updatetoken', {tokenString: tokenString, url: url}, options);
         },
-        loadtoken: function(token) {
-          return this.execute('/loadtoken', {
-            token: token
-          });
+        loadtoken: function(token, options) {
+          return this.call('/loadtoken', {token: token}, options);
         },
-        changepassword: function(userId, currentPassword, newPassword) {
-          var params;
-          params = {
+        changepassword: function(userId, currentPassword, newPassword, options) {
+          var params = {
             userId: userId,
             currentPassword: currentPassword,
             newPassword: newPassword
           };
-          return this.execute('/changepassword', params);
+          return this.call('/changepassword', params, options);
         },
-        getuserfromuserid: function(userId) {
-          return this.execute('/getuserfromuserid', {
-            userId: userId
-          });
+        getuserfromuserid: function(userId, options) {
+          return this.call('/getuserfromuserid', {userId: userId}, options);
         },
-        loadsession: function(sessionToken) {
-          return this.execute('/loadsession', {
-            sessionToken: sessionToken
-          });
+        loadsession: function(sessionToken, options) {
+          return this.call('/loadsession', {sessionToken: sessionToken}, options);
         }
       }
     };
@@ -371,51 +423,46 @@
   myApp = angular.module('af.node', ['af.api', 'af.authManager', 'af.config']);
 
   myApp.service('node', function($http, api, authManager, $config) {
-    var autoApplySession, autoApplySessionPriority, node;
-    autoApplySession = true;
-    autoApplySessionPriority = null;
-    node = {
-      setAutoApplySession: function(value) {
-        return autoApplySession = value;
-      },
-      setAutoApplySessionPriority: function(value) {
-        return autoApplySessionPriority = value;
-      },
+
+    var node = {
+
       RoadmapNode: {
+
         serviceUrl: '/roadmap-node',
-        execute: function(method, params, onSuccess, onError) {
-          var req;
-          if (params == null) {
-            params = {};
-          }
-          if (params.tenant == null) {
-            params.tenant = $config.getTenantIndex();
-          }
-          if (autoApplySession) {
-            if (params.sessionToken == null) {
-              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
-            }
-          }
-          req = {
+
+        // BASE CALL
+        call: function(method, params, options) {
+          params = params || {}
+          options = options || {}
+
+          // auto apply index to params
+          if(!params.tenant && options.autoApplyIndex !== false)
+            params.tenant = $config.index();
+
+          // auto apply sessionToken to params
+          params = api.autoApplySessionToken(params, options)
+
+          var req = {
             url: node.RoadmapNode.serviceUrl + method,
             data: params
           };
-          req = api.addDebugInfo(req);
-          return api.execute(req, onSuccess, onError);
+          // auto apply debug information
+          req = api.autoApplyDebugInfo(req);
+          return $http(req)
         },
-        save: function(type, resource, onSuccess, onError) {
-          return node.RoadmapNode.execute('/api/crud/save', {
-            _type: type,
-            resource: resource
-          }, onSuccess, onError);
+
+
+        // METHODS
+        save: function(type, resource, options) {
+          return node.RoadmapNode.call('/api/crud/save', {_type: type, resource: resource}, options);
         },
-        find: function(type, query, onSuccess, onError) {
-          return node.RoadmapNode.execute('/api/crud/find', {
-            _type: type,
-            query: query
-          }, onSuccess, onError);
+
+        find: function(type, query, options) {
+          return node.RoadmapNode.execute('/api/crud/find', {_type: type, query: query}, options);
         },
-        findOne: function(type, query, onSuccess, onError) {
+
+        findOne: function(type, query, options) {
+
           return node.RoadmapNode.find(type, query, function(data) {
             if (onSuccess) {
               if (_.isArray(data) && data.length >= 1) {
@@ -433,11 +480,15 @@
           }, onSuccess, onError);
         }
       },
+
+
       Batch: {
         execute: function(method, params, onSuccess, onError) {
           return node.RoadmapNode.execute('/api/batch' + method, params, onSuccess, onError);
         }
       },
+
+
       QuickContent: {
         serviceUrl: '/quick-content',
         execute: function(method, params, onSuccess, onError) {
@@ -610,19 +661,29 @@
   var myApp = angular.module('af.authManager', ['af.util']);
 
   myApp.service('authManager', function($util) {
+
     var auth;
+
     return auth = {
-      loggedInUser: amplify.store("loggedInUser"),
+
+      //
+      // SESSION/USER CACHE
+      //
+      loggedInUser: amplify.store("loggedInUser"), // username, firstName, lastName, email, nameOfPractice and email
       sessionToken: amplify.store('sessionToken'),
+
+      loggedIn: function() {
+        return auth.sessionToken && auth.loggedInUser && auth.loggedInUser.userId;
+      },
       clearUser: function() {
         amplify.store('loggedInUser', null);
         amplify.store('sessionToken', null);
         auth.loggedInUser = null;
-        return auth.sessionToken = null;
+        auth.sessionToken = null;
       },
       setSessionToken: function(sessionToken) {
         auth.sessionToken = sessionToken;
-        return amplify.store('sessionToken', sessionToken);
+        amplify.store('sessionToken', sessionToken);
       },
       setLoggedInUser: function(sessionToken, userId, userName, userEmail, authorities) {
         auth.setSessionToken(sessionToken);
@@ -632,73 +693,51 @@
           userEmail: userEmail,
           authorities: authorities
         };
-        return amplify.store('loggedInUser', auth.loggedInUser);
+        amplify.store('loggedInUser', auth.loggedInUser);
       },
+      // finds sessionToken based on priority
       findSessionToken: function(priority) {
-        var token;
-        token = null;
-        if (!priority) {
-          priority = ['app', 'url', 'amplify', 'window'];
-        }
+        // default priority, looks in this class first, then URL, then checks amplify and finally window.sessionToken
+        if (!priority) priority = ['app', 'url', 'amplify', 'window'];
+        var token = null;
         _.each(priority, function(place) {
-          if (token) {
-            return;
-          }
+          if (token) return;
           switch (place) {
-            case 'app':
-              token = auth.sessionToken;
-              break;
-            case 'amplify':
-              token = amplify.store('sessionToken');
-              break;
-            case 'url':
-              token = $util.GET('sessionToken');
-              break;
-            case 'window':
-              token = window.sessionToken;
+            case 'app':     token = auth.sessionToken; break;
+            case 'amplify': token = amplify.store('sessionToken'); break;
+            case 'url':     token = $util.GET('sessionToken'); break;
+            case 'window':  token = window.sessionToken;
           }
-          return token;
         });
         return token;
       },
+
+      
+      //
+      // ROLE CHECKS
+      //
       hasRole: function(role) {
-        if (!auth.loggedIn()) {
-          return false;
-        }
+        if (!auth.loggedIn()) return false;
         return _.contains(auth.loggedInUser.authorities, role);
       },
       hasAnyRole: function(array) {
-        var matched;
-        matched = 0;
+        var matched = 0;
         _.each(array, function(role) {
-          if (auth.hasRole(role)) {
-            return matched += 1;
-          }
+          if (auth.hasRole(role)) matched += 1;
         });
         return matched > 0;
       },
       hasAllRoles: function(array) {
-        var matched;
-        matched = 0;
+        var matched = 0;
         _.each(array, function(role) {
-          if (auth.hasRole(role)) {
-            return matched += 1;
-          }
+          if (auth.hasRole(role)) matched += 1;
         });
         return array.length === matched;
       },
-      isAdmin: function() {
-        return auth.hasAnyRole(['Role_Admin', 'Role_RoadmapUserAdmin', 'Role_RoadmapContentAdmin']);
-      },
-      isCoach: function() {
-        return auth.isManager();
-      },
-      isManager: function() {
-        return auth.hasAnyRole(['Role_AccessKeyManager']);
-      },
-      loggedIn: function() {
-        return auth.sessionToken && auth.loggedInUser && auth.loggedInUser.userId;
-      }
+
+      isAdmin: function() { return auth.hasAnyRole(['Role_Admin', 'Role_RoadmapUserAdmin', 'Role_RoadmapContentAdmin']); },
+      isCoach: function() { return auth.hasAnyRole(['Role_AccessKeyManager']); }
+
     };
   });
 
@@ -716,10 +755,11 @@
   //
   myApp.service('$config', function($window, $log) {
 
-    var app = null;
+    //var app = null;
 
     var pluralize = function(value) {
-      if (!value) return value;
+      if(!value) return value;
+      if(!_.isString(value)) return value;
       var lastChar = value.charAt(value.length - 1).toLowerCase();
       var lastTwoChar = value.slice(value.length - 2).toLowerCase();
       if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
@@ -737,29 +777,28 @@
 
     // the service
     var config = {
+
+      // gets a value from our config
+      // accepts a string value, eg:('label.app.name')
       get: function(path, makePlural) {
         var pluralValue, value;
-        if (!$window.config) {
-          return null;
-        }
-        if (!path) {
-          return $window.config;
-        }
+        if (!$window.config) return null;
+        if (!path) return $window.config; // return whole config if no path
         value = getPathValue($window.config, path);
         if (makePlural) {
           pluralValue = getPathValue($window.config, path + '_plural');
-          if (pluralValue) {
-            return pluralValue;
-          }
+          if(pluralValue) return pluralValue;
           return pluralize(value);
         }
         return value;
       },
-      getTenant: function() {       return config.get('tenant'); },
-      getEnv: function() {          return appEnv.getEnv(); },
-      getTenantIndex: function() {  return appEnv.getTenantIndex(); },
-      getSubDomain: function() {    return appEnv.getSubDomain(); },
 
+      tenant: function() {    return appEnv.tenant(); },
+      env: function() {       return appEnv.env(); },
+      index: function() {     return appEnv.index(); },
+      subDomain: function() { return appEnv.subDomain(); }
+
+      /*
       // App (aka, portal, assessment, reporting, etc...)
       setApp: function(newValue) { return app = newValue; },
       getApp: function() {
@@ -768,6 +807,7 @@
         if (parts.length >= 2) app = parts[1].toLowerCase();
         return app;
       }
+      */
     };
     return config;
   });
