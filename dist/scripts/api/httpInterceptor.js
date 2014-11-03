@@ -1,9 +1,9 @@
 (function() {
   var httpInterceptor, myApp;
 
-  myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
+  myApp = angular.module('af.httpInterceptor', ['af.apiUtil', 'af.sentry', 'af.msg']);
 
-  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, api, $window, $config) {
+  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, apiUtil, $window, $config) {
     var getExtension, interceptor, isObject, responseIsJsend;
     responseIsJsend = function(response) {
       return isObject(response) && response.hasOwnProperty('status');
@@ -26,7 +26,7 @@
         }
         appendDebug = config.appendDebug !== false;
         if (appendDebug && isObject(config.data) && !config.data.debug) {
-          api.addDebugInfo(config);
+          apiUtil.addDebugInfo(config);
         }
         return config;
       },
@@ -45,7 +45,7 @@
         if (ignore === true || (_.isArray(ignore) && _.contains(ignore, response.status))) {
           return $q.reject(response);
         }
-        api.handleApiError(response.data, response.status, response.headers, response.config);
+        apiUtil.handleApiError(response.data, response.status, response.headers, response.config);
         return $q.reject(response);
       }
     };

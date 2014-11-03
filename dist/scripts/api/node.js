@@ -1,9 +1,9 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.node', ['af.api', 'af.authManager', 'af.config']);
+  myApp = angular.module('af.node', ['af.apiUtil', 'af.authManager', 'af.config']);
 
-  myApp.service('node', function($http, api, authManager, $config) {
+  myApp.service('node', function($http, apiUtil, authManager, $config) {
     var autoApplySession, autoApplySessionPriority, node;
     autoApplySession = true;
     autoApplySessionPriority = null;
@@ -33,8 +33,8 @@
             url: node.RoadmapNode.serviceUrl + method,
             data: params
           };
-          req = api.addDebugInfo(req);
-          return api.execute(req, onSuccess, onError);
+          req = apiUtil.addDebugInfo(req);
+          return apiUtil.execute(req, onSuccess, onError);
         },
         save: function(type, resource, onSuccess, onError) {
           return node.RoadmapNode.execute('/api/crud/save', {
@@ -59,7 +59,7 @@
           }, onError);
         },
         remove: function(type, id, onSuccess, onError) {
-          id = api.ensureInt(id);
+          id = apiUtil.ensureInt(id);
           return node.RoadmapNode.execute('/api/crud/remove', {
             _type: type,
             id: id
@@ -90,8 +90,8 @@
             url: node.QuickContent.serviceUrl + method,
             data: params
           };
-          req = api.addDebugInfo(req);
-          return api.execute(req, onSuccess, onError);
+          req = apiUtil.addDebugInfo(req);
+          return apiUtil.execute(req, onSuccess, onError);
         },
         mget: function(body, onSuccess, onError) {
           var params;
@@ -146,7 +146,7 @@
               item._score = row._score;
             }
             if (row._id && !item.id) {
-              item.id = api.ensureInt(row._id);
+              item.id = apiUtil.ensureInt(row._id);
             }
             return item;
           });
@@ -171,8 +171,8 @@
             url: node.ExploreDB.serviceUrl + method,
             data: params
           };
-          req = api.addDebugInfo(req);
-          return api.execute(req, onSuccess, onError);
+          req = apiUtil.addDebugInfo(req);
+          return apiUtil.execute(req, onSuccess, onError);
         },
         findByDate: function(from, to, onSuccess, onError) {
           return node.ExploreDB.execute('/find-by-date', {

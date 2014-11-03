@@ -1,9 +1,9 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.java', ['af.api', 'af.authManager']);
+  myApp = angular.module('af.java', ['af.authManager']);
 
-  myApp.service('java', function($http, api, authManager) {
+  myApp.service('java', function($http, authManager) {
     var autoApplySession, autoApplySessionPriority, java;
     autoApplySession = true;
     autoApplySessionPriority = null;

@@ -2,10 +2,10 @@
 
   var myApp;
 
-  myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
+  myApp = angular.module('af.apiUtil', ['af.msg', 'af.loader', 'af.sentry', 'af.util', 'af.config']);
 
-  myApp.service('api', function($window, $log, $msg, $loader, $sentry, $util, $config) {
-    var api = {
+  myApp.service('apiUtil', function($window, $log, $msg, $loader, $sentry, $util, $config) {
+    var apiUtil = {
 
       // add debugs info to requests (don't do on Java, Java could blow up)
       addDebugInfo: function(req) {
@@ -25,7 +25,7 @@
       handleApiError: function(data, status, headers, config) {
         var message, newData, queries, request;
         request = _.omit(config || {}, 'transformRequest', 'transformResponse');
-        message = api.getErrorMessage(data, status);
+        message = apiUtil.getErrorMessage(data, status);
         // convert urlEncoded to json
         if (request.headers && request.headers['Content-Type'] === 'application/x-www-form-urlencoded') {
           newData = {};
@@ -54,15 +54,15 @@
       getErrorMessage: function(data, status) {
         var codeStr, err;
         if (data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
-          codeStr = api.getHttpCodeString(data.code);
+          codeStr = apiUtil.getHttpCodeString(data.code);
           if (data.message === codeStr) {
             return data.message + ' (' + data.code + ')';
           } else {
             return data.message + ' (' + codeStr + ')';
           }
         }
-        if (_.isNumber(status) && api.isHttpCode(status)) {
-          err = api.getHttpCodeString(status);
+        if (_.isNumber(status) && apiUtil.isHttpCode(status)) {
+          err = apiUtil.getHttpCodeString(status);
           if (status === 502) {
             err = 'Unable to communicate with server. Please check your internet connection.';
           }
@@ -99,11 +99,11 @@
       },
       standardReject: function(defer) {
         return function(data, status, headers, config) {
-          return defer.reject(api.getErrorMessage(data, status));
+          return defer.reject(apiUtil.getErrorMessage(data, status));
         };
       },
       isHttpCode: function(code) {
-        return _.isString(api.getHttpCodeString(code));
+        return _.isString(apiUtil.getHttpCodeString(code));
       },
       getHttpCodeString: function(code) {
         var http_codes;
