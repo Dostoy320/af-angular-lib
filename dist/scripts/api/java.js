@@ -1,49 +1,49 @@
 (function() {
 
-  var myApp = angular.module('af.java', ['af.apiUtil', 'af.authManager']);
+  var myApp = angular.module('af.java', ['af.api']);
 
-  myApp.service('java', function($http, apiUtil, authManager) {
-
+  myApp.service('java', function($http, api) {
 
     var java = {
-
-      setAutoApplySession: function(value) {         return autoApplySession = value; },
-      setAutoApplySessionPriority: function(value) { return autoApplySessionPriority = value; },
 
 
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-        // BASE CALL
-        call: function(method, params, options) {
-          // slap on a sessionToken?
-          params = apiUtil.autoApplySessionToken(params, options)
+        call: function(method, params, onSuccess, onError) {
+          // auto apply sessionToken?
+          params = api.autoApplySessionToken(params, options)
           var requestDefaults = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + method,
             data: params
-          }
-          // merge default options into our request
-          var req = _.defaults(options || {}, requestDefaults);
-          return $http(req);
+          };
+          // merge defaults into user request
+          request = _.defaults(request || {}, requestDefaults);
+          api.call(request, onSuccess, onError);
+        },
+        invoke: function(params, request, onSuccess, onError) {
+          return java.RoadmapService.call('/invoke', params, request, onSuccess, onError);
         },
 
-        // METHODS
-        invoke: function(params, options) {
-          return this.call('/invoke', params, options);
+        createRequest:function(url, params, options){
+          params = api.autoApplySessionToken(params, options)
+          return {
+            method: 'POST',
+            url: java.RoadmapService.serviceUrl + url,
+            data: params || {},
+            options:options || {}
+          }
         }
       },
 
 
 
       AuthService: {
-
         serviceUrl: '/RoadmapService',
-
         // BASE CALL
-        call: function(method, params, options) {
+        call: function(method, params, onSuccess, onError, request) {
           // slap on a sessionToken?
-          params = apiUtil.autoApplySessionToken(params, options)
-
+          params = api.autoApplySessionToken(params, request)
           // AuthService expects urlEncoded
           var requestDefaults = {
             method: 'POST',
@@ -51,18 +51,29 @@
             url: java.AuthService.serviceUrl + method,
             data: $.param(params)
           };
-          // merge default options into our request
-          var req = _.defaults(options || {}, requestDefaults);
-          return $http(req);
+          // merge defaults into user request
+          request = _.defaults(request || {}, requestDefaults);
+          api.call(request, onSuccess, onError);
+        },
+
+        createRequest:function(url, params, options){
+          params = api.autoApplySessionToken(params, options)
+          return {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded'  },
+            url: java.AuthService.serviceUrl + url,
+            data: $.param(params) || {},
+            options:options || {}
+          }
         },
 
 
         // METHODS
-        login: function(username, password, options) {
-          return this.call('/login', {username: username, password: password}, options);
+        login: function(username, password, request, onSuccess, onError) {
+          this.call('/login', { username: username, password: password }, request, onSuccess, onError);
         },
-        logout: function(options) {
-          return this.call('/logout', null, options);
+        logout: function(request, onSuccess, onError) {
+          this.call('/logout', null, request, onSuccess, onError);
         },
         validatesession: function(sessionToken, options) {
           var params = {};

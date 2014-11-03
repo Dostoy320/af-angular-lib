@@ -7,10 +7,11 @@
   //
   myApp.service('$config', function($window, $log) {
 
-    var app = null;
+    //var app = null;
 
     var pluralize = function(value) {
-      if (!value) return value;
+      if(!value) return value;
+      if(!_.isString(value)) return value;
       var lastChar = value.charAt(value.length - 1).toLowerCase();
       var lastTwoChar = value.slice(value.length - 2).toLowerCase();
       if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
@@ -28,29 +29,28 @@
 
     // the service
     var config = {
+
+      // gets a value from our config
+      // accepts a string value, eg:('label.app.name')
       get: function(path, makePlural) {
         var pluralValue, value;
-        if (!$window.config) {
-          return null;
-        }
-        if (!path) {
-          return $window.config;
-        }
+        if (!$window.config) return null;
+        if (!path) return $window.config; // return whole config if no path
         value = getPathValue($window.config, path);
         if (makePlural) {
           pluralValue = getPathValue($window.config, path + '_plural');
-          if (pluralValue) {
-            return pluralValue;
-          }
+          if(pluralValue) return pluralValue;
           return pluralize(value);
         }
         return value;
       },
-      getTenant: function() {       return config.get('tenant'); },
-      getEnv: function() {          return appEnv.getEnv(); },
-      getTenantIndex: function() {  return appEnv.getTenantIndex(); },
-      getSubDomain: function() {    return appEnv.getSubDomain(); },
 
+      tenant: function() {    return appEnv.tenant(); },
+      env: function() {       return appEnv.env(); },
+      index: function() {     return appEnv.index(); },
+      subDomain: function() { return appEnv.subDomain(); }
+
+      /*
       // App (aka, portal, assessment, reporting, etc...)
       setApp: function(newValue) { return app = newValue; },
       getApp: function() {
@@ -59,6 +59,7 @@
         if (parts.length >= 2) app = parts[1].toLowerCase();
         return app;
       }
+      */
     };
     return config;
   });
