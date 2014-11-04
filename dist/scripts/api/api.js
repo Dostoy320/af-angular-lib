@@ -18,7 +18,7 @@
         urlEncode:false,        // send as application/x-www-form-urlencoded
         // response options
         logErrors:true,         // on error, log to sentry (or whatever)
-        displayError:true,      // on error, display error to user
+        displayErrors:true,      // on error, display error to user
         loaderStop:true         // on error, stop loader
       },
 
@@ -65,25 +65,24 @@
 
       // ALL api responses pass through this function
       responseHandler:function(data, status, request, onSuccess, onError) {
-        // remove passwords
-        if (request && request.data && request.data.password) request.data.password = '********';
-        if (request && request.password) request.password = '********';
 
         // is this response an error?
         var isSuccess = true;
         if (status !== 200) isSuccess = false;
-        if (api.responseIsJSEND(data) && data.data.status !== 'success') isSuccess = false;
+        if (api.responseIsJSEND(data) && data.status !== 'success') isSuccess = false;
 
         // handle response
         if (isSuccess) {
           // SUCCESS!
           if (onSuccess) {
-            if (api.responseIsJSEND(data)) data = data.data // strip status off response
+            if (api.responseIsJSEND(data))
+              data = data.data // strip status off response
             onSuccess(data, status, request)
           }
         } else {
           // ERROR - handle it
-          if (onError) onError(data, status, request)
+          if (onError)
+            onError(data, status, request)
           api.handleApiError(data, status, request)
         }
       },
@@ -148,11 +147,11 @@
       //
       handleApiError: function(data, status, request) {
         // log error unless told not to
-        if((request.hasOwnProperty('logError') && request.logErrors === true) || api.defaultRequest.logErrors)
+        if((request.hasOwnProperty('logErrors') && request.logErrors === true) || api.defaultRequest.logErrors)
           api.logApiError(data, status, request);
 
         // display message unless told not to
-        if((request.hasOwnProperty('displayError') && request.displayError === true) || api.defaultRequest.displayError)
+        if((request.hasOwnProperty('displayErrors') && request.displayErrors === true) || api.defaultRequest.displayErrors)
           $msg.error(api.getErrorMessage(data, status));
 
         // stop loaders unless told not to
@@ -160,20 +159,23 @@
           $loader.stop();
       },
 
-      logApiError:function(data, status, request){
-        // remove passwords
-        if (request && request.data && request.data.password) request.data.password = '********';
-        if (request && request.password) request.password = '********';
-        console.log('LOGGING: ', request)
+      logApiError:function(data, status, request) {
+        // remove password!!!
+        if (!request) request = {}
+        if (request.data && _.isString(request.data)){
+          request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
+        } else {
+          if (request.data && request.data.password) request.data.password = '********';
+        }
         // get message
         var message = api.getErrorMessage(data, status);
         $sentry.error(message, { extra: request });
-        $log.error(message, status);
+        $log.warn(message, status);
       },
 
       getErrorMessage: function(data, status) {
         // was this JSEND ERROR?
-        if(data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
+        if (data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
           var codeStr = api.getHttpCodeString(data.code);
           if (data.message === codeStr) {
             return data.message + ' (' + data.code + ')';
@@ -181,7 +183,7 @@
             return data.message + ' (' + codeStr + ')';
           }
         }
-        if(_.isNumber(status) && api.isHttpCode(status)) {
+        if (_.isNumber(status) && api.isHttpCode(status)) {
           var err = api.getHttpCodeString(status);
           if (status === 502) err = 'Unable to communicate with server. Please check your internet connection.';
           return err + ' (' + status + ')';
@@ -196,9 +198,8 @@
       // UTIL
       //
       responseIsJSEND:function(data) {
-        return _.isObject(data) && _.isObject(data.data) && data.data.hasOwnProperty('status');
+        return _.isObject(data) && data.hasOwnProperty('status') && (data.hasOwnProperty('data') || data.hasOwnProperty('code'));
       },
-
 
       ensureInt: function(value) {
         if (_.isString(value)) return parseInt(value);

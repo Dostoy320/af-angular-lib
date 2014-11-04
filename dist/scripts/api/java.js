@@ -76,6 +76,7 @@
         login: function(username, password, onSuccess, onError) {
           var request = this.createRequest('/login', { username: username, password: password })
           request.autoApplySession = false;
+          request.displayErrors = false;
           java.execute(request, onSuccess, onError);
         }
         /*
