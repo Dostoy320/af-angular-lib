@@ -1,23 +1,35 @@
 (function() {
   var myApp = angular.module('af.config', []);
 
-
   //
-  // config exposed from server
+  // plural filter for config
   //
-  myApp.service('$config', function($window, $log) {
-
-    //var app = null;
-
-    var pluralize = function(value) {
+  myApp.filter('plural', function() {
+    return function(value) {
       if(!value) return value;
       if(!_.isString(value)) return value;
       var lastChar = value.charAt(value.length - 1).toLowerCase();
       var lastTwoChar = value.slice(value.length - 2).toLowerCase();
+      // special cases...
       if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
       if (lastTwoChar === 'ch') return value + 'es';
       return value + 's';
     };
+  })
+  // label filter
+  myApp.filter('configLabel', function($config) {
+    return function(path, makePlural) {
+      var val = $config.get(path, makePlural)
+      return val;
+    };
+  })
+
+
+
+  //
+  // config exposed from server
+  //
+  myApp.service('$config', function($window, $filter) {
 
     var getPathValue = function(object, path) {
       var parts = path.split('.');
@@ -29,7 +41,6 @@
 
     // the service
     var config = {
-
       // gets a value from our config
       // accepts a string value, eg:('label.app.name')
       get: function(path, makePlural) {
@@ -40,7 +51,7 @@
         if (makePlural) {
           pluralValue = getPathValue($window.config, path + '_plural');
           if(pluralValue) return pluralValue;
-          return pluralize(value);
+          return $filter('plural')(value);
         }
         return value;
       },
@@ -49,17 +60,6 @@
       env: function() {       return appEnv.env(); },
       index: function() {     return appEnv.index(); },
       subDomain: function() { return appEnv.subDomain(); }
-
-      /*
-      // App (aka, portal, assessment, reporting, etc...)
-      setApp: function(newValue) { return app = newValue; },
-      getApp: function() {
-        if (app) return app;
-        var parts = $window.location.pathname.split('/');
-        if (parts.length >= 2) app = parts[1].toLowerCase();
-        return app;
-      }
-      */
     };
     return config;
   });
