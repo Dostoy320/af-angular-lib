@@ -2,47 +2,38 @@
 
   var myApp = angular.module('af.java', ['af.api']);
 
-  myApp.service('java', function($http, api) {
+  myApp.service('java', function($http, api, $q) {
 
     var java = {
 
-      // so you don't have to inject api in your controllers...
-      execute: function(request, onSuccess, onError) {
-        api.execute(request, onSuccess, onError)
-      },
-
+      // so you don't have to inject $http in your controllers if you injected this service already..
+      call: function(request) { return $http(request); },
 
       //
       // ROADMAP SERVICE
       //
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-
         // BASE
-        // execute shortcut, when you have no options...
-        call:function(url, params, onSuccess, onError){
-          var request = java.RoadmapService.createRequest(url, params)
-          java.call(request, onSuccess, onError);
+        call:function(url, params){
+          return java.call(this.createRequest(url, params));
         },
-
         // creates standard request object for this service
-        createRequest:function(url, params, options){
-          params = api.autoAddSessionTokenToParams(params, options)
-          var defaultRequest = {
+        createRequest:function(url, params, overrides){
+          var request = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + url,
             data: params || {}
           }
-          return _.extend(defaultRequest, options || {})
+          // merge with default request options
+          return api.createRequest(request, overrides)
         },
 
         // METHODS
-        invoke: function(params, request, onSuccess, onError) {
-          return java.RoadmapService.call('/invoke', params, request, onSuccess, onError);
+        invoke: function(params) {
+          return this.call('/invoke', params);
         }
       },
-
-
 
 
 
@@ -52,13 +43,10 @@
       //
       AuthService: {
         serviceUrl: '/RoadmapService',
-
         // BASE
-        // execute shortcut for basic calls
-        call:function(url, params, onSuccess, onError){
-          java.execute(this.createRequest(url, params), onSuccess, onError);
+        call:function(url, params){
+          return java.call(this.createRequest(url, params));
         },
-
         // creates standard request object for this service
         createRequest:function(url, params, overrides){
           var request = {
@@ -68,21 +56,21 @@
             // options
             urlEncode:true
           }
-          return _.extend(api.defaultRequest, request , overrides)
+          // merge with default request options
+          return api.createRequest(request, overrides)
         },
 
 
         // METHODS
-        login: function(username, password, onSuccess, onError) {
+        login: function(username, password) {
           var request = this.createRequest('/login', { username: username, password: password })
           request.autoApplySession = false;
           request.displayErrors = false;
-          java.execute(request, onSuccess, onError);
+          return java.call(request);
         }
         /*
 
         UNTESTED
-
         ,
         logout: function(onSuccess, onError) {
           this.call('/logout', onSuccess, onError);

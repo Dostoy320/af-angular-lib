@@ -1,51 +1,71 @@
 (function() {
-  var httpInterceptor, myApp;
 
-  myApp = angular.module('af.httpInterceptor', ['af.apiUtil', 'af.sentry', 'af.msg']);
+  var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
 
-  myApp.factory("httpInterceptor", httpInterceptor = function($q, $injector, apiUtil, $window, $config) {
-    var getExtension, interceptor, isObject, responseIsJsend;
-    responseIsJsend = function(response) {
-      return isObject(response) && response.hasOwnProperty('status');
-    };
-    isObject = function(item) {
-      return typeof item === 'object';
-    };
-    getExtension = function(url) {
-      return url.split('.').pop();
-    };
-    interceptor = {
-      request: function(config) {
-        var appendDebug, ext;
-        ext = getExtension(config.url);
-        if (ext === 'php' || ext === 'html') {
-          return config;
+  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $log, $window, $config) {
+
+    var interceptor = {
+
+      request: function(request) {
+        // is this interceptor enabled?
+        if(api.optionEnabled('disableHttpInterceptor')) return request;
+        // don't monkey with requests that have a period in them (files)
+        if(request.url && request.url.indexOf('.') >= 0) return request;
+
+        // slap some stuff on our requests
+        request.method = request.method || 'POST';
+        request.debug = api.getDebugInfo();
+        if (api.optionEnabled(request, 'autoApplySession')) {
+          request.data = request.data || {}
+          request.data.sessionToken = authManager.findSessionToken()
         }
-        if (config.method == null) {
-          config.method = 'POST';
+        if (api.optionEnabled(request, 'autoApplyIndex')) {
+          request.data = request.data || {}
+          request.data.tenant = $config.index();
         }
-        appendDebug = config.appendDebug !== false;
-        if (appendDebug && isObject(config.data) && !config.data.debug) {
-          apiUtil.addDebugInfo(config);
+
+        // if we want urlEncoded... deal with that
+        if (api.optionEnabled(request, 'urlEncode')) {
+          // add urlencoded header
+          request.headers = request.headers || {}
+          _.extend(request.headers, {'Content-Type':'application/x-www-form-urlencoded'})
+          // data needs to be in string format
+          if (request.data && !_.isString(request.data))
+            request.data = $.param(request.data)
         }
-        return config;
+        return request;
       },
+
       response: function(response) {
-        if (response.status !== 200 || (responseIsJsend(response.data) && response.data.status !== 'success')) {
+        // is this interceptor enabled?
+        if(api.optionEnabled('disableHttpInterceptor')) return response;
+        // don't monkey with requests that have a period in them (files)
+        if(response.config && response.config.url && response.config.url.indexOf('.') >= 0) return response;
+
+        // is this response an error?
+        var isSuccess = true;
+        var isJSEND = api.responseIsJSEND(response.data);
+
+        if (response.status !== 200) isSuccess = false;
+        if (isJSEND && response.data.status !== 'success') isSuccess = false;
+
+        // handle response
+        if (isSuccess) {
+          if (isJSEND) response.data = response.data.data // strip status junk
+          return response
+        } else {
           return interceptor.responseError(response);
         }
-        if (responseIsJsend(response) && isObject(response.data) && response.data.hasOwnProperty('data')) {
-          response.data = response.data.data;
-        }
-        return response;
       },
       responseError: function(response) {
-        var ignore;
-        ignore = response.config.ignoreExceptions;
-        if (ignore === true || (_.isArray(ignore) && _.contains(ignore, response.status))) {
-          return $q.reject(response);
-        }
-        apiUtil.handleApiError(response.data, response.status, response.headers, response.config);
+        // is this interceptor enabled?
+        if(api.optionEnabled('disableHttpInterceptor')) return $q.reject(response);
+        // don't monkey with requests that have a period in them (files)
+        if(response.config && response.config.url && response.config.url.indexOf('.') >= 0) return $q.reject(response);
+
+        $log.info('httpInterceptor: Handling error')
+        // deal with error
+        api.handleApiError(response.data, response.status, response.config);
         return $q.reject(response);
       }
     };

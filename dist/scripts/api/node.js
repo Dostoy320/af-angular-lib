@@ -3,35 +3,31 @@
 
   myApp = angular.module('af.node', ['af.api', 'af.authManager', 'af.config']);
 
-  myApp.service('node', function($http, api, authManager, $config) {
+  myApp.service('node', function($http, api, $q) {
 
     var node = {
 
-      // so you don't have to inject api in your controllers...
-      execute: function(request, onSuccess, onError) {
-        request.autoApplyIndex = true; // ALL NODE CALLS HAVE INDEX APPLIED (so it knows what DB to hit)
-        api.execute(request, onSuccess, onError)
-      },
+      // so you dont have to inject $http in your controllers if you injected this service already..
+      call: function(request) { return $http(request); },
 
       RoadmapNode: {
-
         serviceUrl: '/roadmap-node',
-
         // execute shortcut for basic calls
-        call:function(url, params, onSuccess, onError){
-          var request = this.createRequest(url, params)
-          node.call(request, onSuccess, onError);
+        call:function(url, params, options){
+          return node.call(this.createRequest(url, params, options));
         },
         // creates standard request object for this service
-        createRequest:function(url, params, overrides){
+        createRequest:function(url, params, options){
           var request = {
             method: 'POST',
             url: node.RoadmapNode.serviceUrl + url,
-            data: params
+            data: params,
+            // options
+            autoApplyIndex:true
           }
-          return _.extend(api.defaultRequest, request , overrides)
+          // merge with default request options
+          return api.createRequest(request, options)
         },
-
 
 
         // METHODS
@@ -40,12 +36,22 @@
         },
 
         find: function(type, query, options) {
-          return node.RoadmapNode.execute('/api/crud/find', {_type: type, query: query}, options);
+          return node.RoadmapNode.call('/api/crud/find', {_type: type, query: query}, options);
         },
 
-        findOne: function(type, query, options) {
 
-          return node.RoadmapNode.find(type, query, function(data) {
+        findOne: function(type, query, options) {
+          query.limit = 1;
+          return node.RoadmapNode.find(type, query, options)
+            .then(function(response){
+              // success
+              if (_.isArray(response.data) && response.data.length >= 1)
+                response.data = response.data[0]
+              return response.data
+            })
+
+          /*
+          return this.find(type, query, function(data) {
             if (onSuccess) {
               if (_.isArray(data) && data.length >= 1) {
                 return onSuccess(data[0]);
@@ -53,7 +59,9 @@
               return onSuccess(null);
             }
           }, onError);
-        },
+          */
+        }
+        /*
         remove: function(type, id, onSuccess, onError) {
           id = api.ensureInt(id);
           return node.RoadmapNode.execute('/api/crud/remove', {
@@ -61,9 +69,10 @@
             id: id
           }, onSuccess, onError);
         }
-      },
+        */
+      }
 
-
+      /*
       Batch: {
         execute: function(method, params, onSuccess, onError) {
           return node.RoadmapNode.execute('/api/batch' + method, params, onSuccess, onError);
@@ -79,7 +88,7 @@
             params = {};
           }
           if (params.index == null) {
-            params.index = $config.getTenantIndex();
+            params.index = $config.index();
           }
           if (autoApplySession) {
             if (params.sessionToken == null) {
@@ -189,6 +198,7 @@
           return node.ExploreDB.execute('/save', data, onSuccess, onError);
         }
       }
+      */
     };
     return node;
   });
