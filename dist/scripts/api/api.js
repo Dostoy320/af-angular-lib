@@ -22,7 +22,7 @@
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $sentry, $config) {
+  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $sentry, $config, $log, $q) {
 
 
 
@@ -59,12 +59,16 @@
           api.logApiError(data, status, request);
 
         // display message to user?
-        if(api.optionEnabled(request, 'displayErrors'))
+        if(api.optionEnabled(request, 'displayErrors')) {
+          $log.debug('api.handleApiError: $msg.error()')
           $msg.error(api.getErrorMessage(data, status));
+        }
 
         // stop loaders?
-        if(api.optionEnabled(request, 'loaderStopOnError'))
+        if(api.optionEnabled(request, 'loaderStopOnError')) {
+          $log.debug('api.handleApiError: $loader.stop()')
           $loader.stop();
+        }
       },
 
       logApiError:function(data, status, request) {
@@ -133,28 +137,18 @@
         if (value === 'false' || value === 0 || value === '0') return false;
         return value;
       },
-      ensureString: function(value) {  return '' + value; }
+      ensureString: function(value) {  return '' + value; },
       
       
       //
       // RESOLVE/REJECT
       //
-      /*
-      standardResolve: function(defer, data) {
-        return function(error) {
-          if (error) {
-            return defer.reject(error);
-          } else {
-            return defer.resolve(data);
-          }
-        };
+      resolveResponse:function(defer){
+        return function(response){ defer.resolve(response); }
       },
-      standardReject: function(defer) {
-        return function(data, status, headers, config) {
-          return defer.reject(api.getErrorMessage(data, status));
-        };
-      },
-      */
+      rejectResponse:function(defer){
+        return function(response){ defer.reject(response); }
+      }
     };
 
     var http_codes = {
