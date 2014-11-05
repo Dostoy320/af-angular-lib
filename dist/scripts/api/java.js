@@ -15,18 +15,18 @@
       RoadmapService: {
         serviceUrl: '/RoadmapService',
         // BASE
-        call:function(url, params){
-          return java.call(this.createRequest(url, params));
+        call:function(url, params, options){
+          return java.call(this.createRequest(url, params, options));
         },
         // creates standard request object for this service
-        createRequest:function(url, params, overrides){
+        createRequest:function(url, params, options){
           var request = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + url,
             data: params || {}
           }
           // merge with default request options
-          return api.createRequest(request, overrides)
+          return api.createRequest(request, options)
         },
 
         // METHODS
@@ -44,11 +44,11 @@
       AuthService: {
         serviceUrl: '/RoadmapService',
         // BASE
-        call:function(url, params){
-          return java.call(this.createRequest(url, params));
+        call:function(url, params, options){
+          return java.call(this.createRequest(url, params, options));
         },
         // creates standard request object for this service
-        createRequest:function(url, params, overrides){
+        createRequest:function(url, params, options){
           var request = {
             method: 'POST',
             url: java.AuthService.serviceUrl + url,
@@ -57,16 +57,23 @@
             urlEncode:true
           }
           // merge with default request options
-          return api.createRequest(request, overrides)
+          return api.createRequest(request, options)
         },
 
 
         // METHODS
         login: function(username, password) {
-          var request = this.createRequest('/login', { username: username, password: password })
-          request.autoApplySession = false;
-          request.displayErrors = false;
-          return java.call(request);
+          var options = {
+            autoApplySession:false,
+            displayErrors:false
+          }
+          return this.call('/login', { username: username, password: password }, options)
+        },
+        logout: function(options) {
+          return this.call('/logout', null, options);
+        },
+        loadsession: function(sessionToken, options) {
+          return this.call('/loadsession', {sessionToken: sessionToken}, options);
         }
         /*
 
@@ -106,9 +113,6 @@
         getuserfromuserid: function(userId) {
           this.call('/getuserfromuserid', {userId: userId});
         },
-        loadsession: function(sessionToken) {
-          this.call('/loadsession', {sessionToken: sessionToken});
-        }
         */
       }
     };

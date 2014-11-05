@@ -1,7 +1,6 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.util', ['af.config']);
+  var myApp = angular.module('af.util', ['af.config']);
 
   Number.prototype.formatNumber = function(precision, decimal, seperator) {
     var i, j, n, s;
@@ -16,14 +15,20 @@
   };
 
   myApp.service('$util', function($window, $location, $config) {
+
+    var preferredDisplayName = $config.get('preferredDisplayName')
+
     var util;
     return util = {
+
       GET: function(key) {
-        var params, search, vars;
-        vars = $location.search();
-        search = $window.location.search;
+        // quick check to see if key is even in url at all...
+        if($location.absUrl().indexOf(key) < 0) return null;
+
+        var vars = $location.search();
+        var search = $window.location.search;
         if (search) {
-          params = search.split('&');
+          var params = search.split('&');
           _.each(params, function(param, i) {
             var parts;
             parts = param.replace('#', '').replace('/', '').replace('?', '').split('=');
@@ -31,16 +36,13 @@
           });
         }
         if (key) {
-          if (vars[key]) {
-            return vars[key];
-          }
-          if (vars[key.toLowerCase()]) {
-            return vars[key.toLowerCase()];
-          }
+          if (vars[key]) return vars[key];
+          if (vars[key.toLowerCase()]) return vars[key.toLowerCase()];
           return null;
         }
         return vars;
       },
+
       postToUrl: function(url, params, newWindow, method) {
         var date, form, winName;
         if (!_.isBoolean(newWindow)) {
@@ -75,18 +77,25 @@
           return form.submit();
         }
       },
+
+      // creates a displayName for our user
+      createDisplayName:function(user){
+        if(!user) return '';
+        if(preferredDisplayName == 'nameOfPractice' && user.nameOfPractice){
+          return user.nameOfPractice;
+        } else if(user.firstName && user.lastName){
+          return user.firstName + ' ' + user.lastName;
+        } else {
+          return user.firstName || user.lastName || user.username || user.userId || '';
+        }
+      },
+
       format: {
         date: function(value, format, inputType) {
-          if (!value) {
-            return '';
-          }
-          if (!inputType) {
-            inputType = "utc";
-          }
+          if (!value) return '';
+          if (!inputType) inputType = "utc";
           if (moment) {
-            if (!format) {
-              format = $config.get('app.dateFormat') || 'MM/DD/YY';
-            }
+            if(!format) format = $config.get('app.dateFormat') || 'MM/DD/YY';
             if (typeof value === 'string') {
               switch (inputType.toLowerCase()) {
                 case 'utc':

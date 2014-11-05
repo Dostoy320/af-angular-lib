@@ -11,9 +11,12 @@
       _prefix: STORAGE_PREFIX + '_',
       _prefixPersistent: 'p_' + STORAGE_PREFIX,
       store: function(key, value, expires) {
-        return amplify.store(this._prefix + key, value, {
-          expires: expires
-        });
+        var options = null
+        if(expires){
+          if(_.isObject(expires) && expires.hasOwnProperty('expires')) options = expires;
+          if(_.isNumber(expires)) options = { expires: expires }
+        }
+        return amplify.store(this._prefix + key, value, options);
       },
       persist: function(key, value, expires) {
         return amplify.store(this._prefixPersistent + key, value, {

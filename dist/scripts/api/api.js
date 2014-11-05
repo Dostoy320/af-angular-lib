@@ -13,10 +13,11 @@
     autoApplyIndex:false,   // should the node db index to ALL api calls automatically?
     urlEncode:false,        // send as application/x-www-form-urlencoded
     // response options
+    disableHttpInterceptor:false,      // turn off to disable any http interceptor
+    // errors
     logErrors:true,         // on error, log to sentry (or whatever)
     displayErrors:true,     // on error, display error to user
-    loaderStop:true,        // on error, call $loader.stop()
-    disableHttpInterceptor:false // turn off to disable any http interceptor
+    loaderStopOnError:true  // on error, call $loader.stop()
   });
 
 
@@ -62,7 +63,7 @@
           $msg.error(api.getErrorMessage(data, status));
 
         // stop loaders?
-        if(api.optionEnabled(request, 'loaderStop'))
+        if(api.optionEnabled(request, 'loaderStopOnError'))
           $loader.stop();
       },
 
@@ -132,7 +133,7 @@
         if (value === 'false' || value === 0 || value === '0') return false;
         return value;
       },
-      ensureString: function(value) {  return '' + value; },
+      ensureString: function(value) {  return '' + value; }
       
       
       //

@@ -2,7 +2,7 @@
 
   var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
 
-  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $log, $window, $config) {
+  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $loader, $log, $window, $config) {
 
     var interceptor = {
 
@@ -17,11 +17,11 @@
         request.debug = api.getDebugInfo();
         if (api.optionEnabled(request, 'autoApplySession')) {
           request.data = request.data || {}
-          request.data.sessionToken = authManager.findSessionToken()
+          if(!request.data.sessionToken) request.data.sessionToken = authManager.sessionToken()
         }
         if (api.optionEnabled(request, 'autoApplyIndex')) {
           request.data = request.data || {}
-          request.data.tenant = $config.index();
+          if(!request.data.tenant) request.data.tenant = $config.index();
         }
 
         // if we want urlEncoded... deal with that
@@ -33,6 +33,7 @@
           if (request.data && !_.isString(request.data))
             request.data = $.param(request.data)
         }
+
         return request;
       },
 
@@ -63,8 +64,7 @@
         // don't monkey with requests that have a period in them (files)
         if(response.config && response.config.url && response.config.url.indexOf('.') >= 0) return $q.reject(response);
 
-        $log.info('httpInterceptor: Handling error')
-        // deal with error
+        // handle error
         api.handleApiError(response.data, response.status, response.config);
         return $q.reject(response);
       }

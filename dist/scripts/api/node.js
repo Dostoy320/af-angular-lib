@@ -12,6 +12,7 @@
 
       RoadmapNode: {
         serviceUrl: '/roadmap-node',
+        // BASE
         // execute shortcut for basic calls
         call:function(url, params, options){
           return node.call(this.createRequest(url, params, options));
@@ -29,48 +30,30 @@
           return api.createRequest(request, options)
         },
 
-
         // METHODS
         save: function(type, resource, options) {
-          return node.RoadmapNode.call('/api/crud/save', {_type: type, resource: resource}, options);
+          return this.call('/api/crud/save', {_type: type, resource: resource}, options);
         },
-
         find: function(type, query, options) {
-          return node.RoadmapNode.call('/api/crud/find', {_type: type, query: query}, options);
+          return this.call('/api/crud/find', {_type: type, query: query}, options);
         },
-
-
         findOne: function(type, query, options) {
-          query.limit = 1;
+          query.limit = 1; // we only want 1
           return node.RoadmapNode.find(type, query, options)
             .then(function(response){
-              // success
               if (_.isArray(response.data) && response.data.length >= 1)
                 response.data = response.data[0]
-              return response.data
+              else
+                response.data = null
+              return response
             })
-
-          /*
-          return this.find(type, query, function(data) {
-            if (onSuccess) {
-              if (_.isArray(data) && data.length >= 1) {
-                return onSuccess(data[0]);
-              }
-              return onSuccess(null);
-            }
-          }, onError);
-          */
+        },
+        remove: function(type, resource) {
+          var id = _.isObject(resource) ? resource.id : resource;
+          return this.call('/api/crud/remove', {_type: type, id:api.ensureInt(id)});
         }
-        /*
-        remove: function(type, id, onSuccess, onError) {
-          id = api.ensureInt(id);
-          return node.RoadmapNode.execute('/api/crud/remove', {
-            _type: type,
-            id: id
-          }, onSuccess, onError);
-        }
-        */
       }
+
 
       /*
       Batch: {

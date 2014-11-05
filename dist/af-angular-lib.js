@@ -15,31 +15,31 @@
     autoApplyIndex:false,   // should the node db index to ALL api calls automatically?
     urlEncode:false,        // send as application/x-www-form-urlencoded
     // response options
+    disableHttpInterceptor:false,      // turn off to disable any http interceptor
+    // errors
     logErrors:true,         // on error, log to sentry (or whatever)
     displayErrors:true,     // on error, display error to user
-    loaderStop:true,        // on error, call $loader.stop()
-    disableHttpInterceptor:false // turn off to disable any http interceptor
+    loaderStopOnError:true  // on error, call $loader.stop()
   });
+
+
 
   myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $sentry, $config) {
 
+
+
     var api = {
+
+
+      //
+      // REQUEST CREATION
+      //
 
       // creates a request... merges default request, with anything users passes in
       // generally this: createRequest(request, overrides)
       createRequest:function(){
         return _.extend({}, API_REQUEST_DEFAULTS, arguments[0], arguments[1], arguments[2])
       },
-
-      optionEnabled:function(request, optionName){
-        if(request && request.hasOwnProperty(optionName))
-          return request[optionName]
-        return API_REQUEST_DEFAULTS[optionName]
-      },
-
-      //
-      // PARAMETERS ADDED TO REQUEST
-      //
       // add debugs info to requests (don't do on Java, Java could blow up)
       getDebugInfo: function() {
         return {
@@ -50,41 +50,45 @@
         }
       },
 
+
+
       //
       // ERROR HANDLING
       //
       handleApiError: function(data, status, request) {
-        // log error unless told not to
-        if((request.hasOwnProperty('logErrors') && request.logErrors === true) || API_REQUEST_DEFAULTS.logErrors)
+        // log errors?
+        if(api.optionEnabled(request, 'logErrors'))
           api.logApiError(data, status, request);
 
-        // display message unless told not to
-        if((request.hasOwnProperty('displayErrors') && request.displayErrors === true) || API_REQUEST_DEFAULTS.displayErrors)
+        // display message to user?
+        if(api.optionEnabled(request, 'displayErrors'))
           $msg.error(api.getErrorMessage(data, status));
 
-        // stop loaders unless told not to
-        if((request.hasOwnProperty('loaderStop') && request.loaderStop === true) || API_REQUEST_DEFAULTS.loaderStop)
+        // stop loaders?
+        if(api.optionEnabled(request, 'loaderStopOnError'))
           $loader.stop();
       },
 
       logApiError:function(data, status, request) {
+        request = request || {}
         // remove password!!!
-        if (!request) request = {}
         if (request.data && _.isString(request.data)){
           request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
         } else {
           if (request.data && request.data.password) request.data.password = '********';
         }
-        // get message
+        // log it
         var message = api.getErrorMessage(data, status);
         $sentry.error(message, { extra: request });
         $log.warn(message, status);
       },
 
+      // attempts to get a humanized response from an error.
       getErrorMessage: function(data, status) {
         // was this JSEND ERROR?
-        if (data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
+        if (api.responseIsJSEND(data)) {
           var codeStr = api.getHttpCodeString(data.code);
+          data.message = data.message || 'Whoops, an error has occured.'
           if (data.message === codeStr) {
             return data.message + ' (' + data.code + ')';
           } else {
@@ -99,26 +103,45 @@
         // return whatever info we can
         return data.message || data.code || data || status;
       },
+      // HTTP CODES
+      isHttpCode: function(code) {
+        return _.isString(api.getHttpCodeString(code));
+      },
+      getHttpCodeString: function(code) {
+        if (http_codes.hasOwnProperty(code)) return http_codes[code];
+        return code;
+      },
 
 
 
       //
       // UTIL
       //
+      optionEnabled:function(request, optionName){
+        if(request && request.hasOwnProperty(optionName))
+          return request[optionName]
+        return API_REQUEST_DEFAULTS[optionName]
+      },
       responseIsJSEND:function(data) {
         return _.isObject(data) && data.hasOwnProperty('status') && (data.hasOwnProperty('data') || data.hasOwnProperty('code'));
       },
-
+      // VALIDATION
       ensureInt: function(value) {
         if (_.isString(value)) return parseInt(value);
         return value;
       },
       ensureBool: function(value) {
-        if (value === 'true' || 1)  return true;
-        if (value === 'false' || 0) return false;
+        if (value === 'true' || value === 1 || value === '1')  return true;
+        if (value === 'false' || value === 0 || value === '0') return false;
         return value;
       },
-      ensureString: function(value) {  return '' + value; },
+      ensureString: function(value) {  return '' + value; }
+      
+      
+      //
+      // RESOLVE/REJECT
+      //
+      /*
       standardResolve: function(defer, data) {
         return function(error) {
           if (error) {
@@ -133,73 +156,66 @@
           return defer.reject(api.getErrorMessage(data, status));
         };
       },
-      isHttpCode: function(code) {
-        return _.isString(api.getHttpCodeString(code));
-      },
-      getHttpCodeString: function(code) {
-        var http_codes = {
-          100: 'Continue',
-          101: 'Switching Protocols',
-          102: 'Processing',
-          200: 'OK',
-          201: 'Created',
-          202: 'Accepted',
-          203: 'Non-Authoritative Information',
-          204: 'No Content',
-          205: 'Reset Content',
-          206: 'Partial Content',
-          207: 'Multi-Status',
-          300: 'Multiple Choices',
-          301: 'Moved Permanently',
-          302: 'Found',
-          303: 'See Other',
-          304: 'Not Modified',
-          305: 'Use Proxy',
-          306: 'Switch Proxy',
-          307: 'Temporary Redirect',
-          400: 'Bad Request',
-          401: 'Unauthorized',
-          402: 'Payment Required',
-          403: 'Forbidden',
-          404: 'Not Found',
-          405: 'Method Not Allowed',
-          406: 'Not Acceptable',
-          407: 'Proxy Authentication Required',
-          408: 'Request Timeout',
-          409: 'Conflict',
-          410: 'Gone',
-          411: 'Length Required',
-          412: 'Precondition Failed',
-          413: 'Request Entity Too Large',
-          414: 'Request-URI Too Long',
-          415: 'Unsupported Media Type',
-          416: 'Requested Range Not Satisfiable',
-          417: 'Expectation Failed',
-          418: 'I\'m a teapot',
-          422: 'Unprocessable Entity',
-          423: 'Locked',
-          424: 'Failed Dependency',
-          425: 'Unordered Collection',
-          426: 'Upgrade Required',
-          449: 'Retry With',
-          450: 'Blocked by Windows Parental Controls',
-          500: 'Internal Server Error',
-          501: 'Not Implemented',
-          502: 'Bad Gateway',
-          503: 'Service Unavailable',
-          504: 'Gateway Timeout',
-          505: 'HTTP Version Not Supported',
-          506: 'Variant Also Negotiates',
-          507: 'Insufficient Storage',
-          509: 'Bandwidth Limit Exceeded',
-          510: 'Not Extended'
-        };
-        if (http_codes.hasOwnProperty(code))
-          return http_codes[code];
-        return code;
-      }
+      */
     };
 
+    var http_codes = {
+      100: 'Continue',
+      101: 'Switching Protocols',
+      102: 'Processing',
+      200: 'OK',
+      201: 'Created',
+      202: 'Accepted',
+      203: 'Non-Authoritative Information',
+      204: 'No Content',
+      205: 'Reset Content',
+      206: 'Partial Content',
+      207: 'Multi-Status',
+      300: 'Multiple Choices',
+      301: 'Moved Permanently',
+      302: 'Found',
+      303: 'See Other',
+      304: 'Not Modified',
+      305: 'Use Proxy',
+      306: 'Switch Proxy',
+      307: 'Temporary Redirect',
+      400: 'Bad Request',
+      401: 'Unauthorized',
+      402: 'Payment Required',
+      403: 'Forbidden',
+      404: 'Not Found',
+      405: 'Method Not Allowed',
+      406: 'Not Acceptable',
+      407: 'Proxy Authentication Required',
+      408: 'Request Timeout',
+      409: 'Conflict',
+      410: 'Gone',
+      411: 'Length Required',
+      412: 'Precondition Failed',
+      413: 'Request Entity Too Large',
+      414: 'Request-URI Too Long',
+      415: 'Unsupported Media Type',
+      416: 'Requested Range Not Satisfiable',
+      417: 'Expectation Failed',
+      418: 'I\'m a teapot',
+      422: 'Unprocessable Entity',
+      423: 'Locked',
+      424: 'Failed Dependency',
+      425: 'Unordered Collection',
+      426: 'Upgrade Required',
+      449: 'Retry With',
+      450: 'Blocked by Windows Parental Controls',
+      500: 'Internal Server Error',
+      501: 'Not Implemented',
+      502: 'Bad Gateway',
+      503: 'Service Unavailable',
+      504: 'Gateway Timeout',
+      505: 'HTTP Version Not Supported',
+      506: 'Variant Also Negotiates',
+      507: 'Insufficient Storage',
+      509: 'Bandwidth Limit Exceeded',
+      510: 'Not Extended'
+    };
 
     return api
 
@@ -208,234 +224,26 @@
 }).call(this);
 
 ;
-/*
-(function() {
-
-  // this file was pulled out of api service because of circular dependency issues with httpInterceptor
-
-  var myApp = angular.module('af.apiUtil', ['af.msg', 'af.loader', 'af.authManager', 'af.sentry', 'af.util', 'af.config']);
-
-  // LOAD DEFAULTS
-  myApp.constant('API_REQUEST_DEFAULTS', {
-    method:'POST',
-    url:'',
-    // options
-    autoApplySession:true,  // should a sessionToken be added to ALL api calls automatically?
-    autoApplyIndex:false,   // should the node db index to ALL api calls automatically?
-    urlEncode:false,        // send as application/x-www-form-urlencoded
-    // response options
-    logErrors:true,         // on error, log to sentry (or whatever)
-    displayErrors:true,     // on error, display error to user
-    loaderStop:true,        // on error, call $loader.stop()
-    disableHttpInterceptor:false // turn off to disable any http interceptor
-  });
-
-  myApp.service('apiUtil', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $sentry, $util, $config) {
-
-    var apiUtil = {
-
-      mergeRequest:function(request, overrides){
-        return _.extend({}, API_REQUEST_DEFAULTS, request , overrides || {})
-      },
-
-      optionEnabled:function(request, optionName){
-        if(request && request.hasOwnProperty(optionName))
-          return request[optionName]
-        return API_REQUEST_DEFAULTS[optionName]
-      },
-
-      //
-      // PARAMETERS ADDED TO REQUEST
-      //
-      // add debugs info to requests (don't do on Java, Java could blow up)
-      getDebugInfo: function() {
-        return {
-          url:    $window.location.href,
-          index:  $config.index(),
-          tenant: $config.tenant(),
-          env:    $config.env()
-        }
-      },
-
-      //
-      // ERROR HANDLING
-      //
-      handleApiError: function(data, status, request) {
-        // log error unless told not to
-        if((request.hasOwnProperty('logErrors') && request.logErrors === true) || API_REQUEST_DEFAULTS.logErrors)
-          apiUtil.logApiError(data, status, request);
-
-        // display message unless told not to
-        if((request.hasOwnProperty('displayErrors') && request.displayErrors === true) || API_REQUEST_DEFAULTS.displayErrors)
-          $msg.error(apiUtil.getErrorMessage(data, status));
-
-        // stop loaders unless told not to
-        if((request.hasOwnProperty('loaderStop') && request.loaderStop === true) || API_REQUEST_DEFAULTS.loaderStop)
-          $loader.stop();
-      },
-
-      logApiError:function(data, status, request) {
-        // remove password!!!
-        if (!request) request = {}
-        if (request.data && _.isString(request.data)){
-          request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
-        } else {
-          if (request.data && request.data.password) request.data.password = '********';
-        }
-        // get message
-        var message = apiUtil.getErrorMessage(data, status);
-        $sentry.error(message, { extra: request });
-        $log.warn(message, status);
-      },
-
-      getErrorMessage: function(data, status) {
-        // was this JSEND ERROR?
-        if (data && data.hasOwnProperty('message') && data.hasOwnProperty('code')) {
-          var codeStr = apiUtil.getHttpCodeString(data.code);
-          if (data.message === codeStr) {
-            return data.message + ' (' + data.code + ')';
-          } else {
-            return data.message + ' (' + codeStr + ')';
-          }
-        }
-        if (_.isNumber(status) && apiUtil.isHttpCode(status)) {
-          var err = apiUtil.getHttpCodeString(status);
-          if (status === 502) err = 'Unable to communicate with server. Please check your internet connection.';
-          return err + ' (' + status + ')';
-        }
-        // return whatever info we can
-        return data.message || data.code || data || status;
-      },
-
-
-
-      //
-      // UTIL
-      //
-      responseIsJSEND:function(data) {
-        return _.isObject(data) && data.hasOwnProperty('status') && (data.hasOwnProperty('data') || data.hasOwnProperty('code'));
-      },
-
-      ensureInt: function(value) {
-        if (_.isString(value)) return parseInt(value);
-        return value;
-      },
-      ensureBool: function(value) {
-        if (value === 'true' || 1)  return true;
-        if (value === 'false' || 0) return false;
-        return value;
-      },
-      ensureString: function(value) {  return '' + value; },
-      standardResolve: function(defer, data) {
-        return function(error) {
-          if (error) {
-            return defer.reject(error);
-          } else {
-            return defer.resolve(data);
-          }
-        };
-      },
-      standardReject: function(defer) {
-        return function(data, status, headers, config) {
-          return defer.reject(apiUtil.getErrorMessage(data, status));
-        };
-      },
-      isHttpCode: function(code) {
-        return _.isString(apiUtil.getHttpCodeString(code));
-      },
-      getHttpCodeString: function(code) {
-        var http_codes = {
-          100: 'Continue',
-          101: 'Switching Protocols',
-          102: 'Processing',
-          200: 'OK',
-          201: 'Created',
-          202: 'Accepted',
-          203: 'Non-Authoritative Information',
-          204: 'No Content',
-          205: 'Reset Content',
-          206: 'Partial Content',
-          207: 'Multi-Status',
-          300: 'Multiple Choices',
-          301: 'Moved Permanently',
-          302: 'Found',
-          303: 'See Other',
-          304: 'Not Modified',
-          305: 'Use Proxy',
-          306: 'Switch Proxy',
-          307: 'Temporary Redirect',
-          400: 'Bad Request',
-          401: 'Unauthorized',
-          402: 'Payment Required',
-          403: 'Forbidden',
-          404: 'Not Found',
-          405: 'Method Not Allowed',
-          406: 'Not Acceptable',
-          407: 'Proxy Authentication Required',
-          408: 'Request Timeout',
-          409: 'Conflict',
-          410: 'Gone',
-          411: 'Length Required',
-          412: 'Precondition Failed',
-          413: 'Request Entity Too Large',
-          414: 'Request-URI Too Long',
-          415: 'Unsupported Media Type',
-          416: 'Requested Range Not Satisfiable',
-          417: 'Expectation Failed',
-          418: 'I\'m a teapot',
-          422: 'Unprocessable Entity',
-          423: 'Locked',
-          424: 'Failed Dependency',
-          425: 'Unordered Collection',
-          426: 'Upgrade Required',
-          449: 'Retry With',
-          450: 'Blocked by Windows Parental Controls',
-          500: 'Internal Server Error',
-          501: 'Not Implemented',
-          502: 'Bad Gateway',
-          503: 'Service Unavailable',
-          504: 'Gateway Timeout',
-          505: 'HTTP Version Not Supported',
-          506: 'Variant Also Negotiates',
-          507: 'Insufficient Storage',
-          509: 'Bandwidth Limit Exceeded',
-          510: 'Not Extended'
-        };
-        if (http_codes.hasOwnProperty(code))
-          return http_codes[code];
-        return code;
-      }
-    };
-
-
-    return apiUtil
-
-  });
-
-}).call(this);
-*/
-;
 (function() {
 
   var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
 
-  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $window, $config) {
+  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $loader, $log, $window, $config) {
 
     var interceptor = {
 
       request: function(request) {
         // is this interceptor enabled?
         if(api.optionEnabled('disableHttpInterceptor')) return request;
-
         // don't monkey with requests that have a period in them (files)
         if(request.url && request.url.indexOf('.') >= 0) return request;
 
         // slap some stuff on our requests
         request.method = request.method || 'POST';
         request.debug = api.getDebugInfo();
-        if (request.optionEnabled(request, 'autoApplySession')) {
+        if (api.optionEnabled(request, 'autoApplySession')) {
           request.data = request.data || {}
-          request.data.sessionToken = authManager.findSessionToken()
+          request.data.sessionToken = authManager.sessionToken()
         }
         if (api.optionEnabled(request, 'autoApplyIndex')) {
           request.data = request.data || {}
@@ -446,18 +254,20 @@
         if (api.optionEnabled(request, 'urlEncode')) {
           // add urlencoded header
           request.headers = request.headers || {}
-          if (!request.headers.hasOwnProperty('Content-Type'))
-            request.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+          _.extend(request.headers, {'Content-Type':'application/x-www-form-urlencoded'})
           // data needs to be in string format
           if (request.data && !_.isString(request.data))
             request.data = $.param(request.data)
         }
+
         return request;
       },
 
       response: function(response) {
         // is this interceptor enabled?
         if(api.optionEnabled('disableHttpInterceptor')) return response;
+        // don't monkey with requests that have a period in them (files)
+        if(response.config && response.config.url && response.config.url.indexOf('.') >= 0) return response;
 
         // is this response an error?
         var isSuccess = true;
@@ -477,8 +287,10 @@
       responseError: function(response) {
         // is this interceptor enabled?
         if(api.optionEnabled('disableHttpInterceptor')) return $q.reject(response);
+        // don't monkey with requests that have a period in them (files)
+        if(response.config && response.config.url && response.config.url.indexOf('.') >= 0) return $q.reject(response);
 
-        // deal with error
+        // handle error
         api.handleApiError(response.data, response.status, response.config);
         return $q.reject(response);
       }
@@ -497,7 +309,7 @@
 
     var java = {
 
-      // so you dont have to inject $http in your controllers if you injected this service already..
+      // so you don't have to inject $http in your controllers if you injected this service already..
       call: function(request) { return $http(request); },
 
       //
@@ -505,28 +317,24 @@
       //
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-
         // BASE
-        // execute shortcut, when you have no options...
-        call:function(url, params, onSuccess, onError){
-          var request = java.RoadmapService.createRequest(url, params)
-          java.call(request, onSuccess, onError);
+        call:function(url, params, options){
+          return java.call(this.createRequest(url, params, options));
         },
-
         // creates standard request object for this service
         createRequest:function(url, params, options){
-          params = api.autoAddSessionTokenToParams(params, options)
-          var defaultRequest = {
+          var request = {
             method: 'POST',
             url: java.RoadmapService.serviceUrl + url,
             data: params || {}
           }
-          return _.extend(defaultRequest, options || {})
+          // merge with default request options
+          return api.createRequest(request, options)
         },
 
         // METHODS
-        invoke: function(params, request, onSuccess, onError) {
-          return java.RoadmapService.call('/invoke', params, request, onSuccess, onError);
+        invoke: function(params) {
+          return this.call('/invoke', params);
         }
       },
 
@@ -539,11 +347,11 @@
       AuthService: {
         serviceUrl: '/RoadmapService',
         // BASE
-        call:function(url, params){
-          return java.call(this.createRequest(url, params));
+        call:function(url, params, options){
+          return java.call(this.createRequest(url, params, options));
         },
         // creates standard request object for this service
-        createRequest:function(url, params, overrides){
+        createRequest:function(url, params, options){
           var request = {
             method: 'POST',
             url: java.AuthService.serviceUrl + url,
@@ -552,21 +360,27 @@
             urlEncode:true
           }
           // merge with default request options
-          return api.createRequest(request, overrides)
+          return api.createRequest(request, options)
         },
 
 
         // METHODS
         login: function(username, password) {
-          var request = this.createRequest('/login', { username: username, password: password })
-          request.autoApplySession = false;
-          request.displayErrors = false;
-          return java.execute(request);
+          var options = {
+            autoApplySession:false,
+            displayErrors:false
+          }
+          return this.call('/login', { username: username, password: password }, options)
+        },
+        logout: function(options) {
+          return this.call('/logout', null, options);
+        },
+        loadsession: function(sessionToken, options) {
+          return this.call('/loadsession', {sessionToken: sessionToken}, options);
         }
         /*
 
         UNTESTED
-
         ,
         logout: function(onSuccess, onError) {
           this.call('/logout', onSuccess, onError);
@@ -602,9 +416,6 @@
         getuserfromuserid: function(userId) {
           this.call('/getuserfromuserid', {userId: userId});
         },
-        loadsession: function(sessionToken) {
-          this.call('/loadsession', {sessionToken: sessionToken});
-        }
         */
       }
     };
@@ -628,6 +439,7 @@
 
       RoadmapNode: {
         serviceUrl: '/roadmap-node',
+        // BASE
         // execute shortcut for basic calls
         call:function(url, params, options){
           return node.call(this.createRequest(url, params, options));
@@ -645,48 +457,30 @@
           return api.createRequest(request, options)
         },
 
-
         // METHODS
         save: function(type, resource, options) {
-          return node.RoadmapNode.call('/api/crud/save', {_type: type, resource: resource}, options);
+          return this.call('/api/crud/save', {_type: type, resource: resource}, options);
         },
-
         find: function(type, query, options) {
-          return node.RoadmapNode.call('/api/crud/find', {_type: type, query: query}, options);
+          return this.call('/api/crud/find', {_type: type, query: query}, options);
         },
-
-
         findOne: function(type, query, options) {
-          query.limit = 1;
+          query.limit = 1; // we only want 1
           return node.RoadmapNode.find(type, query, options)
             .then(function(response){
-              // success
               if (_.isArray(response.data) && response.data.length >= 1)
                 response.data = response.data[0]
-              return response.data
+              else
+                response.data = null
+              return response
             })
-
-          /*
-          return this.find(type, query, function(data) {
-            if (onSuccess) {
-              if (_.isArray(data) && data.length >= 1) {
-                return onSuccess(data[0]);
-              }
-              return onSuccess(null);
-            }
-          }, onError);
-          */
+        },
+        remove: function(type, resource) {
+          var id = _.isObject(resource) ? resource.id : resource;
+          return this.call('/api/crud/remove', {_type: type, id:api.ensureInt(id)});
         }
-        /*
-        remove: function(type, id, onSuccess, onError) {
-          id = api.ensureInt(id);
-          return node.RoadmapNode.execute('/api/crud/remove', {
-            _type: type,
-            id: id
-          }, onSuccess, onError);
-        }
-        */
       }
+
 
       /*
       Batch: {
@@ -868,64 +662,71 @@
 
   var myApp = angular.module('af.authManager', ['af.util']);
 
-  myApp.service('authManager', function($util) {
+  myApp.constant('SESSION_TOKEN_PRIORITY', ['url', 'cache', 'window']);
 
-    var auth;
+  myApp.service('authManager', function($util, SESSION_TOKEN_PRIORITY) {
 
-    return auth = {
+    //
+    // SESSION/USER CACHE
+    //
+    var loggedInUser = amplify.store('loggedInUser') // for easy reference
 
-      sessionTokenPriority:['app', 'url', 'amplify', 'window'],
+    var auth = {
 
-      //
-      // SESSION/USER CACHE
-      //
-      loggedInUser: amplify.store("loggedInUser"), // username, firstName, lastName, email, nameOfPractice and email
-      sessionToken: amplify.store('sessionToken'),
-
-      loggedIn: function() {
-        return auth.sessionToken && auth.loggedInUser && auth.loggedInUser.userId;
-      },
-      clearUser: function() {
-        amplify.store('loggedInUser', null);
-        amplify.store('sessionToken', null);
-        auth.loggedInUser = null;
-        auth.sessionToken = null;
-      },
-      setSessionToken: function(sessionToken) {
-        auth.sessionToken = sessionToken;
-        amplify.store('sessionToken', sessionToken);
-      },
-      setLoggedInUser: function(sessionToken, userId, userName, userEmail, authorities) {
-        auth.setSessionToken(sessionToken);
-        auth.loggedInUser = {
-          userId: userId,
-          userName: userName,
-          userEmail: userEmail,
-          authorities: authorities
-        };
-        amplify.store('loggedInUser', auth.loggedInUser);
-      },
       // finds sessionToken based on priority
-      findSessionToken: function(priority) {
+      sessionToken: function() {
         // default priority, looks in this class first, then URL, then checks amplify and finally window.sessionToken
-        if (!priority) priority = auth.sessionTokenPriority;
         var token = null;
-        _.each(priority, function(place) {
+        _.each(SESSION_TOKEN_PRIORITY, function(place) {
           if (token) return;
           switch (place) {
-            case 'app':     token = auth.sessionToken; break;
-            case 'amplify': token = amplify.store('sessionToken'); break;
             case 'url':     token = $util.GET('sessionToken'); break;
-            case 'window':  token = window.sessionToken;
+            case 'cache':   token = amplify.store('sessionToken'); break;
+            case 'window':  token = window.sessionToken; break;
           }
         });
         return token;
       },
 
-      
+      // return object if null to prevent auth.user().firstName from blowing up.
+      user:function(){            return auth.loggedIn() ? loggedInUser : {} },
+
+      // is logged in?
+      loggedIn: function() { return auth.sessionToken() && loggedInUser && loggedInUser.userId;  },
+
+
+
       //
-      // ROLE CHECKS
+      // SET
       //
+      setSessionToken: function(sessionToken) { amplify.store('sessionToken', sessionToken); },
+      setLoggedInUser: function(user) {
+        user.displayName = $util.createDisplayName(user); // adds a displayName to the user
+        amplify.store('loggedInUser', user);
+      },
+
+
+      //
+      // DESTROY
+      //
+      logout:function(){ auth.clear(); },
+      clear: function() {
+        amplify.store('loggedInUser', null);
+        amplify.store('sessionToken', null);
+        loggedInUser = null;
+      },
+
+
+
+      //
+      // ROLES
+      //
+      // ENUMS
+      Role_Admin:'Role_Admin',                              // has access to everything
+      Role_RoadmapUserAdmin:'Role_RoadmapUserAdmin',        // can edit/create users
+      Role_RoadmapContentAdmin:'Role_RoadmapContentAdmin',  // can edit content
+      Role_AccessKeyManager:'Role_AccessKeyManager',        // can view/edit other users data
+
       hasRole: function(role) {
         if (!auth.loggedIn()) return false;
         return _.contains(auth.loggedInUser.authorities, role);
@@ -945,10 +746,13 @@
         return array.length === matched;
       },
 
-      isAdmin: function() { return auth.hasAnyRole(['Role_Admin', 'Role_RoadmapUserAdmin', 'Role_RoadmapContentAdmin']); },
-      isCoach: function() { return auth.hasAnyRole(['Role_AccessKeyManager']); }
+      isAdmin: function() { return auth.hasAnyRole([auth.Role_Admin, auth.Role_RoadmapUserAdmin, auth.Role_RoadmapContentAdmin]); },
+      isCoach: function() { return auth.hasAnyRole([auth.Role_AccessKeyManager]); }
+
 
     };
+
+    return auth;
   });
 
 }).call(this);
@@ -1070,20 +874,23 @@
   myApp = angular.module('af.loader', ['af.event']);
 
   myApp.service('$loader', function($event) {
-    var srv;
+    var srv, isRunning = false;
     srv = {
       start: function(txt) {
+        isRunning = true;
         return $event.shout($event.EVENT_loaderStart, txt);
       },
       stop: function() {
+        isRunning = false;
         return $event.shout($event.EVENT_loaderStop);
       },
-      save: function() {
-        return $event.shout($event.EVENT_loaderStart, 'Saving...');
-      },
-      load: function() {
-        return $event.shout($event.EVENT_loaderStart, 'Loading...');
-      }
+
+      // util / quickies
+      isLoading:function(){ return isRunning; },
+      saving: function() { srv.start('Saving...');    },
+      loading: function() { srv.start('Loading...');  },
+      bar: function() { srv.start();  },
+      mask: function() { srv.start(' ');  }
     };
     return srv;
   });
@@ -1092,14 +899,24 @@
     return {
       restrict: 'A',
       scope: {},
-      template: '<div class="ng-cloak">' + '<div id="app-loader-bar" ng-cloak ng-show="loaderBar" class="ng-cloak progress progress-striped active">' + '<div class="progress-bar" style="width:100%"></div>' + '</div>' + '<div id="app-loader-mask" ng-show="loadMask">' + '<div class="loader-mask"></div>' + '<div class="loader-text">' + '<i class="icon-spinner icon-spin icon-3x"></i> &nbsp;<p ng-show="loaderText" ng-bind="loaderText"></p>' + '</div>' + '</div>' + '</div>',
+      template: '<div class="ng-cloak">' +
+                  '<div id="app-loader-bar" ng-cloak ng-show="loaderBar" class="ng-cloak progress progress-striped active">' +
+                    '<div class="progress-bar" style="width:100%"></div>' +
+                  '</div>' +
+                  '<div id="app-loader-mask" ng-show="loadMask">' +
+                    '<div class="loader-mask"></div>' +
+                    '<div class="loader-text">' +
+                      '<i class="icon-spinner icon-spin icon-3x"></i> &nbsp;<p ng-show="loaderText" ng-bind="loaderText"></p>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>',
       link: function(scope, element, attrs) {
         scope.loaderBar = null;
         scope.loadMask = null;
         scope.loaderText = null;
         scope.start = function(txt) {
           scope.loaderText = _.isString(txt) ? txt : null;
-          scope.loadMask = _.isBoolean(txt) || scope.loaderText ? true : false;
+          scope.loadMask = _.isBoolean(txt) || (''+scope.loaderText).length > 0 ? true : false;
           return scope.loaderBar = true;
         };
         scope.stop = function() {
@@ -1507,9 +1324,8 @@
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.util', ['af.config']);
+  var myApp = angular.module('af.util', ['af.config']);
 
   Number.prototype.formatNumber = function(precision, decimal, seperator) {
     var i, j, n, s;
@@ -1524,14 +1340,20 @@
   };
 
   myApp.service('$util', function($window, $location, $config) {
+
+    var preferredDisplayName = $config.get('preferredDisplayName')
+
     var util;
     return util = {
+
       GET: function(key) {
-        var params, search, vars;
-        vars = $location.search();
-        search = $window.location.search;
+        // quick check to see if key is even in url at all...
+        if($location.absUrl().indexOf(key) < 0) return null;
+
+        var vars = $location.search();
+        var search = $window.location.search;
         if (search) {
-          params = search.split('&');
+          var params = search.split('&');
           _.each(params, function(param, i) {
             var parts;
             parts = param.replace('#', '').replace('/', '').replace('?', '').split('=');
@@ -1539,16 +1361,13 @@
           });
         }
         if (key) {
-          if (vars[key]) {
-            return vars[key];
-          }
-          if (vars[key.toLowerCase()]) {
-            return vars[key.toLowerCase()];
-          }
+          if (vars[key]) return vars[key];
+          if (vars[key.toLowerCase()]) return vars[key.toLowerCase()];
           return null;
         }
         return vars;
       },
+
       postToUrl: function(url, params, newWindow, method) {
         var date, form, winName;
         if (!_.isBoolean(newWindow)) {
@@ -1583,18 +1402,25 @@
           return form.submit();
         }
       },
+
+      // creates a displayName for our user
+      createDisplayName:function(user){
+        if(!user) return '';
+        if(preferredDisplayName == 'nameOfPractice' && user.nameOfPractice){
+          return user.nameOfPractice;
+        } else if(user.firstName && user.lastName){
+          return user.firstName + ' ' + user.lastName;
+        } else {
+          return user.firstName || user.lastName || user.username || user.userId || '';
+        }
+      },
+
       format: {
         date: function(value, format, inputType) {
-          if (!value) {
-            return '';
-          }
-          if (!inputType) {
-            inputType = "utc";
-          }
+          if (!value) return '';
+          if (!inputType) inputType = "utc";
           if (moment) {
-            if (!format) {
-              format = $config.get('app.dateFormat') || 'MM/DD/YY';
-            }
+            if(!format) format = $config.get('app.dateFormat') || 'MM/DD/YY';
             if (typeof value === 'string') {
               switch (inputType.toLowerCase()) {
                 case 'utc':
