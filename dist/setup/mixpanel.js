@@ -28,5 +28,6 @@ var mixPanelSetup = {
     });
   }
 }
+
 // init mixPanel
 // mixPanelSetup.init();

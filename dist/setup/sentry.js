@@ -11,11 +11,29 @@ var sentrySetup = {
     ignoreUrls: [ /extensions\//i, /^chrome:\/\//i ]
   },
 
-  init:function(){
+  message:function(message){
+    if(typeof Raven === "undefined") return;
+    var options = null
+    if(appEnv) {
+      options = {
+        extra: {url: window.location.url },
+        tags: {
+          app: appEnv.app(),
+          env: appEnv.env(),
+          tenant: appEnv.tenant(),
+          index:  appEnv.index(),
+          subDomain: appEnv.subDomainClean()
+        }
+      }
+    }
+    Raven.captureMessage(message, options)
+  },
+
+  init:function(prodUrl, devUrl, user){
     // what url?
-    var url = sentrySetup.prodUrl
+    var url = prodUrl || sentrySetup.prodUrl
     if(appEnv.env() === 'dev'){
-      url = sentrySetup.devUrl;
+      url = devUrl || sentrySetup.devUrl;
       if(typeof console !== 'undefined') console.log('Sentry - Dev Environment')
     } else {
       if(typeof console !== 'undefined') console.log('Sentry - Prod Environment')
@@ -23,14 +41,13 @@ var sentrySetup = {
 
     // this NEEDS to be loaded.. important our apps are sending errors.
     if(typeof Raven === "undefined") return;
+
     // init
     Raven.config(url, sentrySetup.options).install();
-    // Attach user data if possible
-    if(typeof amplify !== "undefined"){
-      var user = {}
-      if(amplify.store('userId'))    user.id = amplify.store('userId');
-      if(amplify.store('userEmail')) user.email = amplify.store('userEmail');
-      Raven.setUser(user);
+    if(user){
+      Raven.setUser(user)
+    } else {
+      Raven.setUser(); // clear any prior loaded user
     }
   }
 }

@@ -81,7 +81,10 @@
         }
         // log it
         var message = api.getErrorMessage(data, status);
-        $sentry.error(message, { extra: request });
+        if(request.headers)
+          $sentry.error(message, { request:request.data, headers:request.headers, debug:data.debug });
+        else
+          $sentry.error(message, request.data);
         $log.warn(message, status);
       },
 

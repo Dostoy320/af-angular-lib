@@ -31,6 +31,8 @@
   //
   myApp.service('$config', function($window, $filter) {
 
+    var app = ''
+
     var getPathValue = function(object, path) {
       var parts = path.split('.');
       if (parts.length === 1) return object[parts[0]];
@@ -59,7 +61,11 @@
       tenant: function() {    return appEnv.tenant(); },
       env: function() {       return appEnv.env(); },
       index: function() {     return appEnv.index(); },
-      subDomain: function() { return appEnv.subDomain(); }
+      subDomain: function() { return appEnv.subDomain(); },
+
+      // Used by sentry tagging..
+      // App (aka, portal, assessment, reporting, etc...)
+      app: function() {      return appEnv.app(); }
     };
     return config;
   });

@@ -59,7 +59,12 @@ window.appEnv = {
     if(appEnv.cache.subDomainClean == 'waddell')    appEnv.cache.index = 'wr'; // special case
     if(!appEnv.cache.tenant)  appEnv.cache.index =  appEnv.cache.tenant; // defaults to tenant
 
-    if(typeof console !== 'undefined') console.log(appEnv.cache.env+' Env Loaded', appEnv.cache)
+    // set app... mainly for logging/sentry tagging etc...
+    appEnv.cache.app = ''
+    var parts = window.location.pathname.split('/');
+    if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
+
+    if(typeof console !== 'undefined') console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache)
   },
 
 
@@ -93,5 +98,9 @@ window.appEnv = {
   index : function() {
     if(!appEnv.cache) appEnv.init()
     return appEnv.cache.index;
+  },
+  app : function() {
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.app;
   }
 }

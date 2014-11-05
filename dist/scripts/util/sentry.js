@@ -5,51 +5,56 @@
 
   myApp.constant('SENTRY_ENABLED', true);
 
-  myApp.service('$sentry', function($log, $window, authManager, $config, SENTRY_ENABLED) {
-    var sentryIsLoaded, service;
-    sentryIsLoaded = function() {
-      if (!SENTRY_ENABLED) {
-        return false;
-      }
-      if (typeof Raven === "undefined") {
-        return false;
-      }
-      if (authManager && authManager.loggedInUser) {
-        Raven.setUser({
-          id: authManager.loggedInUser.userId,
-          email: authManager.loggedInUser.userEmail
-        });
-      } else {
-        Raven.setUser();
-      }
+  myApp.service('$sentry', function($log, $window, authManager, $config, $log, SENTRY_ENABLED) {
+
+    var sentryIsLoaded = function() {
+      if (!SENTRY_ENABLED) return false;
+      if (typeof Raven === "undefined") return false;
       return true;
     };
-    service = {
+
+
+    var service = {
+
+      setUser:function(){
+        if (!sentryIsLoaded()) return;
+        if (authManager.loggedIn()) {
+          var user = {
+            id: authManager.user().userId,
+            email: authManager.user().email
+          }
+          Raven.setUser(user);
+        }
+      },
+
       error: function(name, extra, tags) {
         return service.message(name, extra, tags);
       },
+
       message: function(name, extra, tags) {
-        var options;
-        if (!sentryIsLoaded()) {
-          return $log.info('Sentry Not loaded. Unable to send message: ' + name);
+        if (!sentryIsLoaded())
+          return $log.warn('Sentry Not loaded. Unable to send message: ' + name);
+
+        // set user if possible
+        service.setUser();
+
+        // send some info about whats going on.
+        var options = {
+          extra: { url: $window.location.url },
+          tags: {
+            app: appEnv.app(),
+            env: appEnv.env(),
+            tenant: appEnv.tenant(),
+            index:  appEnv.index(),
+            subDomain: appEnv.subDomainClean()
+          }
         }
-        options = {
-          extra: extra || {},
-          tags: tags || {}
-        };
-        options.extra.url = $window.location.url;
-        options.tags.env = $config.getEnv();
-        options.tags.app = $config.getApp();
-        options.tags.tenant = $config.getTenant();
+        _.defaults(options.extra, extra || {})
+        _.defaults(options.tags, tags || {})
         return Raven.captureMessage(name, options);
-      },
-      exception: function(error) {
-        if (!sentryIsLoaded()) {
-          return $log.info('Sentry Not loaded. Unable to send exception');
-        }
-        return Raven.captureException(error);
       }
     };
+
     return service;
   });
 

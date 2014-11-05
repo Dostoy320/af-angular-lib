@@ -71,7 +71,7 @@
 
       hasRole: function(role) {
         if (!auth.loggedIn()) return false;
-        return _.contains(auth.loggedInUser.authorities, role);
+        return _.contains(auth.user().authorities, role);
       },
       hasAnyRole: function(array) {
         var matched = 0;
