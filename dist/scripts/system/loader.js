@@ -1,14 +1,13 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.loader', ['af.event']);
+  var myApp = angular.module('af.loader', ['af.event']);
 
   myApp.service('$loader', function($event) {
     var srv, isRunning = false;
     srv = {
-      start: function(txt) {
+      start: function(options) {
         isRunning = true;
-        return $event.shout($event.EVENT_loaderStart, txt);
+        return $event.shout($event.EVENT_loaderStart, options);
       },
       stop: function() {
         isRunning = false;
@@ -19,8 +18,8 @@
       isLoading:function(){ return isRunning; },
       saving: function() { srv.start('Saving...');    },
       loading: function() { srv.start('Loading...');  },
-      bar: function() { srv.start();  },
-      mask: function() { srv.start(' ');  }
+      bar: function() { srv.start({bar:true, mask:false});  },
+      mask: function() { srv.start({bar:false, mask:true});  }
     };
     return srv;
   });
@@ -44,18 +43,24 @@
         scope.loaderBar = null;
         scope.loadMask = null;
         scope.loaderText = null;
-        scope.start = function(txt) {
-          scope.loaderText = _.isString(txt) ? txt : null;
-          scope.loadMask = _.isBoolean(txt) || (''+scope.loaderText).length > 0 ? true : false;
-          return scope.loaderBar = true;
+        scope.start = function(options) {
+          if(_.isString(options)){
+            scope.loaderText = options
+            scope.loadMask = true
+            scope.loaderBar = true
+          } else if(_.isObject(options)){
+            scope.loaderText = options.hasOwnProperty('text') ? options.text : ''
+            scope.loadMask = options.hasOwnProperty('mask') ? options.mask : scope.loaderText // show mask if text
+            scope.loaderBar = options.hasOwnProperty('bar') ? options.bar : true
+          }
         };
         scope.stop = function() {
-          return scope.loaderBar = scope.loaderText = scope.loadMask = null;
+          scope.loaderBar = scope.loaderText = scope.loadMask = null;
         };
         scope.$on($event.EVENT_loaderStart, function(event, txt) {
-          return scope.start(txt);
+          scope.start(txt);
         });
-        return scope.$on($event.EVENT_loaderStop, scope.stop);
+        scope.$on($event.EVENT_loaderStop, scope.stop);
       }
     };
   });

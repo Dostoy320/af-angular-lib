@@ -8,20 +8,16 @@
     return msg = {
       shownAt: null,
       minVisible: 3,
+
       show: function(message, type, closable, delay) {
-        if (type == null) {
-          type = 'warning';
-        }
-        if (!_.isBoolean(closable)) {
-          closable = true;
-        }
-        if (!_.isNumber(delay) || delay < msg.minVisible) {
-          delay = 0;
-        }
-        if (!closable && delay === 0) {
-          delay = 3;
-        }
+        type = type || 'warning'
+
+        if (!_.isBoolean(closable)) closable = true;
+        if (!_.isNumber(delay) || delay < msg.minVisible) delay = 0;
+        if (!closable && delay === 0) delay = 3;
+
         msg.shownAt = new Date().getTime();
+
         return $event.shout($event.EVENT_msgShow, {
           message: message,
           type: type,
@@ -29,25 +25,17 @@
           closable: closable
         });
       },
+
       clear: function(force) {
-        var now;
-        now = new Date().getTime();
-        if (force || (msg.shownAt && (now - msg.shownAt) > msg.minVisible)) {
+        var now = new Date().getTime();
+        if (force || (msg.shownAt && (now - msg.shownAt) > msg.minVisible))
           return $event.shout($event.EVENT_msgClear);
-        }
       },
-      alert: function(message, closable, delay) {
-        return msg.show(message, 'warning', closable, delay);
-      },
-      error: function(message, closable, delay) {
-        return msg.show(message, 'danger', closable, delay);
-      },
-      info: function(message, closable, delay) {
-        return msg.show(message, 'info', closable, delay);
-      },
-      success: function(message, closable, delay) {
-        return msg.show(message, 'success', closable, delay);
-      }
+
+      alert: function(message, closable, delay) {   return msg.show(message, 'warning', closable, delay); },
+      error: function(message, closable, delay) {   return msg.show(message, 'danger',  closable, delay); },
+      info: function(message, closable, delay) {    return msg.show(message, 'info',    closable, delay); },
+      success: function(message, closable, delay) { return msg.show(message, 'success', closable, delay); }
     };
   });
 
