@@ -73,7 +73,7 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
 
     # DOMAIN / URL DATA
     getSubDomain : () ->
-      return (window.location.host).split('.').shift().toLowerCase()
+      return (window.location.hostname).split('.').shift().toLowerCase()
 
     setApp : (app) ->
       app = app

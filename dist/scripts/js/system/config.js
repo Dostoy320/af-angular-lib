@@ -109,7 +109,7 @@
         return index;
       },
       getSubDomain: function() {
-        return window.location.host.split('.').shift().toLowerCase();
+        return window.location.hostname.split('.').shift().toLowerCase();
       },
       setApp: function(app) {
         return app = app;
