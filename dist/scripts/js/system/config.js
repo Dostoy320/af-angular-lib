@@ -92,6 +92,7 @@
             index = 'alpha';
             break;
           case 'alpha2':
+          case 'spro':
             index = 'alpha2';
             break;
           case 'waddell':
