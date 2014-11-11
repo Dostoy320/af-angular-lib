@@ -62,7 +62,7 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
       if subDomain.indexOf('-dev') > -1 then subDomain = subDomain.split("-dev").shift()
       switch subDomain
         when 'alpha'   then index = 'alpha'
-        when 'alpha2'  then index = 'alpha2'
+        when 'alpha2','spro' then index = 'alpha2'
         when 'waddell' then index = 'wr'
         when 'tdai'    then index = 'td'
       # check dev domains
