@@ -4,7 +4,7 @@
 
   // this file was pulled out of api service because of circular dependency issues with httpInterceptor
 
-  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager', 'af.sentry', 'af.config']);
+  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager', 'af.catch', 'af.config']);
 
   // LOAD DEFAULTS
   myApp.constant('API_REQUEST_DEFAULTS', {
@@ -24,7 +24,7 @@
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $sentry, $config, $log, $q) {
+  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $catch, $config, $log, $q) {
 
 
 
@@ -84,9 +84,9 @@
         // log it
         var message = api.getErrorMessage(data, status);
         if(request.headers)
-          $sentry.error(message, { request:request.data, headers:request.headers, debug:data.debug });
+          $catch.error(message, { request:request.data, headers:request.headers, debug:data.debug });
         else
-          $sentry.error(message, request.data);
+          $catch.error(message, request.data);
         $log.warn(message, status);
       },
 
@@ -223,7 +223,7 @@
 ;
 (function() {
 
-  var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
+  var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.authManager', 'af.config']);
 
   myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $config) {
 
@@ -659,9 +659,15 @@
 
   var myApp = angular.module('af.authManager', ['af.util']);
 
-  myApp.constant('SESSION_TOKEN_PRIORITY', ['url', 'cache', 'window']);
+  myApp.constant('AUTH_MANAGER_CONFIG', {
+    tokenPriority:['url', 'cache', 'window'],
+    fields:{
+      id:'userId',
+      email:'email'
+    }
+  });
 
-  myApp.service('authManager', function($util, SESSION_TOKEN_PRIORITY) {
+  myApp.service('authManager', function($util, AUTH_MANAGER_CONFIG) {
 
     //
     // SESSION/USER CACHE
@@ -674,7 +680,7 @@
       sessionToken: function() {
         // default priority, looks in this class first, then URL, then checks amplify and finally window.sessionToken
         var token = null;
-        _.each(SESSION_TOKEN_PRIORITY, function(place) {
+        _.each(AUTH_MANAGER_CONFIG.tokenPriority, function(place) {
           if (token) return;
           switch (place) {
             case 'url':     token = $util.GET('sessionToken'); break;
@@ -686,7 +692,17 @@
       },
 
       // return object if null to prevent auth.user().firstName from blowing up.
-      user:function(){            return auth.loggedIn() ? loggedInUser : {} },
+      user:function(){ return auth.loggedIn() ? loggedInUser : {} },
+
+      userId:function(){
+        if(auth.loggedIn()) return null;
+        auth.user()[AUTH_MANAGER_CONFIG.fields.id]
+      },
+      userEmail:function(){
+        if(auth.loggedIn()) return null;
+        auth.user()[AUTH_MANAGER_CONFIG.fields.email]
+      },
+
 
       // is logged in?
       loggedIn: function() { return auth.sessionToken() && loggedInUser && loggedInUser.userId;  },
@@ -1222,62 +1238,33 @@
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.sentry', ['af.authManager', 'af.config']);
+  var myApp = angular.module('af.catch', ['af.authManager', 'af.config']);
 
-  myApp.constant('SENTRY_ENABLED', true);
+  myApp.constant('CATCH_ENABLED', true);
 
-  myApp.service('$sentry', function($log, $window, authManager, $config, $log, SENTRY_ENABLED) {
+  myApp.service('$catch', function(authManager, $log, CATCH_ENABLED) {
 
-    var sentryIsLoaded = function() {
-      if (!SENTRY_ENABLED) return false;
-      if (typeof Raven === "undefined") return false;
+    var init = function(){
+      if (!CATCH_ENABLED) return false;
+      if (typeof Raven === 'undefined') return false;
+      if (authManager.loggedIn()) {
+        var user = {
+          id: authManager.userId(),
+          email: authManager.userEmail()
+        }
+        afCatch.setUser(user)
+      }
       return true;
-    };
-
+    }
 
     var service = {
-
-      setUser:function(){
-        if (!sentryIsLoaded()) return;
-        if (authManager.loggedIn()) {
-          var user = {
-            id: authManager.user().userId,
-            email: authManager.user().email
-          }
-          Raven.setUser(user);
-        }
-      },
-
-      error: function(name, extra, tags) {
-        return service.message(name, extra, tags);
-      },
-
-      message: function(name, extra, tags) {
-        if (!sentryIsLoaded())
-          return $log.warn('Sentry Not loaded. Unable to send message: ' + name);
-
-        // set user if possible
-        service.setUser();
-
-        // send some info about whats going on.
-        var options = {
-          extra: { url: $window.location.url },
-          tags: {
-            app: appEnv.app(),
-            env: appEnv.env(),
-            tenant: appEnv.tenant(),
-            index:  appEnv.index(),
-            subDomain: appEnv.subDomainClean()
-          }
-        }
-        _.defaults(options.extra, extra || {})
-        _.defaults(options.tags, tags || {})
-        return Raven.captureMessage(name, options);
+      throw: function(msg, extra, tags) {
+        if(!init()) return $log.debug('Sentry Not Loaded. Cannot send: ' + msg);
+        $log.error(msg)
+        afCatch.throw(msg, extra, tags);
       }
     };
-
     return service;
   });
 
@@ -1285,46 +1272,53 @@
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.track', ['af.authManager']);
+  var myApp = angular.module('af.track', ['af.authManager']);
 
   myApp.constant('TRACK_ENABLED', true);
 
   myApp.service('$track', function($log, authManager, TRACK_ENABLED) {
-    var init, service;
-    init = function() {
-      if (!TRACK_ENABLED) {
-        return false;
-      }
-      if (typeof mixpanel === 'undefined') {
-        return false;
-      }
-      if (authManager.loggedInUser) {
-        mixpanel.identify(authManager.loggedInUser.userId);
-      }
+
+    var init = function() {
+      if (!TRACK_ENABLED) return false;
+      if (typeof mixpanel === 'undefined') return false;
+      if (authManager.loggedIn())
+        mixpanel.identify(authManager.userId());
       return true;
-    };
-    service = {
-      event: function(name, options) {
-        if (!init()) {
-          return $log.info('Mixpanel Not loaded. Unable to track event: ' + name);
-        }
+    }
+
+
+    var service = {
+      // track an event named "Registered"
+      // mixpanel.track("Registered", {"Gender": "Male", "Age": 21});
+      event:function(name, options){ service.track(name, options); },
+      track: function(name, options) {
+        if (!init()) return $log.info('Mixpanel Not loaded. Unable to track event: ' + name);
         return mixpanel.track(name, options);
       },
+
+
+      // Register a set of super properties, which are included with all events.
+      // { key:value }
       register: function(options) {
-        if (!init()) {
-          return $log.info('Mixpanel Not loaded. Unable to Register', options);
-        }
+        if (!init()) return $log.info('Mixpanel Not loaded. Unable to Register', options);
         return mixpanel.register(options);
       },
+      // remove a registered key
       unregister: function(string) {
-        if (!init()) {
-          return $log.info('Mixpanel Not loaded. Unable to Unregister: ' + string);
-        }
+        if (!init()) return $log.info('Mixpanel Not loaded. Unable to Unregister: ' + string);
         return mixpanel.unregister(string);
+      },
+
+      // set info about identified user
+      // { key:value }
+      set:function(json){
+        if (!init()) return $log.info('Mixpanel Not loaded. Unable to Set: ' + JSON.stringify(json));
+        return mixpanel.people.set(json);
       }
+
     };
+
     return service;
   });
 

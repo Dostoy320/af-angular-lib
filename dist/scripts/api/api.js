@@ -2,7 +2,7 @@
 
   // this file was pulled out of api service because of circular dependency issues with httpInterceptor
 
-  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager', 'af.sentry', 'af.config']);
+  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager', 'af.catch', 'af.config']);
 
   // LOAD DEFAULTS
   myApp.constant('API_REQUEST_DEFAULTS', {
@@ -22,7 +22,7 @@
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $sentry, $config, $log, $q) {
+  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $catch, $config, $log, $q) {
 
 
 
@@ -82,9 +82,9 @@
         // log it
         var message = api.getErrorMessage(data, status);
         if(request.headers)
-          $sentry.error(message, { request:request.data, headers:request.headers, debug:data.debug });
+          $catch.error(message, { request:request.data, headers:request.headers, debug:data.debug });
         else
-          $sentry.error(message, request.data);
+          $catch.error(message, request.data);
         $log.warn(message, status);
       },
 

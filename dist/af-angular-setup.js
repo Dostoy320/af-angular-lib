@@ -112,91 +112,112 @@ window.appEnv = {
 }
 ;
 //
-// MIX PANEL
+// THIS IS GLOBALLY scoped on window because we need it before angular even loads..
 //
-// start mixpanel lib
+
+
+
+//
+// SENTRY
+//
+var afCatch = {
+
+  config: {
+    prod: 'https://c62072b6aefc4bf1bd217382b9b7dad5@app.getsentry.com/27961', // PROD : nalberg@actifi.com
+    dev: 'https://656d24f28bbd4037b64638a4cdf6d61d@app.getsentry.com/26791', // DEV : alberg.nate@actifi.com
+    options:  {
+      whitelistUrls:[ 'actifi.com/' ],
+      ignoreUrls: [ /extensions\//i, /^chrome:\/\//i ]
+    }
+  },
+
+
+  // util
+  log:function(msg){ if(typeof console !== 'undefined') console.log(msg); },
+  loaded:function(){ return (typeof Raven !== "undefined"); },
+
+  //
+  // INITIALIZE
+  //
+  init:function(){
+    if(!afCatch.loaded()) alert('Cannot initialize Sentry. Raven not defined.')
+    var url = afCatch.config.prod;
+    if(appEnv.env() === 'dev') url = afCatch.config.dev;
+    Raven.config(url, afCatch.config.options).install();
+    afCatch.log('Sentry - '+appEnv.env()+' env: ' + url)
+  },
+
+
+  //
+  // METHODS
+  //
+  // send error
+  throw:function(message, extra, tags){
+    if(!afCatch.loaded()) return afCatch.log('Sentry Not Loaded. Unable to log issue: ' + message)
+
+    // build options
+    var options = {
+      extra:extra || {},
+      tags:tags || {}
+    }
+    // url error occurred.
+    options.extra.url = extra.url || window.location.url;
+    // tags
+    options.tags.app = tags.app || appEnv.app();
+    options.tags.env = tags.env || appEnv.env();
+    options.tags.tenant = tags.tenant || appEnv.tenant();
+    options.tags.index = tags.index || appEnv.index();
+    options.tags.subDomain = tags.subDomain || appEnv.subDomain();
+    Raven.captureMessage(message, options)
+  },
+
+  
+  setUser:function(user){
+    if(!afCatch.loaded()) return;
+    if(user){
+      Raven.setUser(user)
+    } else {
+      afCatch.clearUser();
+    }
+  },
+  clearUser:function(){
+    if(!afCatch.loaded()) return;
+    Raven.setUser(); // clears out any current user
+  }
+
+}
+;
+//
+// THIS IS GLOBALLY scoped on window because we need it before angular even loads..
+//
+
+
+
+//
+// MIXPANEL LIB
+//
 (function(f,b){if(!b.__SV){var a,e,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.track_charge people.clear_charges people.delete_user".split(" ");
-for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=f.createElement("script");a.type="text/javascript";a.async=!0;a.src="//cdn.mxpnl.com/libs/mixpanel-2.2.min.js";e=f.getElementsByTagName("script")[0];e.parentNode.insertBefore(a,e)}})(document,window.mixpanel||[]);
-// end mixpanel lib
+    for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=f.createElement("script");a.type="text/javascript";a.async=!0;a.src="//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";e=f.getElementsByTagName("script")[0];e.parentNode.insertBefore(a,e)}})(document,window.mixpanel||[]);
 
-var mixPanelSetup = {
 
-  prodToken : 'd0695354d367ec464143a4fc30d25cd5', // PROD
-  devToken  : 'c783e4625a55094cbf9d91c94d285242', // DEV
+var afTrack = {
+  config: {
+    prod: 'd0695354d367ec464143a4fc30d25cd5', // PROD
+    dev:  'c783e4625a55094cbf9d91c94d285242'  // DEV
+  },
+
+  // util
+  log:function(msg){ if(typeof console !== 'undefined') console.log(msg); },
+  loaded:function(){ return (typeof mixpanel !== "undefined"); },
 
   init : function(){
-    var token = mixPanelSetup.prodToken
-    if(appEnv.env() === 'dev'){
-      token = mixPanelSetup.devToken;
-      if(typeof console !== 'undefined') console.log('MixPanel - Dev Environment')
-    } else {
-      if(typeof console !== 'undefined') console.log('MixPanel - Prod Environment')
-    }
-
+    var token = afTrack.config.prod;
+    if(appEnv.env() === 'dev') token = afTrack.config.dev;
     window.mixpanel.init(token);
-    // ALL mixPanel events will contain this data...
     window.mixpanel.register({
       domain:appEnv.subDomain(),
       env:appEnv.env()
     });
+    afTrack.log('Mixpanel - '+appEnv.env()+' env: ' + token)
   }
 }
-
-// init mixPanel
-// mixPanelSetup.init();
-;
-//
-// SENTRY
-//
-var sentrySetup = {
-
-  prodUrl : 'https://c62072b6aefc4bf1bd217382b9b7dad5@app.getsentry.com/27961', // PROD : nalberg@actifi.com
-  devUrl :  'https://656d24f28bbd4037b64638a4cdf6d61d@app.getsentry.com/26791', // DEV : alberg.nate@actifi.com
-
-  options:  {
-    whitelistUrls:[ 'actifi.com/' ],
-    ignoreUrls: [ /extensions\//i, /^chrome:\/\//i ]
-  },
-
-  message:function(message){
-    if(typeof Raven === "undefined") return;
-    var options = null
-    if(appEnv) {
-      options = {
-        extra: {url: window.location.url },
-        tags: {
-          app: appEnv.app(),
-          env: appEnv.env(),
-          tenant: appEnv.tenant(),
-          index:  appEnv.index(),
-          subDomain: appEnv.subDomainClean()
-        }
-      }
-    }
-    Raven.captureMessage(message, options)
-  },
-
-  init:function(prodUrl, devUrl, user){
-    // what url?
-    var url = prodUrl || sentrySetup.prodUrl
-    if(appEnv.env() === 'dev'){
-      url = devUrl || sentrySetup.devUrl;
-      if(typeof console !== 'undefined') console.log('Sentry - Dev Environment')
-    } else {
-      if(typeof console !== 'undefined') console.log('Sentry - Prod Environment')
-    }
-
-    // this NEEDS to be loaded.. important our apps are sending errors.
-    if(typeof Raven === "undefined") return;
-
-    // init
-    Raven.config(url, sentrySetup.options).install();
-    if(user){
-      Raven.setUser(user)
-    } else {
-      Raven.setUser(); // clear any prior loaded user
-    }
-  }
-}
-// init sentry
-// sentrySetup.init();

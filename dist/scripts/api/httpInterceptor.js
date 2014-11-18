@@ -1,6 +1,6 @@
 (function() {
 
-  var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
+  var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.authManager', 'af.config']);
 
   myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $config) {
 

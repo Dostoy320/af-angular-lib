@@ -2,9 +2,15 @@
 
   var myApp = angular.module('af.authManager', ['af.util']);
 
-  myApp.constant('SESSION_TOKEN_PRIORITY', ['url', 'cache', 'window']);
+  myApp.constant('AUTH_MANAGER_CONFIG', {
+    tokenPriority:['url', 'cache', 'window'],
+    fields:{
+      id:'userId',
+      email:'email'
+    }
+  });
 
-  myApp.service('authManager', function($util, SESSION_TOKEN_PRIORITY) {
+  myApp.service('authManager', function($util, AUTH_MANAGER_CONFIG) {
 
     //
     // SESSION/USER CACHE
@@ -17,7 +23,7 @@
       sessionToken: function() {
         // default priority, looks in this class first, then URL, then checks amplify and finally window.sessionToken
         var token = null;
-        _.each(SESSION_TOKEN_PRIORITY, function(place) {
+        _.each(AUTH_MANAGER_CONFIG.tokenPriority, function(place) {
           if (token) return;
           switch (place) {
             case 'url':     token = $util.GET('sessionToken'); break;
@@ -29,7 +35,17 @@
       },
 
       // return object if null to prevent auth.user().firstName from blowing up.
-      user:function(){            return auth.loggedIn() ? loggedInUser : {} },
+      user:function(){ return auth.loggedIn() ? loggedInUser : {} },
+
+      userId:function(){
+        if(auth.loggedIn()) return null;
+        auth.user()[AUTH_MANAGER_CONFIG.fields.id]
+      },
+      userEmail:function(){
+        if(auth.loggedIn()) return null;
+        auth.user()[AUTH_MANAGER_CONFIG.fields.email]
+      },
+
 
       // is logged in?
       loggedIn: function() { return auth.sessionToken() && loggedInUser && loggedInUser.userId;  },
