@@ -15,7 +15,7 @@
     autoApplyIndex:false,   // should the node db index to ALL api calls automatically?
     urlEncode:false,        // send as application/x-www-form-urlencoded
     // response options
-    disableHttpInterceptor:false,      // turn off to disable any http interceptor
+    disableHttpInterceptor:false, // turn off to disable any http interceptor
     // errors
     logErrors:true,         // on error, log to sentry (or whatever)
     displayErrors:true,     // on error, display error to user
@@ -24,7 +24,7 @@
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $sentry, $config) {
+  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $sentry, $config, $log, $q) {
 
 
 
@@ -61,12 +61,16 @@
           api.logApiError(data, status, request);
 
         // display message to user?
-        if(api.optionEnabled(request, 'displayErrors'))
+        if(api.optionEnabled(request, 'displayErrors')) {
+          $log.debug('api.handleApiError: $msg.error()')
           $msg.error(api.getErrorMessage(data, status));
+        }
 
         // stop loaders?
-        if(api.optionEnabled(request, 'loaderStopOnError'))
+        if(api.optionEnabled(request, 'loaderStopOnError')) {
+          $log.debug('api.handleApiError: $loader.stop()')
           $loader.stop();
+        }
       },
 
       logApiError:function(data, status, request) {
@@ -79,7 +83,10 @@
         }
         // log it
         var message = api.getErrorMessage(data, status);
-        $sentry.error(message, { extra: request });
+        if(request.headers)
+          $sentry.error(message, { request:request.data, headers:request.headers, debug:data.debug });
+        else
+          $sentry.error(message, request.data);
         $log.warn(message, status);
       },
 
@@ -135,28 +142,18 @@
         if (value === 'false' || value === 0 || value === '0') return false;
         return value;
       },
-      ensureString: function(value) {  return '' + value; }
+      ensureString: function(value) {  return '' + value; },
       
       
       //
       // RESOLVE/REJECT
       //
-      /*
-      standardResolve: function(defer, data) {
-        return function(error) {
-          if (error) {
-            return defer.reject(error);
-          } else {
-            return defer.resolve(data);
-          }
-        };
+      resolveResponse:function(defer){
+        return function(response){ defer.resolve(response); }
       },
-      standardReject: function(defer) {
-        return function(data, status, headers, config) {
-          return defer.reject(api.getErrorMessage(data, status));
-        };
-      },
-      */
+      rejectResponse:function(defer){
+        return function(response){ defer.reject(response); }
+      }
     };
 
     var http_codes = {
@@ -228,7 +225,7 @@
 
   var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.sentry', 'af.msg']);
 
-  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $loader, $log, $window, $config) {
+  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $config) {
 
     var interceptor = {
 
@@ -243,11 +240,11 @@
         request.debug = api.getDebugInfo();
         if (api.optionEnabled(request, 'autoApplySession')) {
           request.data = request.data || {}
-          request.data.sessionToken = authManager.sessionToken()
+          if(!request.data.sessionToken) request.data.sessionToken = authManager.sessionToken()
         }
         if (api.optionEnabled(request, 'autoApplyIndex')) {
           request.data = request.data || {}
-          request.data.tenant = $config.index();
+          if(!request.data.tenant) request.data.tenant = $config.index();
         }
 
         // if we want urlEncoded... deal with that
@@ -699,10 +696,12 @@
       //
       // SET
       //
-      setSessionToken: function(sessionToken) { amplify.store('sessionToken', sessionToken); },
+      setSessionToken: function(sessionToken) {
+        amplify.store('sessionToken', sessionToken, 86400000); // 1 day
+      },
       setLoggedInUser: function(user) {
         user.displayName = $util.createDisplayName(user); // adds a displayName to the user
-        amplify.store('loggedInUser', user);
+        amplify.store('loggedInUser', user, 86400000); // 1 day
       },
 
 
@@ -729,7 +728,7 @@
 
       hasRole: function(role) {
         if (!auth.loggedIn()) return false;
-        return _.contains(auth.loggedInUser.authorities, role);
+        return _.contains(auth.user().authorities, role);
       },
       hasAnyRole: function(array) {
         var matched = 0;
@@ -793,6 +792,8 @@
   //
   myApp.service('$config', function($window, $filter) {
 
+    var app = ''
+
     var getPathValue = function(object, path) {
       var parts = path.split('.');
       if (parts.length === 1) return object[parts[0]];
@@ -821,7 +822,11 @@
       tenant: function() {    return appEnv.tenant(); },
       env: function() {       return appEnv.env(); },
       index: function() {     return appEnv.index(); },
-      subDomain: function() { return appEnv.subDomain(); }
+      subDomain: function() { return appEnv.subDomain(); },
+
+      // Used by sentry tagging..
+      // App (aka, portal, assessment, reporting, etc...)
+      app: function() {      return appEnv.app(); }
     };
     return config;
   });
@@ -836,30 +841,32 @@
 
   myApp.service('$event', function($rootScope, $log) {
     var logEvent, service;
-    logEvent = function(eventName, data) {
-      var suppress;
-      suppress = [service.EVENT_loaderStart, service.EVENT_loaderStop, service.EVENT_msgClear];
+
+    logEvent = function(type, eventName, data) {
+      var suppress = [service.EVENT_loaderStart, service.EVENT_loaderStop, service.EVENT_msgClear];
       if (_.indexOf(suppress, eventName) === -1) {
-        return $log.info('EVENT FIRED: ' + eventName, data);
+        if(data) return $log.debug('$event:' + eventName, data);
+        $log.debug('$event.' + type + ': ' + eventName);
       }
     };
+
     return service = {
-      EVENT_logout: 'Auth.logout',
-      EVENT_login: 'Auth.login',
+
       EVENT_loaderStart: 'Loader.start',
       EVENT_loaderStop: 'Loader.stop',
       EVENT_msgClear: 'Msg.clear',
       EVENT_msgShow: 'Msg.show',
+
       shout: function(eventName, data) {
-        logEvent(eventName, data);
+        logEvent('shout', eventName, data);
         return $rootScope.$broadcast(eventName, data);
       },
       broadcast: function($scope, eventName, data) {
-        logEvent(eventName, data);
+        logEvent('broadcast', eventName, data);
         return $scope.$broadcast(eventName, data);
       },
       emit: function($scope, eventName, data) {
-        logEvent(eventName, data);
+        logEvent('emit', eventName, data);
         return $scope.$emit(eventName, data);
       }
     };
@@ -869,16 +876,15 @@
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.loader', ['af.event']);
+  var myApp = angular.module('af.loader', ['af.event']);
 
   myApp.service('$loader', function($event) {
     var srv, isRunning = false;
     srv = {
-      start: function(txt) {
+      start: function(options) {
         isRunning = true;
-        return $event.shout($event.EVENT_loaderStart, txt);
+        return $event.shout($event.EVENT_loaderStart, options);
       },
       stop: function() {
         isRunning = false;
@@ -889,8 +895,8 @@
       isLoading:function(){ return isRunning; },
       saving: function() { srv.start('Saving...');    },
       loading: function() { srv.start('Loading...');  },
-      bar: function() { srv.start();  },
-      mask: function() { srv.start(' ');  }
+      bar: function() { srv.start({bar:true, mask:false});  },
+      mask: function() { srv.start({bar:false, mask:true});  }
     };
     return srv;
   });
@@ -914,18 +920,24 @@
         scope.loaderBar = null;
         scope.loadMask = null;
         scope.loaderText = null;
-        scope.start = function(txt) {
-          scope.loaderText = _.isString(txt) ? txt : null;
-          scope.loadMask = _.isBoolean(txt) || (''+scope.loaderText).length > 0 ? true : false;
-          return scope.loaderBar = true;
+        scope.start = function(options) {
+          if(_.isString(options)){
+            scope.loaderText = options
+            scope.loadMask = true
+            scope.loaderBar = true
+          } else if(_.isObject(options)){
+            scope.loaderText = options.hasOwnProperty('text') ? options.text : ''
+            scope.loadMask = options.hasOwnProperty('mask') ? options.mask : scope.loaderText // show mask if text
+            scope.loaderBar = options.hasOwnProperty('bar') ? options.bar : true
+          }
         };
         scope.stop = function() {
-          return scope.loaderBar = scope.loaderText = scope.loadMask = null;
+          scope.loaderBar = scope.loaderText = scope.loadMask = null;
         };
         scope.$on($event.EVENT_loaderStart, function(event, txt) {
-          return scope.start(txt);
+          scope.start(txt);
         });
-        return scope.$on($event.EVENT_loaderStop, scope.stop);
+        scope.$on($event.EVENT_loaderStop, scope.stop);
       }
     };
   });
@@ -1053,20 +1065,16 @@
     return msg = {
       shownAt: null,
       minVisible: 3,
+
       show: function(message, type, closable, delay) {
-        if (type == null) {
-          type = 'warning';
-        }
-        if (!_.isBoolean(closable)) {
-          closable = true;
-        }
-        if (!_.isNumber(delay) || delay < msg.minVisible) {
-          delay = 0;
-        }
-        if (!closable && delay === 0) {
-          delay = 3;
-        }
+        type = type || 'warning'
+
+        if (!_.isBoolean(closable)) closable = true;
+        if (!_.isNumber(delay) || delay < msg.minVisible) delay = 0;
+        if (!closable && delay === 0) delay = 3;
+
         msg.shownAt = new Date().getTime();
+
         return $event.shout($event.EVENT_msgShow, {
           message: message,
           type: type,
@@ -1074,25 +1082,17 @@
           closable: closable
         });
       },
+
       clear: function(force) {
-        var now;
-        now = new Date().getTime();
-        if (force || (msg.shownAt && (now - msg.shownAt) > msg.minVisible)) {
+        var now = new Date().getTime();
+        if (force || (msg.shownAt && (now - msg.shownAt) > msg.minVisible))
           return $event.shout($event.EVENT_msgClear);
-        }
       },
-      alert: function(message, closable, delay) {
-        return msg.show(message, 'warning', closable, delay);
-      },
-      error: function(message, closable, delay) {
-        return msg.show(message, 'danger', closable, delay);
-      },
-      info: function(message, closable, delay) {
-        return msg.show(message, 'info', closable, delay);
-      },
-      success: function(message, closable, delay) {
-        return msg.show(message, 'success', closable, delay);
-      }
+
+      alert: function(message, closable, delay) {   return msg.show(message, 'warning', closable, delay); },
+      error: function(message, closable, delay) {   return msg.show(message, 'danger',  closable, delay); },
+      info: function(message, closable, delay) {    return msg.show(message, 'info',    closable, delay); },
+      success: function(message, closable, delay) { return msg.show(message, 'success', closable, delay); }
     };
   });
 
@@ -1154,9 +1154,12 @@
       _prefix: STORAGE_PREFIX + '_',
       _prefixPersistent: 'p_' + STORAGE_PREFIX,
       store: function(key, value, expires) {
-        return amplify.store(this._prefix + key, value, {
-          expires: expires
-        });
+        var options = null
+        if(expires){
+          if(_.isObject(expires) && expires.hasOwnProperty('expires')) options = expires;
+          if(_.isNumber(expires)) options = { expires: expires }
+        }
+        return amplify.store(this._prefix + key, value, options);
       },
       persist: function(key, value, expires) {
         return amplify.store(this._prefixPersistent + key, value, {
@@ -1225,51 +1228,56 @@
 
   myApp.constant('SENTRY_ENABLED', true);
 
-  myApp.service('$sentry', function($log, $window, authManager, $config, SENTRY_ENABLED) {
-    var sentryIsLoaded, service;
-    sentryIsLoaded = function() {
-      if (!SENTRY_ENABLED) {
-        return false;
-      }
-      if (typeof Raven === "undefined") {
-        return false;
-      }
-      if (authManager && authManager.loggedInUser) {
-        Raven.setUser({
-          id: authManager.loggedInUser.userId,
-          email: authManager.loggedInUser.userEmail
-        });
-      } else {
-        Raven.setUser();
-      }
+  myApp.service('$sentry', function($log, $window, authManager, $config, $log, SENTRY_ENABLED) {
+
+    var sentryIsLoaded = function() {
+      if (!SENTRY_ENABLED) return false;
+      if (typeof Raven === "undefined") return false;
       return true;
     };
-    service = {
+
+
+    var service = {
+
+      setUser:function(){
+        if (!sentryIsLoaded()) return;
+        if (authManager.loggedIn()) {
+          var user = {
+            id: authManager.user().userId,
+            email: authManager.user().email
+          }
+          Raven.setUser(user);
+        }
+      },
+
       error: function(name, extra, tags) {
         return service.message(name, extra, tags);
       },
+
       message: function(name, extra, tags) {
-        var options;
-        if (!sentryIsLoaded()) {
-          return $log.info('Sentry Not loaded. Unable to send message: ' + name);
+        if (!sentryIsLoaded())
+          return $log.warn('Sentry Not loaded. Unable to send message: ' + name);
+
+        // set user if possible
+        service.setUser();
+
+        // send some info about whats going on.
+        var options = {
+          extra: { url: $window.location.url },
+          tags: {
+            app: appEnv.app(),
+            env: appEnv.env(),
+            tenant: appEnv.tenant(),
+            index:  appEnv.index(),
+            subDomain: appEnv.subDomainClean()
+          }
         }
-        options = {
-          extra: extra || {},
-          tags: tags || {}
-        };
-        options.extra.url = $window.location.url;
-        options.tags.env = $config.getEnv();
-        options.tags.app = $config.getApp();
-        options.tags.tenant = $config.getTenant();
+        _.defaults(options.extra, extra || {})
+        _.defaults(options.tags, tags || {})
         return Raven.captureMessage(name, options);
-      },
-      exception: function(error) {
-        if (!sentryIsLoaded()) {
-          return $log.info('Sentry Not loaded. Unable to send exception');
-        }
-        return Raven.captureException(error);
       }
     };
+
     return service;
   });
 

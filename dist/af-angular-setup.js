@@ -61,13 +61,22 @@ window.appEnv = {
     if(appEnv.cache.subDomainClean == 'waddell')    appEnv.cache.index = 'wr'; // special case
     if(!appEnv.cache.tenant)  appEnv.cache.index =  appEnv.cache.tenant; // defaults to tenant
 
-    if(typeof console !== 'undefined') console.log(appEnv.cache.env+' Env Loaded', appEnv.cache)
+    // set app... mainly for logging/sentry tagging etc...
+    appEnv.cache.app = ''
+    var parts = window.location.pathname.split('/');
+    if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
+
+    if(typeof console !== 'undefined') console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache)
   },
 
 
   //
   // GETTERS
   //
+  isProd : function(){
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.env !== 'dev';
+  },
   isDev : function(){
     if(!appEnv.cache) appEnv.init()
     return appEnv.cache.env === 'dev';
@@ -95,6 +104,10 @@ window.appEnv = {
   index : function() {
     if(!appEnv.cache) appEnv.init()
     return appEnv.cache.index;
+  },
+  app : function() {
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.app;
   }
 }
 ;
@@ -128,6 +141,7 @@ var mixPanelSetup = {
     });
   }
 }
+
 // init mixPanel
 // mixPanelSetup.init();
 ;
@@ -144,11 +158,29 @@ var sentrySetup = {
     ignoreUrls: [ /extensions\//i, /^chrome:\/\//i ]
   },
 
-  init:function(){
+  message:function(message){
+    if(typeof Raven === "undefined") return;
+    var options = null
+    if(appEnv) {
+      options = {
+        extra: {url: window.location.url },
+        tags: {
+          app: appEnv.app(),
+          env: appEnv.env(),
+          tenant: appEnv.tenant(),
+          index:  appEnv.index(),
+          subDomain: appEnv.subDomainClean()
+        }
+      }
+    }
+    Raven.captureMessage(message, options)
+  },
+
+  init:function(prodUrl, devUrl, user){
     // what url?
-    var url = sentrySetup.prodUrl
+    var url = prodUrl || sentrySetup.prodUrl
     if(appEnv.env() === 'dev'){
-      url = sentrySetup.devUrl;
+      url = devUrl || sentrySetup.devUrl;
       if(typeof console !== 'undefined') console.log('Sentry - Dev Environment')
     } else {
       if(typeof console !== 'undefined') console.log('Sentry - Prod Environment')
@@ -156,14 +188,13 @@ var sentrySetup = {
 
     // this NEEDS to be loaded.. important our apps are sending errors.
     if(typeof Raven === "undefined") return;
+
     // init
     Raven.config(url, sentrySetup.options).install();
-    // Attach user data if possible
-    if(typeof amplify !== "undefined"){
-      var user = {}
-      if(amplify.store('userId'))    user.id = amplify.store('userId');
-      if(amplify.store('userEmail')) user.email = amplify.store('userEmail');
-      Raven.setUser(user);
+    if(user){
+      Raven.setUser(user)
+    } else {
+      Raven.setUser(); // clear any prior loaded user
     }
   }
 }

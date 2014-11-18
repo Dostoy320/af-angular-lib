@@ -71,6 +71,10 @@ window.appEnv = {
   //
   // GETTERS
   //
+  isProd : function(){
+    if(!appEnv.cache) appEnv.init()
+    return appEnv.cache.env !== 'dev';
+  },
   isDev : function(){
     if(!appEnv.cache) appEnv.init()
     return appEnv.cache.env === 'dev';

@@ -13,7 +13,7 @@
     autoApplyIndex:false,   // should the node db index to ALL api calls automatically?
     urlEncode:false,        // send as application/x-www-form-urlencoded
     // response options
-    disableHttpInterceptor:false,      // turn off to disable any http interceptor
+    disableHttpInterceptor:false, // turn off to disable any http interceptor
     // errors
     logErrors:true,         // on error, log to sentry (or whatever)
     displayErrors:true,     // on error, display error to user
