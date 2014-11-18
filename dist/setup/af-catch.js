@@ -47,7 +47,7 @@ var afCatch = {
       extra:extra || {},
       tags:tags || {}
     }
-    // url error occurred.
+    // url error occurred.git st
     options.extra.url = extra.url || window.location.url;
     // tags
     options.tags.app = tags.app || appEnv.app();
