@@ -59,8 +59,8 @@
         amplify.store('sessionToken', sessionToken, 86400000); // 1 day
       },
       setLoggedInUser: function(user) {
-        user.displayName = $util.createDisplayName(user); // adds a displayName to the user
-        amplify.store('loggedInUser', user, 86400000); // 1 day
+        user.displayName = $util.createDisplayName(user);      // adds a displayName to the user
+        amplify.store('loggedInUser', user, 86400000);         // 1 day
       },
 
 

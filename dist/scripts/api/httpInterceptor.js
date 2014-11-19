@@ -2,7 +2,7 @@
 
   var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.authManager', 'af.config']);
 
-  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $config) {
+  myApp.factory("httpInterceptor", function($q, $injector, api, authManager) {
 
     var interceptor = {
 
@@ -21,7 +21,7 @@
         }
         if (api.optionEnabled(request, 'autoApplyIndex')) {
           request.data = request.data || {}
-          if(!request.data.tenant) request.data.tenant = $config.index();
+          if(!request.data.tenant) request.data.tenant = appEnv.index();
         }
 
         // if we want urlEncoded... deal with that

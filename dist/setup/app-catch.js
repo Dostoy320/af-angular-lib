@@ -1,13 +1,7 @@
 //
 // THIS IS GLOBALLY scoped on window because we need it before angular even loads..
 //
-
-
-
-//
-// SENTRY
-//
-var afCatch = {
+var appCatch = {
 
   config: {
     prod: 'https://c62072b6aefc4bf1bd217382b9b7dad5@app.getsentry.com/27961', // PROD : nalberg@actifi.com
@@ -27,11 +21,11 @@ var afCatch = {
   // INITIALIZE
   //
   init:function(){
-    if(!afCatch.loaded()) alert('Cannot initialize Sentry. Raven not defined.')
-    var url = afCatch.config.prod;
-    if(appEnv.env() === 'dev') url = afCatch.config.dev;
-    Raven.config(url, afCatch.config.options).install();
-    afCatch.log('Sentry - '+appEnv.env()+' env: ' + url)
+    if(!appCatch.loaded()) alert('Cannot initialize Sentry. Raven not defined.')
+    var url = appCatch.config.prod;
+    if(appEnv.env() === 'dev') url = appCatch.config.dev;
+    Raven.config(url, appCatch.config.options).install();
+    appCatch.log('Sentry - '+appEnv.env()+' env: ' + url)
   },
 
 
@@ -40,7 +34,7 @@ var afCatch = {
   //
   // send error
   throw:function(message, extra, tags){
-    if(!afCatch.loaded()) return afCatch.log('Sentry Not Loaded. Unable to log issue: ' + message)
+    if(!appCatch.loaded()) return appCatch.log('Sentry Not Loaded. Unable to log issue: ' + message)
 
     // build options
     var options = {
@@ -60,15 +54,15 @@ var afCatch = {
 
   
   setUser:function(user){
-    if(!afCatch.loaded()) return;
+    if(!appCatch.loaded()) return;
     if(user){
       Raven.setUser(user)
     } else {
-      afCatch.clearUser();
+      appCatch.clearUser();
     }
   },
   clearUser:function(){
-    if(!afCatch.loaded()) return;
+    if(!appCatch.loaded()) return;
     Raven.setUser(); // clears out any current user
   }
 

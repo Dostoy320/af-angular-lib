@@ -2,7 +2,7 @@
 
   // this file was pulled out of api service because of circular dependency issues with httpInterceptor
 
-  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager', 'af.catch', 'af.config']);
+  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager', 'af.catch']);
 
   // LOAD DEFAULTS
   myApp.constant('API_REQUEST_DEFAULTS', {
@@ -22,7 +22,7 @@
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $catch, $config, $log, $q) {
+  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $catch, $log, $q) {
 
 
 
@@ -42,9 +42,9 @@
       getDebugInfo: function() {
         return {
           url:    $window.location.href,
-          index:  $config.index(),
-          tenant: $config.tenant(),
-          env:    $config.env()
+          index:  appEnv.index(),
+          tenant: appEnv.tenant(),
+          env:    appEnv.env()
         }
       },
 

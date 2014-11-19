@@ -3,7 +3,8 @@
 //  THIS FILE CONTAINS ALL THE INFORMATION
 //  NEEDED TO PROVIDE THE CLIENT WITH INFORMATION ABOUT ITS ENVIRONMENT
 //
-window.appEnv = {
+
+var appEnv = {
 
   cache:null,
 
@@ -27,11 +28,11 @@ window.appEnv = {
 
   // init
   init:function(){
-    appEnv.cache = {}
+    appEnv.cache = {};
     // subDomain
-    appEnv.cache.subDomain = (window.location.host).split('.').shift().toLowerCase()
+    appEnv.cache.subDomain = (window.location.host).split('.').shift().toLowerCase();
     // clean subDomain (with no -dev on it)
-    appEnv.cache.subDomainClean = appEnv.cache.subDomain.split('-').shift()
+    appEnv.cache.subDomainClean = appEnv.cache.subDomain.split('-').shift();
     // isLocal?
     appEnv.cache.isLocal = false;
     if(appEnv.cache.subDomainClean === 'localhost')           appEnv.cache.isLocal = true;
@@ -64,7 +65,7 @@ window.appEnv = {
     var parts = window.location.pathname.split('/');
     if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
 
-    if(typeof console !== 'undefined') console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache)
+    if(typeof console !== 'undefined') console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache);
   },
 
 
@@ -72,39 +73,39 @@ window.appEnv = {
   // GETTERS
   //
   isProd : function(){
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.env !== 'dev';
   },
   isDev : function(){
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.env === 'dev';
   },
   isLocal : function(){
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.isLocal;
   },
   subDomain : function(){
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.subDomain;
   },
   subDomainClean:function(){
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.subDomainClean; // returns domain with -dev stripped off
   },
   env : function(){
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.env;
   },
   tenant : function() {
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.tenant;
   },
   index : function() {
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.index;
   },
   app : function() {
-    if(!appEnv.cache) appEnv.init()
+    if(!appEnv.cache) appEnv.init();
     return appEnv.cache.app;
   }
 }
