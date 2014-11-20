@@ -18,9 +18,12 @@
   myApp.service('$util', function($window, $location, $config) {
     var util;
     return util = {
+      exists: function(value) {
+        return !_.isNull(value) && !_.isUndefined(value) && !_.isNaN(value);
+      },
       value: function(object, path) {
         var child, parts;
-        if (_.isNull(object) || _.isUndefined(object)) {
+        if (!util.exists(object)) {
           return null;
         }
         parts = path.split('.');
@@ -28,8 +31,8 @@
           return object[parts[0]];
         }
         child = object[parts.shift()];
-        if (!child) {
-          return child;
+        if (!util.exists(child)) {
+          return null;
         }
         return util.value(child, parts.join('.'));
       },

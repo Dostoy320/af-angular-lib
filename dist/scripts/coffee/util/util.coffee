@@ -20,13 +20,20 @@ myApp.service '$util', ($window, $location, $config) ->
 
   return util = {
 
+    exists:(value) ->
+      return (!_.isNull(value) and !_.isUndefined(value) && !_.isNaN(value))
+
     # safely gets nested values from an object that could contain nulls
     value:(object, path) ->
-      if(_.isNull(object) or _.isUndefined(object)) then return null
+      # no object to search? were done...
+      if not util.exists(object) then return null
+      # end of path? were done...
       parts = path.split('.')
       if parts.length == 1 then return object[parts[0]]
+      # no valid child? were done...
       child = object[parts.shift()]
-      if not child then return child
+      if not util.exists(child) then return null
+      # continue search...
       return util.value(child, parts.join('.'))
 
 
