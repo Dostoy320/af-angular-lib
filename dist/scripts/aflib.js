@@ -1455,6 +1455,9 @@
     return util = {
       value: function(object, path) {
         var child, parts;
+        if (_.isNull(object) || _.isUndefined(object)) {
+          return null;
+        }
         parts = path.split('.');
         if (parts.length === 1) {
           return object[parts[0]];
