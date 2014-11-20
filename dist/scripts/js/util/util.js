@@ -18,6 +18,18 @@
   myApp.service('$util', function($window, $location, $config) {
     var util;
     return util = {
+      value: function(object, path) {
+        var child, parts;
+        parts = path.split('.');
+        if (parts.length === 1) {
+          return object[parts[0]];
+        }
+        child = object[parts.shift()];
+        if (!child) {
+          return child;
+        }
+        return util.value(child, parts.join('.'));
+      },
       GET: function(key) {
         var params, search, vars;
         vars = $location.search();

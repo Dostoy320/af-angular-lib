@@ -20,6 +20,16 @@ myApp.service '$util', ($window, $location, $config) ->
 
   return util = {
 
+    # safely gets nested values from an object that could contain nulls
+    value:(object, path) ->
+      if(_.isNull(object) or _.isUndefined(object)) then return null
+      parts = path.split('.')
+      if parts.length == 1 then return object[parts[0]]
+      child = object[parts.shift()]
+      if not child then return child
+      return util.value(child, parts.join('.'))
+
+
     # Get a Search param out of the URL no matter where it is....
     GET : (key) ->
       # angular only looks after hash /#/route?foo=bar
