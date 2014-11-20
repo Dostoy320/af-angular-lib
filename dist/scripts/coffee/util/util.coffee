@@ -20,11 +20,15 @@ myApp.service '$util', ($window, $location, $config) ->
 
   return util = {
 
-    exists:(value) ->
+    # if you pass an object and value it will get the nested path..
+    # else.. checks direct value...
+    exists:(value, path) ->
+      if(typeof value == 'object' && typeof path == 'string')
+        value = util.getNested(value, path)
       return (!_.isNull(value) and !_.isUndefined(value) && !_.isNaN(value))
 
     # safely gets nested values from an object that could contain nulls
-    value:(object, path) ->
+    getNested:(object, path) ->
       # no object to search? were done...
       if not util.exists(object) then return null
       # end of path? were done...

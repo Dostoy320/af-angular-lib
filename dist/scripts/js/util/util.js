@@ -18,10 +18,13 @@
   myApp.service('$util', function($window, $location, $config) {
     var util;
     return util = {
-      exists: function(value) {
+      exists: function(value, path) {
+        if (typeof value === 'object' && typeof path === 'string') {
+          value = util.getNested(value, path);
+        }
         return !_.isNull(value) && !_.isUndefined(value) && !_.isNaN(value);
       },
-      value: function(object, path) {
+      getNested: function(object, path) {
         var child, parts;
         if (!util.exists(object)) {
           return null;
