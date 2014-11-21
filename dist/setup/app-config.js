@@ -14,11 +14,11 @@ var appConfig = {
   get:function(path, makePlural) {
     if (!window.config) return null;
     if (!path) return window.config; // return whole config if no path
-    var value = afConfig.getPathValue(window.config, path);
+    var value = appConfig.getPathValue(window.config, path);
     if (makePlural) {
-      var pluralValue = afConfig.getPathValue(window.config, path + '_plural');
+      var pluralValue = appConfig.getPathValue(window.config, path + '_plural');
       if(pluralValue) return pluralValue;
-      return afConfig.makePlural(value);
+      return appConfig.makePlural(value);
     }
     return value;
   },
@@ -41,6 +41,6 @@ var appConfig = {
     if (parts.length === 1) return object[parts[0]];
     var child = object[parts.shift()];
     if (!child) return child;
-    return afConfig.getPathValue(child, parts.join('.'));
+    return appConfig.getPathValue(child, parts.join('.'));
   }
 }
