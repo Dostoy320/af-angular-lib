@@ -1,59 +1,49 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.storage', []);
+  
+  //
+  // SIMPLE WRAPPER AROUND AMPLIFY.STORE TO ALLOW NAME SPACING...
+  //
+  var myApp = angular.module('af.storage', []);
 
   myApp.constant('STORAGE_PREFIX', 'myApp');
 
   myApp.service('$storage', function(STORAGE_PREFIX) {
-    var service;
-    service = {
-      _prefix: STORAGE_PREFIX + '_',
-      _prefixPersistent: 'p_' + STORAGE_PREFIX,
-      store: function(key, value, expires) {
-        var options = null
-        if(expires){
-          if(_.isObject(expires) && expires.hasOwnProperty('expires')) options = expires;
-          if(_.isNumber(expires)) options = { expires: expires }
-        }
-        return amplify.store(this._prefix + key, value, options);
-      },
-      persist: function(key, value, expires) {
-        return amplify.store(this._prefixPersistent + key, value, {
-          expires: expires
-        });
-      },
-      all: function() {
-        var appData;
-        appData = {};
-        _.each(amplify.store(), function(value, key) {
-          if (service.isAppData(key) || service.isPersistantAppData(key)) {
-            return appData[key] = value;
+
+    var prefix = STORAGE_PREFIX + '_';
+
+    var service = {
+
+      store: function(key, value, options) {
+
+        // save/get key
+        if(key){
+          if(options){
+            if(_.isObject(options) && options.hasOwnProperty('expires')) options = expires;
+            if(_.isNumber(options)) options = { expires: options }
           }
-        });
-        return appData;
+          return amplify.store(prefix + key, value, options);
+
+        // return all data related to this app
+        } else {
+          var allData = {}
+          _.each(amplify.store(), function(value, key){
+            if(key.indexOf(prefix) === 0)
+              allData[key] = value;
+          })
+          return allData;
+        }
       },
+
       clear: function(key) {
-        return _.each(amplify.store(), function(value, key) {
+        _.each(amplify.store(), function(value, key) {
           if (service.isAppData(key)) {
             return amplify.store(key, null);
           }
         });
-      },
-      nuke: function() {
-        return _.each(amplify.store(), function(value, key) {
-          if (service.isAppData(key) || service.isPersistantAppData(key)) {
-            return amplify.store(key, null);
-          }
-        });
-      },
-      isAppData: function(key) {
-        return key.indexOf(this._prefix) === 0;
-      },
-      isPersistantAppData: function(key) {
-        return key.indexOf(this._prefixPersistent) === 0;
       }
     };
+
     return service;
   });
 

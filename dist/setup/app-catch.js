@@ -6,6 +6,7 @@ var appCatch = {
   config: {
     prod: 'https://c62072b6aefc4bf1bd217382b9b7dad5@app.getsentry.com/27961', // PROD : nalberg@actifi.com
     dev: 'https://656d24f28bbd4037b64638a4cdf6d61d@app.getsentry.com/26791', // DEV : alberg.nate@actifi.com
+    enabled:true,
     options:  {
       whitelistUrls:[ 'actifi.com/' ],
       ignoreUrls: [ /extensions\//i, /^chrome:\/\//i ]
@@ -15,16 +16,25 @@ var appCatch = {
 
   // util
   log:function(msg){ if(typeof console !== 'undefined') console.log(msg); },
-  loaded:function(){ return (typeof Raven !== "undefined"); },
+  isEnabled:function(){ return appCatch.initialized && appCatch.config.enabled },
+  initialized:false,
+
 
   //
   // INITIALIZE
   //
   init:function(){
-    if(!appCatch.loaded()) alert('Cannot initialize Sentry. Raven not defined.')
+    if(typeof Raven === "undefined")
+      return alert('Cannot initialize Sentry. Missing Raven library.')
+
+    // init
     var url = appCatch.config.prod;
     if(appEnv.env() === 'dev') url = appCatch.config.dev;
     Raven.config(url, appCatch.config.options).install();
+
+    // store the fact its initialized
+    appCatch.initialized = true;
+
     appCatch.log('Sentry - '+appEnv.env()+' env: ' + url)
   },
 
@@ -33,8 +43,9 @@ var appCatch = {
   // METHODS
   //
   // send error
-  throw:function(message, extra, tags){
-    if(!appCatch.loaded()) return appCatch.log('Sentry Not Loaded. Unable to log issue: ' + message)
+  error:function(message, extra, tags){
+    if(!appCatch.isEnabled())
+      return appCatch.log('Sentry Not Loaded. Unable to log error: ' + message)
 
     // build options
     var options = {
@@ -48,13 +59,14 @@ var appCatch = {
     options.tags.env = tags.env || appEnv.env();
     options.tags.tenant = tags.tenant || appEnv.tenant();
     options.tags.index = tags.index || appEnv.index();
-    options.tags.subDomain = tags.subDomain || appEnv.subDomain();
+    options.tags.subDomain = tags.subDomain || appEnv.subDomainClean();
     Raven.captureMessage(message, options)
   },
-
-  
-  setUser:function(user){
-    if(!appCatch.loaded()) return;
+  // additional info about the user that threw error...
+  setUser:function(id, email){
+    if(!appCatch.isEnabled()) return;
+    var user = {id:id}
+    if(email) user.email = email
     if(user){
       Raven.setUser(user)
     } else {
@@ -62,8 +74,8 @@ var appCatch = {
     }
   },
   clearUser:function(){
-    if(!appCatch.loaded()) return;
-    Raven.setUser(); // clears out any current user
+    if(!appCatch.isEnabled()) return;
+    Raven.setUser(); // this clears out any current user
   }
 
 }

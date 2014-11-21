@@ -1,6 +1,6 @@
 (function() {
 
-  var myApp = angular.module('af.util', ['af.config']);
+  var myApp = angular.module('af.util', []);
 
   Number.prototype.formatNumber = function(precision, decimal, seperator) {
     var i, j, n, s;
@@ -14,12 +14,9 @@
     return s + (j ? i.substr(0, j) + seperator : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + seperator) + (precision ? decimal + Math.abs(n - i).toFixed(precision).slice(2) : "");
   };
 
-  myApp.service('$util', function($window, $location, $config) {
+  myApp.service('$util', function($window, $location) {
 
-    var preferredDisplayName = $config.get('preferredDisplayName')
-
-    var util;
-    return util = {
+    var util = {
 
       GET: function(key) {
         // quick check to see if key is even in url at all...
@@ -81,13 +78,17 @@
       // creates a displayName for our user
       createDisplayName:function(user){
         if(!user) return '';
-        if(preferredDisplayName == 'nameOfPractice' && user.nameOfPractice){
-          return user.nameOfPractice;
-        } else if(user.firstName && user.lastName){
+
+        // return preferred name if it exists...
+        var preferredDisplayName = appConfig.get('preferredDisplayName')
+        if(preferredDisplayName && user[preferredDisplayName])
+          return user[preferredDisplayName];
+
+        // return name
+        if(user.firstName && user.lastName)
           return user.firstName + ' ' + user.lastName;
-        } else {
-          return user.firstName || user.lastName || user.username || user.userId || '';
-        }
+        // return whatever we can about this user
+        return user.firstName || user.lastName || user.nameOfPractice || user.username || user.userId || '';
       },
 
       format: {
@@ -95,7 +96,7 @@
           if (!value) return '';
           if (!inputType) inputType = "utc";
           if (moment) {
-            if(!format) format = $config.get('app.dateFormat') || 'MM/DD/YY';
+            if(!format) format = appConfig.get('app.dateFormat') || 'MM/DD/YY';
             if (typeof value === 'string') {
               switch (inputType.toLowerCase()) {
                 case 'utc':
@@ -122,6 +123,8 @@
         }
       }
     };
+
+    return util;
   });
 
 }).call(this);

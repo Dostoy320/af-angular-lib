@@ -1,7 +1,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.node', ['af.api', 'af.authManager', 'af.config']);
+  myApp = angular.module('af.node', ['af.api', 'af.authManager']);
 
   myApp.service('node', function($http, api, $q) {
 
@@ -71,7 +71,7 @@
             params = {};
           }
           if (params.index == null) {
-            params.index = $config.index();
+            params.index = appConfig.index();
           }
           if (autoApplySession) {
             if (params.sessionToken == null) {
@@ -152,7 +152,7 @@
             params = {};
           }
           if (params.index == null) {
-            params.index = $config.getTenantIndex();
+            params.index = appConfig.getTenantIndex();
           }
           if (autoApplySession) {
             if (params.sessionToken == null) {

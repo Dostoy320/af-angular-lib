@@ -4,7 +4,7 @@
 
   // this file was pulled out of api service because of circular dependency issues with httpInterceptor
 
-  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager', 'af.catch', 'af.config']);
+  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager']);
 
   // LOAD DEFAULTS
   myApp.constant('API_REQUEST_DEFAULTS', {
@@ -24,7 +24,7 @@
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $catch, $config, $log, $q) {
+  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $log, $q) {
 
 
 
@@ -44,9 +44,9 @@
       getDebugInfo: function() {
         return {
           url:    $window.location.href,
-          index:  $config.index(),
-          tenant: $config.tenant(),
-          env:    $config.env()
+          index:  appEnv.index(),
+          tenant: appEnv.tenant(),
+          env:    appEnv.env()
         }
       },
 
@@ -84,9 +84,9 @@
         // log it
         var message = api.getErrorMessage(data, status);
         if(request.headers)
-          $catch.error(message, { request:request.data, headers:request.headers, debug:data.debug });
+          appCatch.error(message, { request:request.data, headers:request.headers, debug:data.debug });
         else
-          $catch.error(message, request.data);
+          appCatch.error(message, request.data);
         $log.warn(message, status);
       },
 
@@ -223,9 +223,9 @@
 ;
 (function() {
 
-  var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.authManager', 'af.config']);
+  var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.authManager']);
 
-  myApp.factory("httpInterceptor", function($q, $injector, api, authManager, $config) {
+  myApp.factory("httpInterceptor", function($q, $injector, api, authManager) {
 
     var interceptor = {
 
@@ -244,7 +244,7 @@
         }
         if (api.optionEnabled(request, 'autoApplyIndex')) {
           request.data = request.data || {}
-          if(!request.data.tenant) request.data.tenant = $config.index();
+          if(!request.data.tenant) request.data.tenant = appEnv.index();
         }
 
         // if we want urlEncoded... deal with that
@@ -425,7 +425,7 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.node', ['af.api', 'af.authManager', 'af.config']);
+  myApp = angular.module('af.node', ['af.api', 'af.authManager']);
 
   myApp.service('node', function($http, api, $q) {
 
@@ -495,7 +495,7 @@
             params = {};
           }
           if (params.index == null) {
-            params.index = $config.index();
+            params.index = appConfig.index();
           }
           if (autoApplySession) {
             if (params.sessionToken == null) {
@@ -576,7 +576,7 @@
             params = {};
           }
           if (params.index == null) {
-            params.index = $config.getTenantIndex();
+            params.index = appConfig.getTenantIndex();
           }
           if (autoApplySession) {
             if (params.sessionToken == null) {
@@ -657,6 +657,32 @@
 ;
 (function() {
 
+
+  //
+  // ANGULAR wrapper for appConfig
+  //
+  var myApp = angular.module('af.filters', []);
+
+  // plural filter for config
+  myApp.filter('plural', function($config) {
+    return function(value){
+      return appConfig.makePlural(value)
+    }
+  })
+  // label filter
+  myApp.filter('label', function($config) {
+    return function(path, makePlural){
+      return appConfig.get(path, makePlural)
+    }
+  })
+
+}).call(this);
+
+;
+
+;
+(function() {
+
   var myApp = angular.module('af.authManager', ['af.util']);
 
   myApp.constant('AUTH_MANAGER_CONFIG', {
@@ -716,8 +742,8 @@
         amplify.store('sessionToken', sessionToken, 86400000); // 1 day
       },
       setLoggedInUser: function(user) {
-        user.displayName = $util.createDisplayName(user); // adds a displayName to the user
-        amplify.store('loggedInUser', user, 86400000); // 1 day
+        user.displayName = $util.createDisplayName(user);      // adds a displayName to the user
+        amplify.store('loggedInUser', user, 86400000);         // 1 day
       },
 
 
@@ -773,81 +799,6 @@
 }).call(this);
 
 ;
-
-;
-(function() {
-  var myApp = angular.module('af.config', []);
-
-  //
-  // plural filter for config
-  //
-  myApp.filter('plural', function() {
-    return function(value) {
-      if(!value) return value;
-      if(!_.isString(value)) return value;
-      var lastChar = value.charAt(value.length - 1).toLowerCase();
-      var lastTwoChar = value.slice(value.length - 2).toLowerCase();
-      // special cases...
-      if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
-      if (lastTwoChar === 'ch') return value + 'es';
-      return value + 's';
-    };
-  })
-  // label filter
-  myApp.filter('configLabel', function($config) {
-    return function(path, makePlural) {
-      var val = $config.get(path, makePlural)
-      return val;
-    };
-  })
-
-
-
-  //
-  // config exposed from server
-  //
-  myApp.service('$config', function($window, $filter) {
-
-    var app = ''
-
-    var getPathValue = function(object, path) {
-      var parts = path.split('.');
-      if (parts.length === 1) return object[parts[0]];
-      var child = object[parts.shift()];
-      if (!child) return child;
-      return getPathValue(child, parts.join('.'));
-    };
-
-    // the service
-    var config = {
-      // gets a value from our config
-      // accepts a string value, eg:('label.app.name')
-      get: function(path, makePlural) {
-        var pluralValue, value;
-        if (!$window.config) return null;
-        if (!path) return $window.config; // return whole config if no path
-        value = getPathValue($window.config, path);
-        if (makePlural) {
-          pluralValue = getPathValue($window.config, path + '_plural');
-          if(pluralValue) return pluralValue;
-          return $filter('plural')(value);
-        }
-        return value;
-      },
-
-      tenant: function() {    return appEnv.tenant(); },
-      env: function() {       return appEnv.env(); },
-      index: function() {     return appEnv.index(); },
-      subDomain: function() { return appEnv.subDomain(); },
-
-      // Used by sentry tagging..
-      // App (aka, portal, assessment, reporting, etc...)
-      app: function() {      return appEnv.app(); }
-    };
-    return config;
-  });
-
-}).call(this);
 
 ;
 (function() {
@@ -1158,61 +1109,51 @@
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.storage', []);
+  
+  //
+  // SIMPLE WRAPPER AROUND AMPLIFY.STORE TO ALLOW NAME SPACING...
+  //
+  var myApp = angular.module('af.storage', []);
 
   myApp.constant('STORAGE_PREFIX', 'myApp');
 
   myApp.service('$storage', function(STORAGE_PREFIX) {
-    var service;
-    service = {
-      _prefix: STORAGE_PREFIX + '_',
-      _prefixPersistent: 'p_' + STORAGE_PREFIX,
-      store: function(key, value, expires) {
-        var options = null
-        if(expires){
-          if(_.isObject(expires) && expires.hasOwnProperty('expires')) options = expires;
-          if(_.isNumber(expires)) options = { expires: expires }
-        }
-        return amplify.store(this._prefix + key, value, options);
-      },
-      persist: function(key, value, expires) {
-        return amplify.store(this._prefixPersistent + key, value, {
-          expires: expires
-        });
-      },
-      all: function() {
-        var appData;
-        appData = {};
-        _.each(amplify.store(), function(value, key) {
-          if (service.isAppData(key) || service.isPersistantAppData(key)) {
-            return appData[key] = value;
+
+    var prefix = STORAGE_PREFIX + '_';
+
+    var service = {
+
+      store: function(key, value, options) {
+
+        // save/get key
+        if(key){
+          if(options){
+            if(_.isObject(options) && options.hasOwnProperty('expires')) options = expires;
+            if(_.isNumber(options)) options = { expires: options }
           }
-        });
-        return appData;
+          return amplify.store(prefix + key, value, options);
+
+        // return all data related to this app
+        } else {
+          var allData = {}
+          _.each(amplify.store(), function(value, key){
+            if(key.indexOf(prefix) === 0)
+              allData[key] = value;
+          })
+          return allData;
+        }
       },
+
       clear: function(key) {
-        return _.each(amplify.store(), function(value, key) {
+        _.each(amplify.store(), function(value, key) {
           if (service.isAppData(key)) {
             return amplify.store(key, null);
           }
         });
-      },
-      nuke: function() {
-        return _.each(amplify.store(), function(value, key) {
-          if (service.isAppData(key) || service.isPersistantAppData(key)) {
-            return amplify.store(key, null);
-          }
-        });
-      },
-      isAppData: function(key) {
-        return key.indexOf(this._prefix) === 0;
-      },
-      isPersistantAppData: function(key) {
-        return key.indexOf(this._prefixPersistent) === 0;
       }
     };
+
     return service;
   });
 
@@ -1239,95 +1180,7 @@
 ;
 (function() {
 
-  var myApp = angular.module('af.catch', ['af.authManager', 'af.config']);
-
-  myApp.constant('CATCH_ENABLED', true);
-
-  myApp.service('$catch', function(authManager, $log, CATCH_ENABLED) {
-
-    var init = function(){
-      if (!CATCH_ENABLED) return false;
-      if (typeof Raven === 'undefined') return false;
-      if (authManager.loggedIn()) {
-        var user = {
-          id: authManager.userId(),
-          email: authManager.userEmail()
-        }
-        afCatch.setUser(user)
-      }
-      return true;
-    }
-
-    var service = {
-      throw: function(msg, extra, tags) {
-        if(!init()) return $log.debug('Sentry Not Loaded. Cannot send: ' + msg);
-        $log.error(msg)
-        afCatch.throw(msg, extra, tags);
-      }
-    };
-    return service;
-  });
-
-}).call(this);
-
-;
-(function() {
-
-  var myApp = angular.module('af.track', ['af.authManager']);
-
-  myApp.constant('TRACK_ENABLED', true);
-
-  myApp.service('$track', function($log, authManager, TRACK_ENABLED) {
-
-    var init = function() {
-      if (!TRACK_ENABLED) return false;
-      if (typeof mixpanel === 'undefined') return false;
-      if (authManager.loggedIn())
-        mixpanel.identify(authManager.userId());
-      return true;
-    }
-
-
-    var service = {
-      // track an event named "Registered"
-      // mixpanel.track("Registered", {"Gender": "Male", "Age": 21});
-      event:function(name, options){ service.track(name, options); },
-      track: function(name, options) {
-        if (!init()) return $log.info('Mixpanel Not loaded. Unable to track event: ' + name);
-        return mixpanel.track(name, options);
-      },
-
-
-      // Register a set of super properties, which are included with all events.
-      // { key:value }
-      register: function(options) {
-        if (!init()) return $log.info('Mixpanel Not loaded. Unable to Register', options);
-        return mixpanel.register(options);
-      },
-      // remove a registered key
-      unregister: function(string) {
-        if (!init()) return $log.info('Mixpanel Not loaded. Unable to Unregister: ' + string);
-        return mixpanel.unregister(string);
-      },
-
-      // set info about identified user
-      // { key:value }
-      set:function(json){
-        if (!init()) return $log.info('Mixpanel Not loaded. Unable to Set: ' + JSON.stringify(json));
-        return mixpanel.people.set(json);
-      }
-
-    };
-
-    return service;
-  });
-
-}).call(this);
-
-;
-(function() {
-
-  var myApp = angular.module('af.util', ['af.config']);
+  var myApp = angular.module('af.util', []);
 
   Number.prototype.formatNumber = function(precision, decimal, seperator) {
     var i, j, n, s;
@@ -1341,12 +1194,9 @@
     return s + (j ? i.substr(0, j) + seperator : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + seperator) + (precision ? decimal + Math.abs(n - i).toFixed(precision).slice(2) : "");
   };
 
-  myApp.service('$util', function($window, $location, $config) {
+  myApp.service('$util', function($window, $location) {
 
-    var preferredDisplayName = $config.get('preferredDisplayName')
-
-    var util;
-    return util = {
+    var util = {
 
       GET: function(key) {
         // quick check to see if key is even in url at all...
@@ -1408,13 +1258,17 @@
       // creates a displayName for our user
       createDisplayName:function(user){
         if(!user) return '';
-        if(preferredDisplayName == 'nameOfPractice' && user.nameOfPractice){
-          return user.nameOfPractice;
-        } else if(user.firstName && user.lastName){
+
+        // return preferred name if it exists...
+        var preferredDisplayName = appConfig.get('preferredDisplayName')
+        if(preferredDisplayName && user[preferredDisplayName])
+          return user[preferredDisplayName];
+
+        // return name
+        if(user.firstName && user.lastName)
           return user.firstName + ' ' + user.lastName;
-        } else {
-          return user.firstName || user.lastName || user.username || user.userId || '';
-        }
+        // return whatever we can about this user
+        return user.firstName || user.lastName || user.nameOfPractice || user.username || user.userId || '';
       },
 
       format: {
@@ -1422,7 +1276,7 @@
           if (!value) return '';
           if (!inputType) inputType = "utc";
           if (moment) {
-            if(!format) format = $config.get('app.dateFormat') || 'MM/DD/YY';
+            if(!format) format = appConfig.get('app.dateFormat') || 'MM/DD/YY';
             if (typeof value === 'string') {
               switch (inputType.toLowerCase()) {
                 case 'utc':
@@ -1449,6 +1303,8 @@
         }
       }
     };
+
+    return util;
   });
 
 }).call(this);
