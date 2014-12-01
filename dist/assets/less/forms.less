@@ -5,9 +5,6 @@ form{
       position: relative;
       .required{
         color:#B94A48;
-        position: absolute;
-        right:5px;
-        top:4px;
       }
     }
     .help-block{
@@ -23,6 +20,12 @@ form{
     font-weight: normal;
   }
 }
+form.form-horizontal .form-group label.required {
+  position: absolute;
+  right:5px;
+  top:4px;
+}
+
 
 input.unsaved{
   border-color: @state-warning-text;
