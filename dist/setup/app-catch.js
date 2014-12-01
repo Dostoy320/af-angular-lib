@@ -47,13 +47,15 @@ var appCatch = {
     if(!appCatch.isEnabled())
       return appCatch.log('Sentry Not Loaded. Unable to log error: ' + message)
 
+    extra = extra || {};
+    tags = tags || {};
     // build options
     var options = {
-      extra:extra || {},
-      tags:tags || {}
+      extra:extra,
+      tags:tags
     }
     // url error occurred.git st
-    options.extra.url = extra.url || window.location.url;
+    options.extra.url = extra.href || window.location.href;
     // tags
     options.tags.app = tags.app || appEnv.app();
     options.tags.env = tags.env || appEnv.env();

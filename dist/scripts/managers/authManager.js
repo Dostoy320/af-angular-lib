@@ -3,11 +3,7 @@
   var myApp = angular.module('af.authManager', ['af.util']);
 
   myApp.constant('AUTH_MANAGER_CONFIG', {
-    tokenPriority:['url', 'cache', 'window'],
-    fields:{
-      id:'userId',
-      email:'email'
-    }
+    tokenPriority:['url', 'cache', 'window']
   });
 
   myApp.service('authManager', function($util, AUTH_MANAGER_CONFIG) {
@@ -39,11 +35,11 @@
 
       userId:function(){
         if(auth.loggedIn()) return null;
-        auth.user()[AUTH_MANAGER_CONFIG.fields.id]
+        auth.user()['userId']
       },
       userEmail:function(){
         if(auth.loggedIn()) return null;
-        auth.user()[AUTH_MANAGER_CONFIG.fields.email]
+        auth.user()['email']
       },
 
 
@@ -60,7 +56,8 @@
       },
       setLoggedInUser: function(user) {
         user.displayName = $util.createDisplayName(user);      // adds a displayName to the user
-        amplify.store('loggedInUser', user, 86400000);         // 1 day
+        loggedInUser = user;
+        amplify.store('loggedInUser', loggedInUser, 86400000); // 1 day
       },
 
 
