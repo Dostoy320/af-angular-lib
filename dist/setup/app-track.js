@@ -35,7 +35,7 @@ var appTrack = {
     // init
     var token = appTrack.config.prod;
     if(appEnv.env() === 'dev') token = appTrack.config.dev;
-    mixpanel.init(token, { 'debug':true, 'cross_subdomain_cookie':false﻿});// 'debug':true,
+    mixpanel.init(token, {'cross_subdomain_cookie':false﻿});// 'debug':true,
 
     // store the fact its initialized
     appTrack.initialized = true;

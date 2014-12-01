@@ -2,44 +2,54 @@ if (typeof console === "undefined") { var console = { log : function(){} }; }
 ;
 
 //
-//  THIS FILE CONTAINS ALL THE INFORMATION
-//  NEEDED TO PROVIDE THE CLIENT WITH INFORMATION ABOUT ITS ENVIRONMENT
+// THIS FILE CONTAINS ALL THE INFORMATION NEEDED TO PROVIDE
+// THE CLIENT WITH INFORMATION ABOUT ITS ENVIRONMENT
 //
 
 var appEnv = {
 
-  cache:null,
 
-  // DEVELOPMENT OVERRIDES
-  // index essentially provides node with the database
-  dev:{
-    localhost:{
-      tenant:'actifi',
-      index:'alpha2'
-    },
-    alpha:{
-      tenant:'waddell',
-      index:'alpha'
-    },
-    alpha2:{
-      tenant:'td',
-      index:'alpha2'
-    }
+  // this gets filled out once per page load...
+  loaded:false,
+  cache:{
+    subDomain:'',
+    subDomainClean:'',
+    tenant:'',
+    index:'',
+    isLocal:'',
+    env:'',
+    app:''
   },
 
 
-  // init
+  // DEVELOPMENT OVERRIDES (SEE BOTTOM OF PAGE!!!!!)
+  // these can get overwritten by window.devConfig
+  // index essentially provides node with the database
+  dev:{
+    alpha:{     tenant:'actifi', index:'alpha'  },
+    alpha2:{    tenant:'actifi', index:'alpha2' },
+    localhost:{ tenant:'actifi', index:'alpha2' }
+  },
+
+
+
+  //
+  // INIT, this only runs once per page load... (generally)
+  //
   init:function(){
     appEnv.cache = {};
+
     // subDomain
     appEnv.cache.subDomain = (window.location.host).split('.').shift().toLowerCase();
     // clean subDomain (with no -dev on it)
     appEnv.cache.subDomainClean = appEnv.cache.subDomain.split('-').shift();
+
     // isLocal?
     appEnv.cache.isLocal = false;
     if(appEnv.cache.subDomainClean === 'localhost')           appEnv.cache.isLocal = true;
     if(appEnv.cache.subDomainClean === 'dev')                 appEnv.cache.isLocal = true;
     if(appEnv.cache.subDomainClean.indexOf('192.168.') === 0) appEnv.cache.isLocal = true;
+
     // environment
     appEnv.cache.env = 'prod';
     if(appEnv.cache.isLocal)                            appEnv.cache.env = 'dev';
@@ -54,22 +64,24 @@ var appEnv = {
     if(appEnv.cache.subDomainClean == 'apps')       appEnv.cache.tenant = 'actifi'; // special case
     if(!appEnv.cache.tenant)  appEnv.cache.tenant = appEnv.cache.subDomainClean;    // defaults to subDomain
 
-    // load tenant index (db uid)
-    if(appEnv.isLocal())                            appEnv.cache.index = appEnv.dev.localhost.index;
+    // load tenant index for node (db uid)
+    if(appEnv.cache.isLocal)                        appEnv.cache.index = appEnv.dev.localhost.index;
     if(appEnv.cache.subDomainClean == 'alpha')      appEnv.cache.index = appEnv.dev.alpha.index;
     if(appEnv.cache.subDomainClean == 'alpha2')     appEnv.cache.index = appEnv.dev.alpha2.index;
     if(appEnv.cache.subDomainClean == 'tdai')       appEnv.cache.index = 'td'; // special case
     if(appEnv.cache.subDomainClean == 'waddell')    appEnv.cache.index = 'wr'; // special case
     if(!appEnv.cache.tenant)  appEnv.cache.index =  appEnv.cache.tenant; // defaults to tenant
 
-    // set app... mainly for logging/sentry tagging etc...
+    // set app... mainly for logging/sentry/tagging etc...
     if(!appEnv.cache.app){
       // attempt to auto get app from pathname....
-      appEnv.cache.app = ''
+      appEnv.cache.app = '';
       var parts = window.location.pathname.split('/');
       if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
     }
 
+    // save that it loaded... and log it...
+    appEnv.loaded = true;
     if(typeof console !== 'undefined')
       console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache);
   },
@@ -79,42 +91,46 @@ var appEnv = {
   // GETTERS
   //
   isProd : function(){
-    if(!appEnv.cache) appEnv.init();
+    if(!appEnv.loaded) appEnv.init();
     return appEnv.cache.env !== 'dev';
   },
   isDev : function(){
-    if(!appEnv.cache) appEnv.init();
+    if(!appEnv.loaded) appEnv.init();
     return appEnv.cache.env === 'dev';
   },
   isLocal : function(){
-    if(!appEnv.cache) appEnv.init();
+    if(!appEnv.loaded) appEnv.init();
     return appEnv.cache.isLocal;
   },
   subDomain : function(){
-    if(!appEnv.cache) appEnv.init();
+    if(!appEnv.loaded) appEnv.init();
     return appEnv.cache.subDomain;
   },
+  // returns domain with -dev stripped off
   subDomainClean:function(){
-    if(!appEnv.cache) appEnv.init();
-    return appEnv.cache.subDomainClean; // returns domain with -dev stripped off
+    if(!appEnv.loaded) appEnv.init();
+    return appEnv.cache.subDomainClean;
   },
   env : function(){
-    if(!appEnv.cache) appEnv.init();
+    if(!appEnv.loaded) appEnv.init();
     return appEnv.cache.env;
   },
   tenant : function() {
-    if(!appEnv.cache) appEnv.init();
+    if(!appEnv.loaded) appEnv.init();
     return appEnv.cache.tenant;
   },
   index : function() {
-    if(!appEnv.cache) appEnv.init();
+    if(!appEnv.loaded) appEnv.init();
     return appEnv.cache.index;
   },
   app : function() {
-    if(!appEnv.cache) appEnv.init();
+    if(!appEnv.loaded) appEnv.init();
     return appEnv.cache.app;
   }
 }
+
+// if this is set.. use it...
+if(window.devConfig) appEnv.dev = window.devConfig;
 ;
 //
 // THIS IS GLOBALLY scoped on window because we need it before angular even loads..
@@ -165,13 +181,15 @@ var appCatch = {
     if(!appCatch.isEnabled())
       return appCatch.log('Sentry Not Loaded. Unable to log error: ' + message)
 
+    extra = extra || {};
+    tags = tags || {};
     // build options
     var options = {
-      extra:extra || {},
-      tags:tags || {}
+      extra:extra,
+      tags:tags
     }
     // url error occurred.git st
-    options.extra.url = extra.url || window.location.url;
+    options.extra.url = extra.href || window.location.href;
     // tags
     options.tags.app = tags.app || appEnv.app();
     options.tags.env = tags.env || appEnv.env();
@@ -182,7 +200,7 @@ var appCatch = {
   },
   // additional info about the user that threw error...
   setUser:function(id, email){
-    if(!appCatch.loaded()) return;
+    if(!appCatch.isEnabled()) return;
     var user = {id:id}
     if(email) user.email = email
     if(user){
@@ -192,7 +210,7 @@ var appCatch = {
     }
   },
   clearUser:function(){
-    if(!appCatch.loaded()) return;
+    if(!appCatch.isEnabled()) return;
     Raven.setUser(); // this clears out any current user
   }
 
@@ -223,9 +241,16 @@ var appConfig = {
     return value;
   },
 
+
   //
   // UTIL
   //
+
+  // checks if enabled flag is true on an object
+  enabled:function(path){
+    return appConfig.get(path+'.enabled') === true
+  },
+
   makePlural:function(value){
     if(!value) return value;
     if(!_.isString(value)) return value;
@@ -254,7 +279,7 @@ var appConfig = {
 // MIXPANEL LIB
 //
 (function(f,b){if(!b.__SV){var a,e,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.track_charge people.clear_charges people.delete_user".split(" ");
-  for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=f.createElement("script");a.type="text/javascript";a.async=!0;a.src="//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";e=f.getElementsByTagName("script")[0];e.parentNode.insertBefore(a,e)}})(document,window.mixpanel||[]);
+    for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=f.createElement("script");a.type="text/javascript";a.async=!0;a.src="//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";e=f.getElementsByTagName("script")[0];e.parentNode.insertBefore(a,e)}})(document,window.mixpanel||[]);
 
 
 var appTrack = {
@@ -262,7 +287,7 @@ var appTrack = {
   config: {
     enabled:true,
     prod: 'd0695354d367ec464143a4fc30d25cd5', // default PROD key
-    dev:  'c783e4625a55094cbf9d91c94d285242'  // default DEV key
+    dev:  'd71bf20acd263bf696cfdc594ef80ce6'  // default DEV key
   },
 
   // util
@@ -282,7 +307,7 @@ var appTrack = {
     // init
     var token = appTrack.config.prod;
     if(appEnv.env() === 'dev') token = appTrack.config.dev;
-    mixpanel.init(token);
+    mixpanel.init(token, {'cross_subdomain_cookie':false﻿});// 'debug':true,
 
     // store the fact its initialized
     appTrack.initialized = true;
@@ -301,8 +326,6 @@ var appTrack = {
   //
   // METHODS
   //
-
-
   // allows us to track logged in users.... need to call right away.
   setUser:function(id){
     if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to setUser: ' + id);
@@ -332,7 +355,19 @@ var appTrack = {
   unregister: function(key) {
     if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to Unregister: ' + key);
     return mixpanel.unregister(key);
+  },
+
+
+
+  //
+  //  EVENTS we track
+  //
+  TRACK_LOGIN:function(){   appTrack.track('Login') },
+  TRACK_LOGOUT:function(){  appTrack.track('Logout') },
+  TRACK_PAGE_VIEW:function(pageName){
+    appTrack.track('PageView', {
+      'page': pageName,
+      'url':window.location.hash
+    });
   }
-
-
 }
