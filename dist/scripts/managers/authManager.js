@@ -102,7 +102,9 @@
       },
 
       isAdmin: function() { return auth.hasAnyRole([auth.Role_Admin, auth.Role_RoadmapUserAdmin, auth.Role_RoadmapContentAdmin]); },
-      isCoach: function() { return auth.hasAnyRole([auth.Role_AccessKeyManager]); }
+      isCoach: function() {
+        return auth.hasAnyRole([auth.Role_AccessKeyManager]);
+      }
 
 
     };

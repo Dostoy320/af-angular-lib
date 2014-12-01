@@ -35,7 +35,7 @@ var appTrack = {
     // init
     var token = appTrack.config.prod;
     if(appEnv.env() === 'dev') token = appTrack.config.dev;
-    mixpanel.init(token, {'cross_subdomain_cookie':false﻿});// 'debug':true,
+    mixpanel.init(token, { 'debug':true, 'cross_subdomain_cookie':false﻿});// 'debug':true,
 
     // store the fact its initialized
     appTrack.initialized = true;
@@ -91,5 +91,11 @@ var appTrack = {
   //  EVENTS we track
   //
   TRACK_LOGIN:function(){   appTrack.track('Login') },
-  TRACK_LOGOUT:function(){  appTrack.track('Logout') }
+  TRACK_LOGOUT:function(){  appTrack.track('Logout') },
+  TRACK_PAGE_VIEW:function(pageName){
+    appTrack.track('PageView', {
+      'page': pageName,
+      'url':window.location.hash
+    });
+  }
 }

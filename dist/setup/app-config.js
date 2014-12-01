@@ -23,9 +23,16 @@ var appConfig = {
     return value;
   },
 
+
   //
   // UTIL
   //
+
+  // checks if enabled flag is true on an object
+  enabled:function(path){
+    return appConfig.get(path+'.enabled') === true
+  },
+
   makePlural:function(value){
     if(!value) return value;
     if(!_.isString(value)) return value;
