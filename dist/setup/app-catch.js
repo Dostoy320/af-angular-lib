@@ -80,4 +80,18 @@ var appCatch = {
     Raven.setUser(); // this clears out any current user
   }
 
+};
+
+// if this is set.. use it...
+if(window.localCatch){
+  var overrides = window.localCatch[appEnv.subDomain()];
+  // copy over dev configurations if exist...
+  if(overrides){
+    for (var key in overrides){
+      appCatch.config[key] = overrides[key];
+    }
+  }
 }
+
+// run it..
+appCatch.init();

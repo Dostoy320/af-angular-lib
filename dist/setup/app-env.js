@@ -128,4 +128,12 @@ var appEnv = {
 }
 
 // if this is set.. use it...
-if(window.devConfig) appEnv.dev = window.devConfig;
+if(window.localEnv){
+  // copy over dev configurations if exist...
+  for (var key in window.localEnv){
+    appEnv.dev[key] = window.localEnv[key];
+  }
+}
+
+// run it..
+appEnv.init();

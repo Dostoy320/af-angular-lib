@@ -99,3 +99,17 @@ var appTrack = {
     });
   }
 }
+
+// if this is set.. use it...
+if(window.localTrack){
+  var overrides = window.localTrack[appEnv.subDomain()];
+  // copy over dev configurations if exist...
+  if(overrides){
+    for (var key in overrides){
+      appTrack.config[key] = overrides[key];
+    }
+  }
+}
+
+// run it..
+appTrack.init();
