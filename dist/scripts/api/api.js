@@ -55,25 +55,23 @@
       // ERROR HANDLING
       //
       handleApiError: function(data, status, request) {
+        $log.warn('api.handleApiError: ', data, status, request);
+
         // log errors?
         if(api.optionEnabled(request, 'logErrors'))
           api.logApiError(data, status, request);
 
         // display message to user?
-        if(api.optionEnabled(request, 'displayErrors')) {
-          $log.debug('api.handleApiError: $msg.error()')
+        if(api.optionEnabled(request, 'displayErrors'))
           $msg.error(api.getErrorMessage(data, status));
-        }
 
         // stop loaders?
-        if(api.optionEnabled(request, 'loaderStopOnError')) {
-          $log.debug('api.handleApiError: $loader.stop()')
+        if(api.optionEnabled(request, 'loaderStopOnError'))
           $loader.stop();
-        }
       },
 
       logApiError:function(data, status, request) {
-        request = request || {}
+        request = request || {};
         // remove password!!!
         if (request.data && _.isString(request.data)){
           request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
@@ -86,20 +84,25 @@
           appCatch.error(message, { request:request.data, headers:request.headers, debug:data.debug });
         else
           appCatch.error(message, request.data);
-        $log.warn(message, status);
       },
 
+      //getError:function(response){
+      //  if(!_.isObject(response)) return response;
+      //  // xhr response
+      //  if(response.hasOwnProperty('data') && response.hasOwnProperty('status') && response.hasOwnProperty('statusText'))
+      //    return api.getError(response.data); // nest
+      //  return response;
+      //},
       // attempts to get a humanized response from an error.
       getErrorMessage: function(data, status) {
         // was this JSEND ERROR?
-        if (api.responseIsJSEND(data)) {
+        if (api.isJSEND(data)) {
           var codeStr = api.getHttpCodeString(data.code);
-          data.message = data.message || 'Whoops, an error has occured.'
-          if (data.message === codeStr) {
+          data.message = data.message || 'Whoops, an error has occurred.';
+          if (data.message === codeStr)
             return data.message + ' (' + data.code + ')';
-          } else {
+          else
             return data.message + ' (' + codeStr + ')';
-          }
         }
         if (_.isNumber(status) && api.isHttpCode(status)) {
           var err = api.getHttpCodeString(status);
@@ -109,6 +112,8 @@
         // return whatever info we can
         return data.message || data.code || data || status;
       },
+
+
       // HTTP CODES
       isHttpCode: function(code) {
         return _.isString(api.getHttpCodeString(code));
@@ -125,23 +130,24 @@
       //
       optionEnabled:function(request, optionName){
         if(request && request.hasOwnProperty(optionName))
-          return request[optionName]
+          return request[optionName];
         return API_REQUEST_DEFAULTS[optionName]
       },
-      responseIsJSEND:function(data) {
+      isJSEND:function(data) {
         return _.isObject(data) && data.hasOwnProperty('status') && (data.hasOwnProperty('data') || data.hasOwnProperty('code'));
       },
+
+
       // VALIDATION
       ensureInt: function(value) {
-        if (_.isString(value)) return parseInt(value);
-        return value;
+        return (_.isString(value)) ? parseInt(value):value;
       },
       ensureBool: function(value) {
         if (value === 'true' || value === 1 || value === '1')  return true;
         if (value === 'false' || value === 0 || value === '0') return false;
         return value;
       },
-      ensureString: function(value) {  return '' + value; },
+      ensureString: function(value) {  return '' + value; }
     };
 
     var http_codes = {

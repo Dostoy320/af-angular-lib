@@ -16,19 +16,19 @@
         request.method = request.method || 'POST';
         request.debug = api.getDebugInfo();
         if (api.optionEnabled(request, 'autoApplySession')) {
-          request.data = request.data || {}
+          request.data = request.data || {};
           if(!request.data.sessionToken) request.data.sessionToken = authManager.sessionToken()
         }
         if (api.optionEnabled(request, 'autoApplyIndex')) {
-          request.data = request.data || {}
+          request.data = request.data || {};
           if(!request.data.tenant) request.data.tenant = appEnv.index();
         }
 
         // if we want urlEncoded... deal with that
         if (api.optionEnabled(request, 'urlEncode')) {
           // add urlencoded header
-          request.headers = request.headers || {}
-          _.extend(request.headers, {'Content-Type':'application/x-www-form-urlencoded'})
+          request.headers = request.headers || {};
+          _.extend(request.headers, {'Content-Type':'application/x-www-form-urlencoded'});
           // data needs to be in string format
           if (request.data && !_.isString(request.data))
             request.data = $.param(request.data)
@@ -45,15 +45,15 @@
 
         // is this response an error?
         var isSuccess = true;
-        var isJSEND = api.responseIsJSEND(response.data);
+        var isJSEND = api.isJSEND(response.data);
 
         if (response.status !== 200) isSuccess = false;
         if (isJSEND && response.data.status !== 'success') isSuccess = false;
 
         // handle response
         if (isSuccess) {
-          if (isJSEND) response.data = response.data.data // strip status junk
-          return response
+          if (isJSEND) response.data = response.data.data; // strip status junk
+          return response;
         } else {
           return interceptor.responseError(response);
         }

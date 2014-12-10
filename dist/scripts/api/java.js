@@ -70,11 +70,11 @@
           var options = {
             autoApplySession:false,
             displayErrors:false
-          }
+          };
           this.call('/login', { username: username, password: password }, callback, options)
         },
-        logout: function(options, callback) {
-          this.call('/logout', null, options, callback);
+        logout: function(callback, options) {
+          this.call('/logout', null, callback, options);
         },
         loadsession: function(sessionToken, callback, options) {
           this.call('/loadsession', {sessionToken: sessionToken}, callback, options);
