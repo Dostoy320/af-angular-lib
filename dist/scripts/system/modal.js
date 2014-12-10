@@ -9,34 +9,31 @@
     var service;
     service = {
       url: null,
-      modalScope: null,
-      parentScope: null,
-      open: function(url, parentScope, modalScope) {
+      controller: null,
+      size:null,
+      open: function(url, ctrl, size) {
         service.url = url;
-        service.modalScope = modalScope;
-        service.parentScope = parentScope;
-        if (!service.url) {
-          service.url = DEFAULT_MODAL_PATH;
-        }
-        return $event.shout("Modal.open", {
+        service.controller = ctrl;
+        service.size = size; // lg, md, sm
+        if (!service.url) service.url = DEFAULT_MODAL_PATH;
+        $event.shout("Modal.open", {
           url: service.url,
-          parentScope: service.parentScope,
-          modalScope: modalScope
+          controller: service.controller,
+          size: service.size
         });
       },
       close: function(data) {
+        $event.shout("Modal.close", data);
         service.url = null;
-        return $event.shout("Modal.close", data);
-      },
-      getModalScope: function() {
-        return service.modalScope;
-      },
-      getParentScope: function() {
-        return service.parentScope;
-      },
-      updateModalScope: function(scope) {
-        return service.modalScope = scope;
+        service.size = null;
+        service.controller = null;
       }
+      //getController: function() {
+      //  return service.controller;
+      //},
+      //updateController: function(scope) {
+      //  return service.controller = scope;
+      //}
     };
     return service;
   });
@@ -45,9 +42,16 @@
     return {
       restrict: "A",
       scope: {},
-      template: "<div id=\"modalHolder\" class=\"ng-cloak\" ng-show=\"modalURL\">" + "<div class=\"modal fade\" ng-click=\"close()\" style=\"display:block\">" + "<div class=\"modal-dialog\" ng-click=\"stopClickThrough($event)\" ng-include=\"modalURL\"></div>" + "</div>" + "<div class=\"modal-backdrop fade\" ng-click=\"close()\"></div>" + "</div>",
+      template: '<div id="modalHolder" class="ng-cloak" ng-show="modalURL">' +
+                  '<div class="modal fade" ng-click="close()" style="display:block">' +
+                    '<div class="modal-dialog" ng-click="stopClickThrough($event)" ' +
+                      'ng-include="modalURL" ng-class="size"></div>' +
+                  '</div>' +
+                  '<div class="modal-backdrop fade" ng-click="close()"></div>' +
+                '</div>',
       link: function(scope, element, attrs) {
         scope.modalURL = $modal.url;
+        scope.size = null;
         scope.close = function() {
           $('body').removeClass('modal-open');
           $("#modalHolder").children().removeClass("in");
@@ -55,9 +59,17 @@
         };
         scope.$on("Modal.open", function() {
           scope.modalURL = $modal.url;
+          scope.size = null;
+          if($modal.size){
+            switch($modal.size){
+              case 'lg': scope.size = {'modal-lg':true}; break;
+              case 'md': scope.size = {'modal-md':true}; break;
+              case 'sm': scope.size = {'modal-sm':true}; break;
+            }
+          }
           $('body').addClass('modal-open');
-          return $timeout(function() {
-            return $("#modalHolder").children().addClass("in");
+          $timeout(function() {
+            $("#modalHolder").children().addClass("in");
           }, 50);
         });
         scope.$on("Modal.close", scope.close);

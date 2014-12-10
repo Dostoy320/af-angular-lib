@@ -1,34 +1,18 @@
 (function() {
-  var myApp;
-
-  myApp = angular.module('af.bsIcons', []);
+  var myApp = angular.module('af.bsIcons', []);
 
   myApp.directive('bsIcon', function() {
     return {
-      scope: {
-        icon: '@bsIcon',
-        color: '@bsIconColor'
-      },
-      link: function(scope, element, attrs) {
-        element.addClass('ng-show-inline glyphicon glyphicon-' + scope.icon);
-        if (scope.color) {
-          return element.css('color', scope.color);
-        }
+      compile:function(elm, attrs){
+        angular.element(elm).addClass('ng-show-inline glyphicon glyphicon-' + attrs.bsIcon);
       }
     };
   });
 
   myApp.directive("faIcon", function() {
     return {
-      scope: {
-        icon: '@faIcon',
-        color: '@faIconColor'
-      },
-      link: function(scope, element, attrs) {
-        element.addClass('ng-show-inline fa fa-' + scope.icon);
-        if (scope.color) {
-          return element.css('color', scope.color);
-        }
+      compile: function(elm, attrs) {
+        angular.element(elm).addClass('ng-show-inline fa fa-' + attrs.faIcon);
       }
     };
   });

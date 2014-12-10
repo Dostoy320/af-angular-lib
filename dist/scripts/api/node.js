@@ -42,9 +42,9 @@
           return node.RoadmapNode.find(type, query, options)
             .then(function(response){
               if (_.isArray(response.data) && response.data.length >= 1)
-                response.data = response.data[0]
+                response.data = response.data[0];
               else
-                response.data = null
+                response.data = null;
               return response
             })
         },
