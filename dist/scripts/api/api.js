@@ -38,6 +38,7 @@
       createRequest:function(){
         return _.extend({}, API_REQUEST_DEFAULTS, arguments[0], arguments[1], arguments[2])
       },
+
       // add debugs info to requests (don't do on Java, Java could blow up)
       getDebugInfo: function() {
         return {
@@ -141,17 +142,6 @@
         return value;
       },
       ensureString: function(value) {  return '' + value; },
-      
-      
-      //
-      // RESOLVE/REJECT
-      //
-      resolveResponse:function(defer){
-        return function(response){ defer.resolve(response); }
-      },
-      rejectResponse:function(defer){
-        return function(response){ defer.reject(response); }
-      }
     };
 
     var http_codes = {

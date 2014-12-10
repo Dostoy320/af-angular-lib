@@ -7,17 +7,19 @@
     var java = {
 
       // so you don't have to inject $http in your controllers if you injected this service already..
-      call: function(request) { return $http(request); },
+      call: function(request, callback) {
+        $http(request).success(function(data){
+          if(callback) callback(null, data)
+        }).error(function(error){
+          if(callback) callback(error)
+        });
+      },
 
       //
       // ROADMAP SERVICE
       //
       RoadmapService: {
         serviceUrl: '/RoadmapService',
-        // BASE
-        call:function(url, params, options){
-          return java.call(this.createRequest(url, params, options));
-        },
         // creates standard request object for this service
         createRequest:function(url, params, options){
           var request = {
@@ -26,12 +28,15 @@
             data: params || {}
           }
           // merge with default request options
-          return api.createRequest(request, options)
+          api.createRequest(request, options)
+        },
+        call:function(url, params, callback, options){
+          java.call(this.createRequest(url, params, options), callback);
         },
 
         // METHODS
-        invoke: function(params) {
-          return this.call('/invoke', params);
+        invoke: function(params, callback, options){
+          this.call('/invoke', params, callback, options);
         }
       },
 
@@ -43,10 +48,6 @@
       //
       AuthService: {
         serviceUrl: '/RoadmapService',
-        // BASE
-        call:function(url, params, options){
-          return java.call(this.createRequest(url, params, options));
-        },
         // creates standard request object for this service
         createRequest:function(url, params, options){
           var request = {
@@ -59,21 +60,24 @@
           // merge with default request options
           return api.createRequest(request, options)
         },
+        call:function(url, params, callback, options){
+          java.call(this.createRequest(url, params, options), callback);
+        },
 
 
         // METHODS
-        login: function(username, password) {
+        login: function(username, password, callback) {
           var options = {
             autoApplySession:false,
             displayErrors:false
           }
-          return this.call('/login', { username: username, password: password }, options)
+          this.call('/login', { username: username, password: password }, callback, options)
         },
-        logout: function(options) {
-          return this.call('/logout', null, options);
+        logout: function(options, callback) {
+          this.call('/logout', null, options, callback);
         },
-        loadsession: function(sessionToken, options) {
-          return this.call('/loadsession', {sessionToken: sessionToken}, options);
+        loadsession: function(sessionToken, callback, options) {
+          this.call('/loadsession', {sessionToken: sessionToken}, callback, options);
         }
         /*
 
