@@ -31,20 +31,16 @@
       },
 
       // return object if null to prevent auth.user().firstName from blowing up.
-      user:function(){ return auth.loggedIn() ? loggedInUser : {} },
-
-      userId:function(){
-        if(auth.loggedIn()) return null;
-        auth.user()['userId']
-      },
-      userEmail:function(){
-        if(auth.loggedIn()) return null;
-        auth.user()['email']
-      },
-
+      user:function(){      return auth.loggedIn() ? loggedInUser : {} },
+      // quickie makers for things we get often:
+      user_id:function(){   return auth.loggedIn() ? auth.user()['id']:null; },
+      userId:function(){    return auth.loggedIn() ? auth.user()['userId']:null; },
+      userEmail:function(){ return auth.loggedIn() ? auth.user()['email']:null;  },
 
       // is logged in?
-      loggedIn: function() { return auth.sessionToken() && loggedInUser && loggedInUser.userId;  },
+      loggedIn: function() {
+        return (auth.sessionToken() && loggedInUser && loggedInUser.userId) ? true:false;
+      },
 
 
 

@@ -27,6 +27,7 @@
       },
 
       clear: function(force) {
+        console.log('MESSAGE CLEARED!');
         var now = new Date().getTime();
         if (force || (msg.shownAt && (now - msg.shownAt) > msg.minVisible))
           return $event.shout($event.EVENT_msgClear);
@@ -40,11 +41,17 @@
   });
 
   myApp.directive('msgHolder', function($timeout, $window, $event) {
-    var timer;
-    timer = null;
+    var timer = null;
     return {
       restrict: 'A',
-      template: '<div class="app-alert" class="ng-cloak" style="position:fixed; top:0; left:0; right:0;">' + '<div class="animate-alert-animation container" ng-show="visible">' + '<div class="alert" ng-class="cssClass">' + '<button type="button" class="close" ng-show="closable" ng-click="clear()">×</button>' + '<span ng-bind-html="message"></span>' + '</div>' + '</div>' + '</div>',
+      template: '<div id="app-alert" class="ng-cloak">' +
+                  '<div class="app-alert-container container" ng-show="visible">' +
+                    '<div class="alert" ng-class="cssClass">' +
+                      '<button type="button" class="close" ng-show="closable" ng-click="clear()">×</button>' +
+                      '<span ng-bind-html="message"></span>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>',
       link: function(scope, element, attrs) {
         scope.message = null;
         scope.type = null;
@@ -54,27 +61,25 @@
           scope.message = message;
           scope.closable = closable;
           scope.cssClass = type ? 'alert-' + type : 'alert-warning';
-          if (scope.closable) {
+          if (scope.closable)
             scope.cssClass += ' alert-dismissable';
-          }
           scope.visible = true;
-          if (timer) {
-            $timeout.cancel(timer);
-          }
+
+          // clear after delay
+          if (timer) $timeout.cancel(timer);
           if (_.isNumber(delay) && delay > 0) {
-            return timer = $timeout(function() {
-              return scope.clear();
+            timer = $timeout(function() {
+              scope.clear();
             }, delay * 1000);
           }
         };
         scope.clear = function() {
           scope.visible = false;
-          if (timer) {
-            return $timeout.cancel(timer);
-          }
+          if (timer) $timeout.cancel(timer);
         };
         scope.$on($event.EVENT_msgShow, function(event, data) {
-          return scope.show(data.message, data.type, data.closable, data.delay);
+          console.log('MESSAGE HEARD!');
+          scope.show(data.message, data.type, data.closable, data.delay);
         });
         return scope.$on($event.EVENT_msgClear, scope.clear);
       }

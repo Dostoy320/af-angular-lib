@@ -5,47 +5,51 @@
   box-shadow: @shadow;
 }
 
+// remove silly margins from all alerts
 .alert{ margin:0; }
-.alert.app-alert{
-  border-radius:0;
-  top:0; left:0; right:0;
 
-  // animate down from top of screen
-  &.animate-slide-down{
-    margin:0 auto;
-    max-width:550px;
-    z-index:1000;
-    .border-top-radius(0);
-    .border-bottom-radius(10px);
-    .msg-shadow(0 3px 3px rgba(0,0,0,.3));
-  }
-
-  &.alert-warning{ border:1px solid darken(@state-warning-text, 20%); }
-  &.alert-info{    border:1px solid darken(@state-info-text,    20%); }
-  &.alert-danger{  border:1px solid darken(@state-danger-text,  20%); }
-  &.alert-success{ border:1px solid darken(@state-success-text, 20%); }
-
-}
-
-// ANIMATION
-.animate-slide-down(@speed:1s, @start:-100px, @end:0){
+#app-alert{
   position:fixed;
-  left:0; right:0;
-  top:@end;
-  // on hide
-  &.ng-hide-add {
-    .transition(@speed linear all);
+  z-index:9999;
+  top:0;
+  left:0;
+  right:0;
+
+  .alert{
+    .border-bottom-radius(8px);
+    .border-top-radius(0);
+
+    &.alert-warning{ border:1px solid darken(@state-warning-text, 20%); }
+    &.alert-info{    border:1px solid darken(@state-info-text,    20%); }
+    &.alert-danger{  border:1px solid darken(@state-danger-text,  20%); }
+    &.alert-success{ border:1px solid darken(@state-success-text, 20%); }
+  }
+
+  // animate the alert box
+  .app-alert-container{
+    .animate-slide-down();
+  }
+
+  // the slide down animation
+  .animate-slide-down(@speed:.5s, @start:-100px, @end:-1px){
+    // default (hidden)
+    position:fixed;
+    left:0;
+    right:0;
     top:@end;
-    &.ng-hide-add-active { top:@start; }
+
+    // on show
+    &.ng-hide-remove{
+      top:@start;
+      .transition(@speed linear all);
+      display:block !important; // force visible during fade in
+      &.ng-hide-remove-active { top:@end; } // showing
+    }
+    // on hide
+    &.ng-hide-add {
+      top:@end;
+      .transition(@speed linear all);
+      &.ng-hide-add-active { top:@start; } // hiding
+    }
   }
-  // on show
-  &.ng-hide-remove{
-    top:@start;
-    .transition(@speed linear all);
-    display:block !important; // force visible during fade in
-    &.ng-hide-remove-active { top:@end; }
-  }
-}
-.animate-slide-down.app-alert{
-  .animate-slide-down(.3s, -100px, -5px);
 }
