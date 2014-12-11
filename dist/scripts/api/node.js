@@ -10,9 +10,9 @@
       // so you dont have to inject $http in your controllers if you injected this service already..
       call: function(request, callback) {
         $http(request).success(function(data){
-          if(callback) callback(null, data)
-        }).error(function(error){
-          if(callback) callback(error)
+          if(callback) callback(null, data);    // SUCCESS
+        }).error(function(error, status){
+          if(callback) callback(error, status); // ERROR
         });
       },
 
@@ -21,15 +21,11 @@
         // BASE
         // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = {
-            method: 'POST',
-            url: node.RoadmapNode.serviceUrl + url,
-            data: params,
-            // options
-            autoApplyIndex:true
-          }
-          // merge with default request options
-          return api.createRequest(request, options)
+          var request = api.newRequest(options);
+          request.url = node.RoadmapNode.serviceUrl + url;
+          request.data = params || {};
+          request.autoApplyIndex = true;
+          return request;
         },
         call:function(url, params, callback, options){
           node.call(this.createRequest(url, params, options), callback);

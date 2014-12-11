@@ -43,6 +43,7 @@ var appCatch = {
   // METHODS
   //
   // send error
+  send:function(message, extra, tags){ appCatch.error(message, extra, tags); }, // alias
   error:function(message, extra, tags){
     if(!appCatch.isEnabled())
       return appCatch.log('Sentry Not Loaded. Unable to log error: ' + message)

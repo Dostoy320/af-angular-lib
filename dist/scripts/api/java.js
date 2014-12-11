@@ -9,9 +9,9 @@
       // so you don't have to inject $http in your controllers if you injected this service already..
       call: function(request, callback) {
         $http(request).success(function(data){
-          if(callback) callback(null, data)
-        }).error(function(error){
-          if(callback) callback(error)
+          if(callback) callback(null, data);    // SUCCESS
+        }).error(function(error, status){
+          if(callback) callback(error, status); // ERROR
         });
       },
 
@@ -22,13 +22,10 @@
         serviceUrl: '/RoadmapService',
         // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = {
-            method: 'POST',
-            url: java.RoadmapService.serviceUrl + url,
-            data: params || {}
-          }
-          // merge with default request options
-          api.createRequest(request, options)
+          var request = api.newRequest(options);
+          request.url = java.RoadmapService.serviceUrl + url;
+          request.data = params || {};
+          return request;
         },
         call:function(url, params, callback, options){
           java.call(this.createRequest(url, params, options), callback);
@@ -50,27 +47,19 @@
         serviceUrl: '/RoadmapService',
         // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = {
-            method: 'POST',
-            url: java.AuthService.serviceUrl + url,
-            data: params,
-            // options
-            urlEncode:true
-          }
-          // merge with default request options
-          return api.createRequest(request, options)
+          var request = api.newRequest(options);
+          request.url = java.AuthService.serviceUrl + url;
+          request.data = params || {};
+          request.urlEncode = true;
+          return request;
         },
         call:function(url, params, callback, options){
           java.call(this.createRequest(url, params, options), callback);
         },
 
-
         // METHODS
-        login: function(username, password, callback) {
-          var options = {
-            autoApplySession:false,
-            displayErrors:false
-          };
+        login: function(username, password, callback, options) {
+          if(!options) options = { autoApplySession:false, displayErrors:false };
           this.call('/login', { username: username, password: password }, callback, options)
         },
         logout: function(callback, options) {

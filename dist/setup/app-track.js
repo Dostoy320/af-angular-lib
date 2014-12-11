@@ -68,6 +68,7 @@ var appTrack = {
 
   // track an event named "Registered":
   // mixpanel.track("Registered", {"Gender": "Male", "Age": 21});
+  send:function(name, options){ appTrack.track(name, options); }, // alias
   track:function(name, options){
     if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to track event: ' + name);
     mixpanel.track(name, options); //

@@ -4,44 +4,49 @@
 
   myApp.factory("httpInterceptor", function($q, $injector, api, authManager) {
 
+    var isDisabled = function(request){
+      return api.optionEnabled(request, 'disableHttpInterceptor');
+    };
+    var isFile = function(request){
+      // if end of our request contains a period.. probably a file request
+      return request.url.substr(request.url.length - 5).indexOf('.') >= 0
+    };
+
     var interceptor = {
 
       request: function(request) {
-        // is this interceptor enabled?
-        if(api.optionEnabled('disableHttpInterceptor')) return request;
-        // don't monkey with requests that have a period in them (files)
-        if(request.url && request.url.indexOf('.') >= 0) return request;
+        // should this even run?
+        if(isDisabled(request) || isFile(request)) return request;
 
-        // slap some stuff on our requests
+        // AUTO APPLY SOME REQUEST PARAMS:
         request.method = request.method || 'POST';
-        request.debug = api.getDebugInfo();
-        if (api.optionEnabled(request, 'autoApplySession')) {
-          request.data = request.data || {};
-          if(!request.data.sessionToken) request.data.sessionToken = authManager.sessionToken()
-        }
-        if (api.optionEnabled(request, 'autoApplyIndex')) {
-          request.data = request.data || {};
-          if(!request.data.tenant) request.data.tenant = appEnv.index();
-        }
+        request.data = request.data || {};
 
-        // if we want urlEncoded... deal with that
+        if(api.optionEnabled(request, 'autoApplyDebugInfo'))
+          request.debug = api.debugInfo();
+
+        if(api.optionEnabled(request, 'autoApplySession') && !request.data.sessionToken)
+          request.data.sessionToken = authManager.sessionToken();
+
+        if(api.optionEnabled(request, 'autoApplyIndex') && !request.data.tenant)
+          request.data.tenant = appEnv.index();
+
+        // URLENCODED?
         if (api.optionEnabled(request, 'urlEncode')) {
           // add urlencoded header
           request.headers = request.headers || {};
           _.extend(request.headers, {'Content-Type':'application/x-www-form-urlencoded'});
           // data needs to be in string format
-          if (request.data && !_.isString(request.data))
-            request.data = $.param(request.data)
+          if(!_.isString(request.data)) request.data = $.param(request.data)
         }
-
         return request;
       },
 
       response: function(response) {
-        // is this interceptor enabled?
-        if(api.optionEnabled('disableHttpInterceptor')) return response;
-        // don't monkey with requests that have a period in them (files)
-        if(response.config && response.config.url && response.config.url.indexOf('.') >= 0) return response;
+        if(!response.config) return response; // don't mess with a response that has no config
+        var request = response.config;
+        // should this even run?
+        if(isDisabled(request) || isFile(request)) return response;
 
         // is this response an error?
         var isSuccess = true;
@@ -59,13 +64,12 @@
         }
       },
       responseError: function(response) {
-        // is this interceptor enabled?
-        if(api.optionEnabled('disableHttpInterceptor')) return $q.reject(response);
-        // don't monkey with requests that have a period in them (files)
-        if(response.config && response.config.url && response.config.url.indexOf('.') >= 0) return $q.reject(response);
-
-        // handle error
-        api.handleApiError(response.data, response.status, response.config);
+        if(!response.config) return $q.reject(response); // don't mess with a response that has no config
+        var request = response.config;
+        // should this even run?
+        if(isDisabled(request) || isFile(request)) return $q.reject(response);
+        // handle it
+        api.httpRequestErrorHandler(response.data, response.status, response.config);
         return $q.reject(response);
       }
     };

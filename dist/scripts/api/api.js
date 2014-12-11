@@ -8,39 +8,38 @@
   myApp.constant('API_REQUEST_DEFAULTS', {
     method:'POST',
     url:'',
-    // HTTP INTERCEPTOR options
-    autoApplySession:true,  // should a sessionToken be added to ALL api calls automatically?
-    autoApplyIndex:false,   // should add node db index to ALL api calls automatically?
+    // auto add some params:
+    autoApplySession:true,   // should a sessionToken be added to api calls automatically?
+    autoApplyIndex:false,    // should add node db index to api calls automatically?
+    autoApplyDebugInfo:true, // should add node db index to api calls automatically?
+    // request options:
     urlEncode:false,        // send as application/x-www-form-urlencoded
-    // response options
+    // response options:
     disableHttpInterceptor:false, // disable the http interceptor completely
     // errors
     logErrors:true,         // on error, log to sentry (or whatever)
     displayErrors:true,     // on error, display error to user
-    loaderStopOnError:true  // on error, call $loader.stop()
+    stopLoaderOnError:true  // on error, call $loader.stop()
   });
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $log, $q) {
-
-
+  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $log) {
 
     var api = {
 
 
       //
-      // REQUEST CREATION
+      // REQUEST API
       //
-
       // creates a request... merges default request, with anything users passes in
-      // generally this: createRequest(request, overrides)
-      createRequest:function(){
-        return _.extend({}, API_REQUEST_DEFAULTS, arguments[0], arguments[1], arguments[2])
+      newRequest:function(options){
+        return _.extend({}, API_REQUEST_DEFAULTS, options);
       },
 
+
       // add debugs info to requests (don't do on Java, Java could blow up)
-      getDebugInfo: function() {
+      debugInfo: function() {
         return {
           url:    $window.location.href,
           index:  appEnv.index(),
@@ -52,47 +51,52 @@
 
 
       //
-      // ERROR HANDLING
+      // REQUEST ERROR HANDLERS
+      // this is generally used by a httpInterceptor
       //
-      handleApiError: function(data, status, request) {
-        $log.warn('api.handleApiError: ', data, status, request);
+      httpRequestErrorHandler: function(data, status, request) {
+        $log.error('api.requestErrorHandler: ', data, status, request);
 
         // log errors?
         if(api.optionEnabled(request, 'logErrors'))
-          api.logApiError(data, status, request);
+          api.httpRequestErrorLogger(data, status, request);
 
         // display message to user?
         if(api.optionEnabled(request, 'displayErrors'))
           $msg.error(api.getErrorMessage(data, status));
 
         // stop loaders?
-        if(api.optionEnabled(request, 'loaderStopOnError'))
+        if(api.optionEnabled(request, 'stopLoaderOnError'))
           $loader.stop();
       },
-
-      logApiError:function(data, status, request) {
+      httpRequestErrorLogger:function(data, status, request) {
         request = request || {};
-        // remove password!!!
-        if (request.data && _.isString(request.data)){
+        // don't log passwords!!
+        if (request.data && _.isString(request.data))
           request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
-        } else {
-          if (request.data && request.data.password) request.data.password = '********';
-        }
+        else if (request.data && request.data.password)
+          request.data.password = '********';
         // log it
-        var message = api.getErrorMessage(data, status);
-        if(request.headers)
-          appCatch.error(message, { request:request.data, headers:request.headers, debug:data.debug });
-        else
-          appCatch.error(message, request.data);
+        appCatch.send(api.getErrorMessage(data, status), request.data);
       },
 
-      //getError:function(response){
-      //  if(!_.isObject(response)) return response;
-      //  // xhr response
-      //  if(response.hasOwnProperty('data') && response.hasOwnProperty('status') && response.hasOwnProperty('statusText'))
-      //    return api.getError(response.data); // nest
-      //  return response;
-      //},
+
+      //
+      // DEFAULT ERROR HANDLER for manual err handling
+      // generally used to handle a response if interceptor is off
+      //
+      handleError:function(err, status){
+        var message = api.getErrorMessage(err, status);
+        // log it
+        $log.error(message, err, status);
+        appCatch.send(message, err);
+        // display it
+        $msg.error(message);
+        // stop any loaders
+        $loader.stop();
+      },
+
+
       // attempts to get a humanized response from an error.
       getErrorMessage: function(data, status) {
         // was this JSEND ERROR?
@@ -129,9 +133,16 @@
       // UTIL
       //
       optionEnabled:function(request, optionName){
-        if(request && request.hasOwnProperty(optionName))
+        if(request && optionName && request.hasOwnProperty(optionName))
           return request[optionName];
-        return API_REQUEST_DEFAULTS[optionName]
+        // return default
+        var defaultRequest = angular.copy(API_REQUEST_DEFAULTS);
+        if(defaultRequest && optionName && defaultRequest.hasOwnProperty(optionName))
+          return defaultRequest[optionName];
+        // this shouldn't happen... log it
+        $log.error('Invalid $http Request Option sent: '+optionName);
+        appCatch.send('Invalid $http Request Option sent: '+optionName);
+        return false;
       },
       isJSEND:function(data) {
         return _.isObject(data) && data.hasOwnProperty('status') && (data.hasOwnProperty('data') || data.hasOwnProperty('code'));
