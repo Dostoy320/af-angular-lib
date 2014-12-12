@@ -7,12 +7,13 @@
     var java = {
 
       // so you don't have to inject $http in your controllers if you injected this service already..
-      call: function(request, callback) {
-        $http(request).success(function(data){
-          if(callback) callback(null, data);    // SUCCESS
-        }).error(function(error, status){
-          if(callback) callback(error, status); // ERROR
-        });
+      call: function(request) {
+        return $http(request);
+        //.success(function(data){
+          //if(callback) callback(null, data);    // SUCCESS
+        //}).error(function(error, status){
+        //  if(callback) callback(error, status); // ERROR
+        //});
       },
 
       //
@@ -27,13 +28,13 @@
           request.data = params || {};
           return request;
         },
-        call:function(url, params, callback, options){
-          java.call(this.createRequest(url, params, options), callback);
+        call:function(url, params, options){
+          return java.call(this.createRequest(url, params, options));
         },
 
         // METHODS
         invoke: function(params, callback, options){
-          this.call('/invoke', params, callback, options);
+          return this.call('/invoke', params, callback, options);
         }
       },
 
@@ -53,21 +54,22 @@
           request.urlEncode = true;
           return request;
         },
-        call:function(url, params, callback, options){
-          java.call(this.createRequest(url, params, options), callback);
+        call:function(url, params, options){
+          return java.call(this.createRequest(url, params, options));
         },
 
         // METHODS
-        login: function(username, password, callback, options) {
+        login: function(username, password, options) {
           if(!options) options = { autoApplySession:false, displayErrors:false };
-          this.call('/login', { username: username, password: password }, callback, options)
+          return this.call('/login', { username: username, password: password }, options)
         },
-        logout: function(callback, options) {
-          this.call('/logout', null, callback, options);
+        logout: function(options) {
+          return this.call('/logout', null, options);
         },
-        loadsession: function(sessionToken, callback, options) {
-          this.call('/loadsession', {sessionToken: sessionToken}, callback, options);
+        loadsession: function(sessionToken, options) {
+          return this.call('/loadsession', {sessionToken: sessionToken}, options);
         }
+
         /*
 
         UNTESTED

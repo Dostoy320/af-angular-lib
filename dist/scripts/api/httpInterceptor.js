@@ -25,10 +25,10 @@
         if(api.optionEnabled(request, 'autoApplyDebugInfo'))
           request.debug = api.debugInfo();
 
-        if(api.optionEnabled(request, 'autoApplySession') && !request.data.sessionToken)
+        if(api.optionEnabled(request, 'autoApplySession') && !request.data.hasOwnProperty('sessionToken'))
           request.data.sessionToken = authManager.sessionToken();
 
-        if(api.optionEnabled(request, 'autoApplyIndex') && !request.data.tenant)
+        if(api.optionEnabled(request, 'autoApplyIndex') && !request.data.hasOwnProperty('tenant'))
           request.data.tenant = appEnv.index();
 
         // URLENCODED?

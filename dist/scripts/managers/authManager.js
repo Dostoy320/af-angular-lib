@@ -48,6 +48,7 @@
       // SET
       //
       setSessionToken: function(sessionToken) {
+        console.log('sessionToken set to ', sessionToken);
         amplify.store('sessionToken', sessionToken, 86400000); // 1 day
       },
       setLoggedInUser: function(user) {
