@@ -16,18 +16,22 @@
     urlEncode:false,        // send as application/x-www-form-urlencoded
     // response options:
     disableHttpInterceptor:false, // disable the http interceptor completely
-    // errors
-    logErrors:true,         // on error, log to sentry (or whatever)
-    displayErrors:true,     // on error, display error to user
-    stopLoaderOnError:true  // on error, call $loader.stop()
+    logErrors:true,               // on error, log to sentry (or whatever)
+    displayErrors:true            // on error, display error to user
   });
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $log) {
+  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $q, $log) {
 
     var api = {
 
+      // turning this on will allow you to
+      // suppress error messages displayed by $http requests
+      // and handle the them manually
+      // don't forget to turn it back on!
+      // HTTP errors will STILL BE LOGGED!
+      suppressErrorMessages:false,
 
       //
       // REQUEST API
@@ -51,80 +55,80 @@
 
 
       //
-      // REQUEST ERROR HANDLERS
-      // this is generally used by a httpInterceptor
+      // response handlers
       //
-      httpRequestErrorHandler: function(data, status, request) {
-        $log.error('api.requestErrorHandler: ', data, status, request);
+      error:{
+        handler:function(response){
+          $loader.stop(); // stop loader on error
+          // prevents same response from getting handled/logged twice by accident
+          if(response.handled === true) return;
 
-        // log errors?
-        if(api.optionEnabled(request, 'logErrors'))
-          api.httpRequestErrorLogger(data, status, request);
+          var request = response.config;
+          var data = response.data;
+          var status = response.status;
 
-        // display message to user?
-        if(api.optionEnabled(request, 'displayErrors'))
-          $msg.error(api.getErrorMessage(data, status));
+          if(response.status !== 'InvalidLoginParameter') // don't console.log this
+            $log.error('Whoops: ' + data, response);
 
-        // stop loaders?
-        if(api.optionEnabled(request, 'stopLoaderOnError'))
-          $loader.stop();
+          // log it?
+          if(api.optionEnabled(request, 'logErrors'))
+            api.error.log(response);
+
+          // display it?
+          if(api.optionEnabled(request, 'displayErrors') && !api.suppressErrorMessages)
+            api.error.display(response);
+
+          response.handled = true;
+        },
+        log:function(response){
+          if(_.isString(response)) return appCatch.send(response);
+
+          var request = response.config || {};
+
+          // don't log credentials!!
+          if (request.data && _.isString(request.data))
+            request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
+          else if (request.data && request.data.password)
+            request.data.password = '********';
+
+          // log it
+          var extra = {};
+          if(request.url)  extra.url = request.url;
+          if(request.data) extra.data = request.data;
+          appCatch.send(api.error.getMessage(response), extra);
+        },
+        display:function(response){
+          $msg.error(api.error.getMessage(response))
+        },
+        // attempts to get a humanized response from an error.
+        getMessage: function(response) {
+          if(response.status === 502) return 'Unable to communicate with server. Please check your internet connection.';
+          return response.data || api.getHttpCodeString(response.status);
+        }
       },
-      httpRequestErrorLogger:function(data, status, request) {
-        request = request || {};
-        // don't log passwords!!
-        if (request.data && _.isString(request.data))
-          request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
-        else if (request.data && request.data.password)
-          request.data.password = '********';
-        // log it
-        appCatch.send(api.getErrorMessage(data, status), request.data);
-      },
+
 
 
       //
-      // DEFAULT ERROR HANDLER for manual err handling
-      // generally used to handle a response if interceptor is off
+      //  PROMISE
       //
-      handleError:function(err, status){
-        var message = api.getErrorMessage(err, status);
-        // log it
-        $log.error(message, err, status);
-        appCatch.send(message, err);
-        // display it
-        $msg.error(message);
-        // stop any loaders
-        $loader.stop();
+      // creates a rejection similar to an $http rejection
+      reject:function(status, reason, config){
+        if(arguments.length == 1) reason = status;
+        return $q.reject({
+          status:status,
+          data:reason,
+          config:{}
+        });
       },
-
-
-      // attempts to get a humanized response from an error.
-      getErrorMessage: function(data, status) {
-        // was this JSEND ERROR?
-        if (api.isJSEND(data)) {
-          var codeStr = api.getHttpCodeString(data.code);
-          data.message = data.message || 'Whoops, an error has occurred.';
-          if (data.message === codeStr)
-            return data.message + ' (' + data.code + ')';
+      catcher:function(defer) {
+        return function (response){
+          api.error.handler(response);
+          if(defer)
+            return defer.reject(response);
           else
-            return data.message + ' (' + codeStr + ')';
+            return $q.reject(response);
         }
-        if (_.isNumber(status) && api.isHttpCode(status)) {
-          var err = api.getHttpCodeString(status);
-          if (status === 502) err = 'Unable to communicate with server. Please check your internet connection.';
-          return err + ' (' + status + ')';
-        }
-        // return whatever info we can
-        return data.message || data.code || data || status;
-      },
-
-
-      // HTTP CODES
-      isHttpCode: function(code) {
-        return _.isString(api.getHttpCodeString(code));
-      },
-      getHttpCodeString: function(code) {
-        if (http_codes.hasOwnProperty(code)) return http_codes[code];
-        return code;
       },
 
 
@@ -132,21 +136,19 @@
       //
       // UTIL
       //
-      optionEnabled:function(request, optionName){
-        if(request && optionName && request.hasOwnProperty(optionName))
-          return request[optionName];
-        // return default
-        var defaultRequest = angular.copy(API_REQUEST_DEFAULTS);
-        if(defaultRequest && optionName && defaultRequest.hasOwnProperty(optionName))
-          return defaultRequest[optionName];
-        // this shouldn't happen... log it
-        $log.error('Invalid $http Request Option sent: '+optionName);
-        appCatch.send('Invalid $http Request Option sent: '+optionName);
+      isJSEND:function(data) {
+        if(!_.object(data) || !_.has(data, 'status')) return false;
+        if(_.isFunction(data.headers)) return false;
+        if(_.has(data, 'code') && _.has(data, 'message')) return true;
+        if(_.has(data, 'data')) return true;
         return false;
       },
-      isJSEND:function(data) {
-        return _.isObject(data) && data.hasOwnProperty('status') && (data.hasOwnProperty('data') || data.hasOwnProperty('code'));
+      optionEnabled:function(request, optionName){
+        if(request && _.isObject(request) && request.hasOwnProperty(optionName))
+          return request[optionName];
+        return false;
       },
+
 
 
       // VALIDATION
@@ -158,7 +160,19 @@
         if (value === 'false' || value === 0 || value === '0') return false;
         return value;
       },
-      ensureString: function(value) {  return '' + value; }
+      ensureString: function(value) {
+        return '' + value;
+      },
+
+
+      // HTTP CODES
+      isHttpCode: function(code) {
+        return _.isString(api.getHttpCodeString(code));
+      },
+      getHttpCodeString: function(code) {
+        if (http_codes.hasOwnProperty(code)) return http_codes[code];
+        return code;
+      }
     };
 
     var http_codes = {

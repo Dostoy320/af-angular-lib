@@ -48,28 +48,37 @@
         // should this even run?
         if(isDisabled(request) || isFile(request)) return response;
 
-        // is this response an error?
-        var isSuccess = true;
         var isJSEND = api.isJSEND(response.data);
 
+        // is this actually an error?
+        var isSuccess = true;
         if (response.status !== 200) isSuccess = false;
         if (isJSEND && response.data.status !== 'success') isSuccess = false;
+
 
         // handle response
         if (isSuccess) {
           if (isJSEND) response.data = response.data.data; // strip status junk
           return response;
         } else {
+          // convert the jsend response to an actual response
+          if (isJSEND){
+            response.status = response.data.code;
+            response.statusText = api.getHttpCodeString(response.status);
+            response.data = response.data.message || 'Unknown Error, code:' + response.data.code;
+          }
           return interceptor.responseError(response);
         }
       },
+
       responseError: function(response) {
         if(!response.config) return $q.reject(response); // don't mess with a response that has no config
         var request = response.config;
         // should this even run?
         if(isDisabled(request) || isFile(request)) return $q.reject(response);
+
         // handle it
-        api.httpRequestErrorHandler(response.data, response.status, response.config);
+        api.error.handler(response);
         return $q.reject(response);
       }
     };
