@@ -6,12 +6,12 @@
     tokenPriority:['url', 'cache', 'window']
   });
 
-  myApp.service('authManager', function($util, AUTH_MANAGER_CONFIG) {
+  myApp.service('authManager', function($util, $log, AUTH_MANAGER_CONFIG) {
 
     //
     // SESSION/USER CACHE
     //
-    var loggedInUser = amplify.store('loggedInUser') // for easy reference
+    var loggedInUser = amplify.store('loggedInUser'); // for easy reference
 
     var auth = {
 
@@ -48,13 +48,14 @@
       // SET
       //
       setSessionToken: function(sessionToken) {
-        console.log('sessionToken set to ', sessionToken);
         amplify.store('sessionToken', sessionToken, 86400000); // 1 day
+        //$log.debug('authManager.setSessionToken:', sessionToken);
       },
       setLoggedInUser: function(user) {
         user.displayName = $util.createDisplayName(user);      // adds a displayName to the user
         loggedInUser = user;
         amplify.store('loggedInUser', loggedInUser, 86400000); // 1 day
+        //$log.debug('authManager.setLoggedInUser:', loggedInUser);
       },
 
 

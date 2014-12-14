@@ -81,6 +81,7 @@
           response.handled = true;
         },
         log:function(response){
+          $log.error(response);
           if(_.isString(response)) return appCatch.send(response);
 
           var request = response.config || {};
@@ -112,7 +113,15 @@
       //
       //  PROMISE
       //
+      // generally used when returning cached data instead of
+      // making an ajax call
+      newResolvedPromise:function(data){
+        var defer = $q.defer();
+        defer.resolve(data);
+        return defer.promise;
+      },
       // creates a rejection similar to an $http rejection
+      // TODO : dont like these names?
       reject:function(status, reason, config){
         if(arguments.length == 1) reason = status;
         return $q.reject({

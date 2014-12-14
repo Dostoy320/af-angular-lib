@@ -27,7 +27,6 @@
       },
 
       clear: function(force) {
-        console.log('MESSAGE CLEARED!');
         var now = new Date().getTime();
         if (force || (msg.shownAt && (now - msg.shownAt) > msg.minVisible))
           return $event.shout($event.EVENT_msgClear);

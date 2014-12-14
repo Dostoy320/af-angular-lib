@@ -8,40 +8,46 @@
 
   myApp.constant('STORAGE_PREFIX', 'myApp');
 
-  myApp.service('$storage', function(STORAGE_PREFIX) {
+  myApp.service('$storage', function(STORAGE_PREFIX, $log) {
 
-    var prefix = STORAGE_PREFIX + '_';
+    var sessionData = {};
+
+    // ensure options are in correct format: { expires:x }
+    var checkOptions = function(options){
+      if(_.isNumber(options)) return { expires:options };
+      if(_.isObject(options) && _.has(options, 'expires')) return options;
+      return null;
+    };
 
     var service = {
 
-      store: function(key, value, options) {
-
-        // save/get key
-        if(key){
-          if(options){
-            if(_.isObject(options) && options.hasOwnProperty('expires')) options = expires;
-            if(_.isNumber(options)) options = { expires: options }
-          }
-          return amplify.store(prefix + key, value, options);
-
-        // return all data related to this app
-        } else {
-          var allData = {}
-          _.each(amplify.store(), function(value, key){
-            if(key.indexOf(prefix) === 0)
-              allData[key] = value;
-          })
-          return allData;
-        }
+      // data stored with prefix pertaining to a particular application only
+      store:function(key, value, options){
+        if(key) return amplify.store(STORAGE_PREFIX + '_' + key, value, checkOptions(options));
+        // get all data
+        var appData = {};
+        _.each(amplify.store(), function(value, key){
+          if (service.isAppData(key)) appData[key] = value;
+        });
+        return appData;
       },
 
-      clear: function(key) {
-        _.each(amplify.store(), function(value, key) {
-          if (service.isAppData(key)) {
-            return amplify.store(key, null);
-          }
+      // data that will be gone if page refreshed.
+      session:function(key, value){
+        if(arguments.length == 0) return sessionData;
+        if(arguments.length == 1) return sessionData[key];
+        sessionData[key] = value;
+      },
+
+      clear: function() {
+        sessionData = {};
+        _.each(amplify.store(), function(value, key){
+          if(service.isAppData(key)) amplify.store(key, null);
         });
-      }
+      },
+
+      isAppData:function(key){ return key.indexOf(STORAGE_PREFIX+'_') === 0; }
+
     };
 
     return service;

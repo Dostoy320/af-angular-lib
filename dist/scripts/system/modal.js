@@ -47,7 +47,7 @@
                     '<div class="modal-dialog" ng-click="stopClickThrough($event)" ' +
                       'ng-include="modalURL" ng-class="size"></div>' +
                   '</div>' +
-                  '<div class="modal-backdrop fade" ng-click="close()"></div>' +
+                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1039;" ng-click="close()"></div>' +
                 '</div>',
       link: function(scope, element, attrs) {
         scope.modalURL = $modal.url;
