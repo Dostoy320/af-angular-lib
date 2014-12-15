@@ -4,8 +4,7 @@
   myApp = angular.module('af.modal', ['af.event']);
 
   myApp.constant('$MODAL_CONFIG', {
-    genericModalPath:'src/views/templates/generic.modal.message.view.php',
-    messageModalPath:'src/views/templates/generic.modal.view.php'
+    genericModalPath:'src/views/templates/generic.modal.message.view.html'
   })
 
   myApp.service("$modal", function($event, $MODAL_CONFIG) {
@@ -31,8 +30,15 @@
         service.size = null;
         service.controller = null;
       },
-      message:function(text){
-        service.open($MODAL_CONFIG.genericModalPath, { body:text })
+      message:function(title, body){
+        var ctrl = { title:null, body:'' };
+        if(arguments.length == 1) {
+          ctrl.body = title;
+        } else {
+          ctrl.title = title;
+          ctrl.body = body;
+        }
+        service.open($MODAL_CONFIG.genericModalPath, ctrl);
       }
     };
     return service;
@@ -97,7 +103,6 @@
       body: 'Are you sure you wish to continue?',
       closeBtnLabel: 'Close',
       confirmBtnLabel: null,
-      showbuttons: true,
       clickClose: function() {
         return $modal.close();
       },
@@ -110,8 +115,8 @@
       }
     };
     init = function() {
-      _.extend($scope, defaultController, $modal.getModalScope());
-      return $modal.updateModalScope($scope);
+      _.extend($scope, defaultController, $modal.controller);
+      //return $modal.updateModalScope($scope);
     };
     init();
     return $scope.run();
