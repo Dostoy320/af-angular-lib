@@ -55,7 +55,15 @@
         user.displayName = $util.createDisplayName(user);      // adds a displayName to the user
         loggedInUser = user;
         amplify.store('loggedInUser', loggedInUser, 86400000); // 1 day
-        //$log.debug('authManager.setLoggedInUser:', loggedInUser);
+        $log.debug('authManager.setLoggedInUser:', loggedInUser);
+      },
+      setUserProperty: function(key, value){
+        loggedInUser[key] = value;
+        auth.setLoggedInUser(loggedInUser); // update/cache it
+      },
+      getUserProperty: function(key){
+        // (you can just do .user()[key] also)
+        return loggedInUser[key];
       },
 
 
