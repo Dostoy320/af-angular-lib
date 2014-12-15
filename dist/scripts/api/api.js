@@ -81,7 +81,6 @@
           response.handled = true;
         },
         log:function(response){
-          $log.error(response);
           if(_.isString(response)) return appCatch.send(response);
 
           var request = response.config || {};
