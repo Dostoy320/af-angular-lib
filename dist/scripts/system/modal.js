@@ -3,9 +3,12 @@
 
   myApp = angular.module('af.modal', ['af.event']);
 
-  myApp.constant('DEFAULT_MODAL_PATH', 'src/views/templates/generic.modal.view.php');
+  myApp.constant('$MODAL_CONFIG', {
+    genericModalPath:'src/views/templates/generic.modal.message.view.php',
+    messageModalPath:'src/views/templates/generic.modal.view.php'
+  })
 
-  myApp.service("$modal", function($event, DEFAULT_MODAL_PATH) {
+  myApp.service("$modal", function($event, $MODAL_CONFIG) {
     var service;
     service = {
       url: null,
@@ -15,7 +18,7 @@
         service.url = url;
         service.controller = ctrl;
         service.size = size; // lg, md, sm
-        if (!service.url) service.url = DEFAULT_MODAL_PATH;
+        if (!service.url) service.url = $MODAL_CONFIG.genericModalPath;
         $event.shout("Modal.open", {
           url: service.url,
           controller: service.controller,
@@ -27,13 +30,10 @@
         service.url = null;
         service.size = null;
         service.controller = null;
+      },
+      message:function(text){
+        service.open($MODAL_CONFIG.genericModalPath, { body:text })
       }
-      //getController: function() {
-      //  return service.controller;
-      //},
-      //updateController: function(scope) {
-      //  return service.controller = scope;
-      //}
     };
     return service;
   });
