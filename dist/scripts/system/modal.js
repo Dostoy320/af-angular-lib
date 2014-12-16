@@ -4,7 +4,7 @@
   myApp = angular.module('af.modal', ['af.event']);
 
   myApp.constant('$MODAL_CONFIG', {
-    genericModalPath:'src/views/templates/generic.modal.message.view.html'
+    genericModalPath:'src/views/templates/generic.modal.view.html'
   })
 
   myApp.service("$modal", function($event, $MODAL_CONFIG) {
@@ -31,7 +31,7 @@
         service.controller = null;
       },
       message:function(title, body){
-        var ctrl = { title:null, body:'' };
+        var ctrl = { title:null, body:''};
         if(arguments.length == 1) {
           ctrl.body = title;
         } else {
@@ -79,8 +79,8 @@
           }, 50);
         });
         scope.$on("Modal.close", scope.close);
-        return scope.stopClickThrough = function(event) {
-          return event.stopImmediatePropagation();
+        scope.stopClickThrough = function(event) {
+          event.stopImmediatePropagation();
         };
       }
     };
