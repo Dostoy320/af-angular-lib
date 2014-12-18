@@ -3,39 +3,47 @@
 //
 var appCatch = {
 
+  loaded:false,
+
   config: {
-    prod: 'https://c62072b6aefc4bf1bd217382b9b7dad5@app.getsentry.com/27961', // PROD : nalberg@actifi.com
-    dev: 'https://656d24f28bbd4037b64638a4cdf6d61d@app.getsentry.com/26791', // DEV : alberg.nate@actifi.com
-    enabled:true,
-    options:  {
+    url:'',
+    enabled: true,
+    logging:true,
+    options: {
       whitelistUrls:[ 'actifi.com/' ],
       ignoreUrls: [ /extensions\//i, /^chrome:\/\//i ]
     }
   },
 
-
-  // util
-  log:function(msg){ if(typeof console !== 'undefined') console.log(msg); },
-  isEnabled:function(){ return appCatch.initialized && appCatch.config.enabled },
-  initialized:false,
-
+  log:function(){
+    if(!appCatch.config.logging) return;
+    var args = arguments.unshift('SENTRY: ');
+    console.log.apply(this, args);
+  },
 
   //
   // INITIALIZE
   //
   init:function(){
-    if(typeof Raven === "undefined")
-      return alert('Cannot initialize Sentry. Missing Raven library.')
+    if(appCatch.loaded || !appCatch.config.enabled) return; // do once
+
+    // sanity checks
+    if(!appConfig) return alert('Sentry init error. Application Config not defined.');
+    if(typeof Raven === "undefined") return alert('Cannot initialize Sentry. Missing Raven library.');
+
+    // populate config
+    var env = appEnv.env();
+    if(appConfig[env] && appConfig[env].sentry){
+      var config = appConfig[env].sentry;
+      for(var key in config){
+        appCatch.config[key] = config[key];
+      }
+    }
 
     // init
-    var url = appCatch.config.prod;
-    if(appEnv.env() === 'dev') url = appCatch.config.dev;
-    Raven.config(url, appCatch.config.options).install();
-
-    // store the fact its initialized
-    appCatch.initialized = true;
-
-    appCatch.log('Sentry - '+appEnv.env()+' env: ' + url)
+    Raven.config(appCatch.config.url, appCatch.config.options).install();
+    console.log('SENTRY: '+appEnv.env()+' - ' + appCatch.config.url, appCatch.config.options);
+    appCatch.loaded = true;
   },
 
 
@@ -45,54 +53,41 @@ var appCatch = {
   // send error
   send:function(message, extra, tags){ appCatch.error(message, extra, tags); }, // alias
   error:function(message, extra, tags){
-    if(!appCatch.isEnabled())
-      return appCatch.log('Sentry Not Loaded. Unable to log error: ' + message)
-
+    if(!appCatch.loaded) return;
+    appCatch.log('error', message);
     extra = extra || {};
     tags = tags || {};
     // build options
-    var options = {
-      extra:extra,
-      tags:tags
-    }
-    // url error occurred.git st
+    var options = { extra:extra, tags:tags };
+    // url error occurred
     options.extra.url = extra.href || window.location.href;
     // tags
     options.tags.app = tags.app || appEnv.app();
     options.tags.env = tags.env || appEnv.env();
-    options.tags.tenant = tags.tenant || appEnv.tenant();
-    options.tags.index = tags.index || appEnv.index();
     options.tags.subDomain = tags.subDomain || appEnv.subDomainClean();
     Raven.captureMessage(message, options)
   },
+
   // additional info about the user that threw error...
   setUser:function(id, email){
-    if(!appCatch.isEnabled()) return;
-    var user = {id:id}
-    if(email) user.email = email
-    if(user){
-      Raven.setUser(user)
+    if(!appCatch.loaded) return;
+    var user = {id:id};
+    if(email) user.email = email;
+    if(user) {
+      appCatch.log('setUser', user);
+      Raven.setUser(user);
     } else {
       appCatch.clearUser();
     }
   },
+
   clearUser:function(){
-    if(!appCatch.isEnabled()) return;
+    if(!appCatch.loaded) return;
+    appCatch.log('clearUser');
     Raven.setUser(); // this clears out any current user
   }
 
 };
-
-// if this is set.. use it...
-if(window.localCatch){
-  var overrides = window.localCatch[appEnv.subDomain()];
-  // copy over dev configurations if exist...
-  if(overrides){
-    for (var key in overrides){
-      appCatch.config[key] = overrides[key];
-    }
-  }
-}
 
 // run it..
 appCatch.init();

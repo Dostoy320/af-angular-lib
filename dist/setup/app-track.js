@@ -12,33 +12,47 @@
 
 var appTrack = {
 
+  loaded:false,
+
   config: {
     enabled:true,
-    prod: 'd0695354d367ec464143a4fc30d25cd5', // default PROD key
-    dev:  'd71bf20acd263bf696cfdc594ef80ce6'  // default DEV key
+    key:'',
+    options:{
+      'cross_subdomain_cookie':false
+      //,'debug':true
+    },
+    logging:true
   },
 
-  // util
-  log:function(msg){ if(typeof console !== 'undefined') console.log(msg); },
-  isEnabled:function(){ return appTrack.initialized && appTrack.config.enabled },
-  initialized:false,
-
-
+  log:function(){
+    if(!appTrack.config.logging) return;
+    var args = arguments.unshift('MIXPANEL: ');
+    console.log.apply(this, args);
+  },
 
   //
   // INITIALIZE
   //
-  init : function(){
-    if(typeof mixpanel === "undefined")
-      return alert('Cannot initialize MixPanel. Missing MixPanel library.')
+  init:function(){
+    if(appTrack.loaded || !appTrack.config.enabled) return; // do once
+
+    // sanity checks
+    if(!appConfig) return alert('Sentry init error. Application Config not defined.');
+    if(typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
+
+    // populate config
+    var env = appEnv.env();
+    if(appConfig[env] && appConfig[env].mixpanel){
+      var config = appConfig[env].mixpanel;
+      for(var key in config){
+        appTrack.config[key] = config[key];
+      }
+    }
 
     // init
-    var token = appTrack.config.prod;
-    if(appEnv.env() === 'dev') token = appTrack.config.dev;
-    mixpanel.init(token, {'cross_subdomain_cookie':false﻿});// 'debug':true,
-
-    // store the fact its initialized
-    appTrack.initialized = true;
+    mixpanel.init(appTrack.config.key, appTrack.config.options);
+    console.log('MIXPANEL: '+appEnv.env() +' - ' + appTrack.config.key, appTrack.config.options);
+    appTrack.loaded = true;
 
     // always pass this with events:
     appTrack.register({
@@ -46,7 +60,6 @@ var appTrack = {
       env:appEnv.env(),
       app:appEnv.app()
     })
-    appTrack.log('Mixpanel - '+appEnv.env()+' env: ' + token)
   },
 
 
@@ -56,37 +69,41 @@ var appTrack = {
   //
   // allows us to track logged in users.... need to call right away.
   setUser:function(id){
-    if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to setUser: ' + id);
+    if(!appTrack.loaded) return;
+    appTrack.log('identify()', id);
     mixpanel.identify(id);
   },
+
   // set info about identified user
   // { key:value }
   setProfile:function(object){
-    if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to people.set: ' + JSON.stringify(object));
-    return mixpanel.people.set(object);
+    if (!appTrack.loaded) return;
+    appTrack.log('people.set()', object);
+    mixpanel.people.set(object);
   },
 
   // track an event named "Registered":
   // mixpanel.track("Registered", {"Gender": "Male", "Age": 21});
   send:function(name, options){ appTrack.track(name, options); }, // alias
   track:function(name, options){
-    if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to track event: ' + name);
+    if (!appTrack.loaded) return;
+    appTrack.log('track()', name, options);
     mixpanel.track(name, options); //
   },
 
   // Register a set of super properties, which are automatically included with all events.
   // { key:value }
   register: function(options) {
-    if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to Register', options);
-    return mixpanel.register(options);
+    if (!appTrack.loaded) return;
+    appTrack.log('register()', options);
+    mixpanel.register(options);
   },
   // removes a registered key
   unregister: function(key) {
-    if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to Unregister: ' + key);
-    return mixpanel.unregister(key);
+    if (!appTrack.loaded) return;
+    appTrack.log('unregister(): ', key);
+    mixpanel.unregister(key);
   },
-
-
 
   //
   //  EVENTS we track
@@ -101,16 +118,4 @@ var appTrack = {
   }
 }
 
-// if this is set.. use it...
-if(window.localTrack){
-  var overrides = window.localTrack[appEnv.subDomain()];
-  // copy over dev configurations if exist...
-  if(overrides){
-    for (var key in overrides){
-      appTrack.config[key] = overrides[key];
-    }
-  }
-}
-
-// run it..
-appTrack.init();
+appTrack.init(); // init
