@@ -5,7 +5,7 @@
   var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager']);
 
   // LOAD DEFAULTS
-  myApp.constant('API_REQUEST_DEFAULTS', {
+  myApp.constant('AF_API_CONFIG', {
     method:'POST',
     url:'',
     // auto add some params:
@@ -22,7 +22,7 @@
 
 
 
-  myApp.service('api', function($window, $log, $msg, API_REQUEST_DEFAULTS, authManager, $loader, $q, $log) {
+  myApp.service('api', function($window, $log, $msg, AF_API_CONFIG, authManager, $loader, $q, $log) {
 
     var api = {
 
@@ -38,7 +38,7 @@
       //
       // creates a request... merges default request, with anything users passes in
       newRequest:function(options){
-        return _.extend({}, API_REQUEST_DEFAULTS, options);
+        return _.extend({}, AF_API_CONFIG, options);
       },
 
 
