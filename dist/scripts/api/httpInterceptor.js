@@ -2,7 +2,8 @@
 
   var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.authManager']);
 
-  myApp.factory("httpInterceptor", function($q, $injector, api, authManager) {
+  //myApp.factory("httpInterceptor", function($q, $injector, api, authManager) {
+  myApp.factory("httpInterceptor", function($q, $injector) {
 
     var isDisabled = function(request){
       return api.optionEnabled(request, 'disableHttpInterceptor');

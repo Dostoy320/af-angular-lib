@@ -44,13 +44,13 @@
         scope.loadMask = null;
         scope.loaderText = null;
         scope.start = function(options) {
-          if(_.isString(options)){
-            scope.loaderText = options
-            scope.loadMask = true
-            scope.loaderBar = true
-          } else if(_.isObject(options)){
-            scope.loaderText = options.hasOwnProperty('text') ? options.text : ''
-            scope.loadMask = options.hasOwnProperty('mask') ? options.mask : scope.loaderText // show mask if text
+          if(Object.isString(options)){
+            scope.loaderText = options;
+            scope.loadMask = true;
+            scope.loaderBar = true;
+          } else if(Object.isObject(options)){
+            scope.loaderText = options.hasOwnProperty('text') ? options.text : '';
+            scope.loadMask = options.hasOwnProperty('mask') ? options.mask : scope.loaderText; // show mask if text
             scope.loaderBar = options.hasOwnProperty('bar') ? options.bar : true
           }
         };

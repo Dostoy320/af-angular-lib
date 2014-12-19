@@ -24,12 +24,6 @@ var appTrack = {
     logging:true
   },
 
-  log:function(){
-    if(!appTrack.config.logging) return;
-    var args = arguments.unshift('MIXPANEL: ');
-    console.log.apply(this, args);
-  },
-
   //
   // INITIALIZE
   //
@@ -51,14 +45,13 @@ var appTrack = {
 
     // init
     mixpanel.init(appTrack.config.key, appTrack.config.options);
-    console.log('MIXPANEL: '+appEnv.env() +' - ' + appTrack.config.key, appTrack.config.options);
+    console.log('MIXPANEL LOADED - '+appEnv.env() + ' - ' + appTrack.config.key, appTrack.config.options);
     appTrack.loaded = true;
 
     // always pass this with events:
     appTrack.register({
       domain:appEnv.subDomainClean(),
-      env:appEnv.env(),
-      app:appEnv.app()
+      env:appEnv.env()
     })
   },
 
@@ -70,7 +63,7 @@ var appTrack = {
   // allows us to track logged in users.... need to call right away.
   setUser:function(id){
     if(!appTrack.loaded) return;
-    appTrack.log('identify()', id);
+    console.log('MIXPANEL.identify(): ', id);
     mixpanel.identify(id);
   },
 
@@ -78,7 +71,7 @@ var appTrack = {
   // { key:value }
   setProfile:function(object){
     if (!appTrack.loaded) return;
-    appTrack.log('people.set()', object);
+    console.log('MIXPANEL.people.set():', object);
     mixpanel.people.set(object);
   },
 
@@ -87,7 +80,7 @@ var appTrack = {
   send:function(name, options){ appTrack.track(name, options); }, // alias
   track:function(name, options){
     if (!appTrack.loaded) return;
-    appTrack.log('track()', name, options);
+    console.log('MIXPANEL.track:', name, options);
     mixpanel.track(name, options); //
   },
 
@@ -95,13 +88,13 @@ var appTrack = {
   // { key:value }
   register: function(options) {
     if (!appTrack.loaded) return;
-    appTrack.log('register()', options);
+    console.log('MIXPANEL.register:', options);
     mixpanel.register(options);
   },
   // removes a registered key
   unregister: function(key) {
     if (!appTrack.loaded) return;
-    appTrack.log('unregister(): ', key);
+    console.log('MIXPANEL.unregister: ', key);
     mixpanel.unregister(key);
   },
 

@@ -152,7 +152,7 @@
         return false;
       },
       optionEnabled:function(request, optionName){
-        if(request && _.isObject(request) && request.hasOwnProperty(optionName))
+        if(request && Object.isObject(request) && request.hasOwnProperty(optionName))
           return request[optionName];
         return false;
       },

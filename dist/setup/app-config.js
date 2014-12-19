@@ -5,6 +5,7 @@
 //
 // CONFIG
 //
+/*
 var appConfig = {
 
   //
@@ -51,3 +52,4 @@ var appConfig = {
     return appConfig.getPathValue(child, parts.join('.'));
   }
 }
+*/

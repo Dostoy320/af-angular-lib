@@ -12,8 +12,7 @@ var appEnv = {
     subDomain:'',       // domain, includes -dev
     subDomainClean:'',  // domain, strips off -dev
     env:'production',   // development / production.
-    isLocal:false,      // running locally? (http://localhost/ or http://development/
-    app:null
+    isLocal:false       // running locally? (http://localhost/ or http://development/
   },
 
 
@@ -23,6 +22,7 @@ var appEnv = {
   init:function(){
     if(appEnv.loaded) return; // do once.
 
+    console.log(window.location.hostname);
     // subDomain
     appEnv.cache.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
     // clean subDomain (no -dev on it)
@@ -37,8 +37,8 @@ var appEnv = {
     if(appEnv.cache.subDomain.indexOf('-dev') >= 0) appEnv.cache.env = 'development';
 
     // set app... mainly for logging/sentry/tagging etc...
-    var parts = window.location.pathname.split('/');
-    if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
+    //var parts = window.location.pathname.split('/');
+    //if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
 
     // log
     console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache);
@@ -73,10 +73,6 @@ var appEnv = {
   env : function(){
     appEnv.init();
     return appEnv.cache.env;
-  },
-  app : function(){
-    appEnv.init();
-    return appEnv.cache.app;
   }
 };
 
