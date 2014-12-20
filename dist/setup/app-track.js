@@ -12,64 +12,63 @@
 
 var appTrack = {
 
-  loaded:false,
+  loaded: false,
 
   config: {
-    enabled:true,
-    key:'',
-    options:{
-      'cross_subdomain_cookie':false
+    enabled: true,
+    key: '',
+    options: {
+      'cross_subdomain_cookie': false
       //,'debug':true
     },
-    logging:true
+    logging: true
   },
 
   //
   // INITIALIZE
   //
-  init:function(){
-    if(appTrack.loaded || !appTrack.config.enabled) return; // do once
-
+  init: function (settings) {
+    if(settings) appTrack.loadSettings(settings);
+    // do once
+    if (appTrack.loaded || !appTrack.config.enabled) return;
     // sanity checks
-    if(!appConfig) return alert('Sentry init error. Application Config not defined.');
-    if(typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
-
-    // populate config
-    var env = appEnv.env();
-    if(appConfig[env] && appConfig[env].mixpanel){
-      var config = appConfig[env].mixpanel;
-      for(var key in config){
-        appTrack.config[key] = config[key];
-      }
-    }
+    if (typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
+    if (!appTrack.config.key) return alert('Sentry init error. Application Config not defined.');
 
     // init
     mixpanel.init(appTrack.config.key, appTrack.config.options);
-    console.log('MIXPANEL LOADED - '+appEnv.env() + ' - ' + appTrack.config.key, appTrack.config.options);
+    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.key, appTrack.config.options);
     appTrack.loaded = true;
 
     // always pass this with events:
     appTrack.register({
-      domain:appEnv.subDomainClean(),
-      env:appEnv.env()
+      domain: appEnv.subDomainClean(),
+      env: appEnv.env()
     })
   },
 
+  loadSettings: function (from) {
+    // populate config
+    if (!from) return;
+    for (var key in from) {
+      appTrack.config[key] = from[key];
+    }
+  },
 
 
   //
   // METHODS
   //
   // allows us to track logged in users.... need to call right away.
-  setUser:function(id){
-    if(!appTrack.loaded) return;
+  setUser: function (id) {
+    if (!appTrack.loaded) return;
     console.log('MIXPANEL.identify(): ', id);
     mixpanel.identify(id);
   },
 
   // set info about identified user
   // { key:value }
-  setProfile:function(object){
+  setProfile: function (object) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.people.set():', object);
     mixpanel.people.set(object);
@@ -77,8 +76,10 @@ var appTrack = {
 
   // track an event named "Registered":
   // mixpanel.track("Registered", {"Gender": "Male", "Age": 21});
-  send:function(name, options){ appTrack.track(name, options); }, // alias
-  track:function(name, options){
+  send: function (name, options) {
+    appTrack.track(name, options);
+  }, // alias
+  track: function (name, options) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.track:', name, options);
     mixpanel.track(name, options); //
@@ -86,13 +87,13 @@ var appTrack = {
 
   // Register a set of super properties, which are automatically included with all events.
   // { key:value }
-  register: function(options) {
+  register: function (options) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.register:', options);
     mixpanel.register(options);
   },
   // removes a registered key
-  unregister: function(key) {
+  unregister: function (key) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.unregister: ', key);
     mixpanel.unregister(key);
@@ -101,14 +102,16 @@ var appTrack = {
   //
   //  EVENTS we track
   //
-  TRACK_LOGIN:function(){   appTrack.track('Login') },
-  TRACK_LOGOUT:function(){  appTrack.track('Logout') },
-  TRACK_PAGE_VIEW:function(pageName){
+  TRACK_LOGIN: function () {
+    appTrack.track('Login')
+  },
+  TRACK_LOGOUT: function () {
+    appTrack.track('Logout')
+  },
+  TRACK_PAGE_VIEW: function (pageName) {
     appTrack.track('PageView', {
       'page': pageName,
-      'url':window.location.hash
+      'url': window.location.hash
     });
   }
-}
-
-appTrack.init(); // init
+};

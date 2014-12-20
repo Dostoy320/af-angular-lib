@@ -18,27 +18,26 @@ var appCatch = {
   //
   // INITIALIZE
   //
-  init:function(){
-
+  init:function(settings){
+    if(settings) appCatch.loadSettings(settings);
+    // do once
+    if(appCatch.loaded || !appCatch.config.enabled) return;
     // sanity checks
-    if(!appConfig) return alert('Sentry init error. Application Config not defined.');
     if(typeof Raven === "undefined") return alert('Cannot initialize Sentry. Missing Raven library.');
-
-    if(appCatch.loaded || !appCatch.config.enabled) return; // do once
-
-    // populate config
-    var env = appEnv.env();
-    if(appConfig[env] && appConfig[env].sentry){
-      var config = appConfig[env].sentry;
-      for(var key in config){
-        appCatch.config[key] = config[key];
-      }
-    }
+    if(!appCatch.config.url) return alert('Sentry init error. Application Config not defined.');
 
     // init
     Raven.config(appCatch.config.url, appCatch.config.options).install();
     console.log('SENTRY LOADED - '+appEnv.env() + ' - ' + appCatch.config.url, appCatch.config.options);
     appCatch.loaded = true;
+  },
+
+  loadSettings:function(settings){
+    // populate config
+    if(!settings) return;
+    for(var key in settings){
+      appCatch.config[key] = settings[key];
+    }
   },
 
 
@@ -83,6 +82,3 @@ var appCatch = {
   }
 
 };
-
-// run it..
-appCatch.init();

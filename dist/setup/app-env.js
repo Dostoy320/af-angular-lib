@@ -22,7 +22,6 @@ var appEnv = {
   init:function(){
     if(appEnv.loaded) return; // do once.
 
-    console.log(window.location.hostname);
     // subDomain
     appEnv.cache.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
     // clean subDomain (no -dev on it)
@@ -35,10 +34,6 @@ var appEnv = {
     // development?
     if(appEnv.cache.isLocal)                        appEnv.cache.env = 'development';
     if(appEnv.cache.subDomain.indexOf('-dev') >= 0) appEnv.cache.env = 'development';
-
-    // set app... mainly for logging/sentry/tagging etc...
-    //var parts = window.location.pathname.split('/');
-    //if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
 
     // log
     console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache);
