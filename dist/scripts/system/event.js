@@ -8,7 +8,7 @@
 
     logEvent = function(type, eventName, data) {
       var suppress = [service.EVENT_loaderStart, service.EVENT_loaderStop, service.EVENT_msgClear];
-      if (suppress.find(eventName)) {
+      if (!suppress.find(eventName)) {
         if(data) return $log.debug('$event:' + eventName, data);
         $log.debug('$event.' + type + ': ' + eventName);
       }

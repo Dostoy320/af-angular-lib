@@ -10,6 +10,7 @@
   myApp.service("$modal", function($event, $MODAL_CONFIG) {
     var service;
     service = {
+      isOpen:false,
       url: null,
       controller: null,
       size:null,
@@ -23,9 +24,12 @@
           controller: service.controller,
           size: service.size
         });
+        service.isOpen = true;
       },
       close: function(data) {
+        if(!service.isOpen) return;
         $event.shout("Modal.close", data);
+        service.isOpen = false;
         service.url = null;
         service.size = null;
         service.controller = null;
