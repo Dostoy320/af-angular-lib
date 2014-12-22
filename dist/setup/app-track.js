@@ -43,7 +43,8 @@ var appTrack = {
     // always pass this with events:
     appTrack.register({
       domain: appEnv.subDomainClean(),
-      env: appEnv.env()
+      env: appEnv.env(),
+      app: appEnv.app()
     })
   },
 
