@@ -43,19 +43,18 @@ var appTrack = {
     // always pass this with events:
     appTrack.register({
       domain:appEnv.subDomainClean(),
-      env:appEnv.env(),
+      //env:appEnv.env(), // this is always the same.. so why send it.
       app:appEnv.app()
     })
     appTrack.log('Mixpanel - '+appEnv.env()+' env: ' + token)
   },
 
 
-
   //
   // METHODS
   //
   // allows us to track logged in users.... need to call right away.
-  setUser:function(id){
+  setUserId:function(id){
     if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to setUser: ' + id);
     mixpanel.identify(id);
   },
@@ -71,7 +70,13 @@ var appTrack = {
   send:function(name, options){ appTrack.track(name, options); }, // alias
   track:function(name, options){
     if (!appTrack.isEnabled()) return appTrack.log('Mixpanel Not loaded. Unable to track event: ' + name);
-    mixpanel.track(name, options); //
+    mixpanel.track(name, options);
+    // spenser's global usage
+    if(name !== 'Login' && name !== 'Page View')
+      mixpanel.track('Key Metrics', {'Metric Name':name})
+  },
+  increment:function(name){
+    mixpanel.people.increment(name);
   },
 
   // Register a set of super properties, which are automatically included with all events.
