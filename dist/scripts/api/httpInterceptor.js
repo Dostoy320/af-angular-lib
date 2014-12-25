@@ -41,12 +41,13 @@
         return request;
       },
 
+
       response: function(response) {
         if(!response.config) return response; // don't mess with a response that has no config
         var request = response.config;
         // should this even run?
         if(!isEnabled(request, 'disableHttpInterceptor') || isFile(request))
-          return request;
+          return response;
 
         var isJSEND = apiUtil.response.isJSEND(response);
 
@@ -75,6 +76,7 @@
       },
 
       responseError: function(response) {
+        console.log('responseError', response);
         if(!response.config) return $q.reject(response); // don't mess with a response that has no config
         var request = response.config;
         // should this even run?
