@@ -1,25 +1,17 @@
 //
-// THIS IS GLOBALLY scoped on window because we need it before angular even loads..
+// TENANTS CONFIGURATION (labels, theme, etc)
 //
+var appTenant = {
 
-//
-// CONFIG
-//
-/*
-var appConfig = {
+  config:{}, // holds config (loaded from db or php, or whatever)
 
-  //
-  // METHODS
-  //
-  // send error
   get:function(path, makePlural) {
-    if (!window.config) return null;
-    if (!path) return window.config; // return whole config if no path
-    var value = appConfig.getPathValue(window.config, path);
-    if (makePlural) {
-      var pluralValue = appConfig.getPathValue(window.config, path + '_plural');
+    if (!path) return appTenant.config; // return whole config
+    var value = appTenant.getPathValue(appTenant.config, path);
+    if(makePlural) {
+      var pluralValue = appTenant.getPathValue(appTenant.config, path + '_plural');
       if(pluralValue) return pluralValue;
-      return appConfig.makePlural(value);
+      return appTenant.makePlural(value);
     }
     return value;
   },
@@ -28,15 +20,13 @@ var appConfig = {
   //
   // UTIL
   //
-
   // checks if enabled flag is true on an object
   enabled:function(path){
-    return appConfig.get(path+'.enabled') === true
+    return appTenant.get(path+'.enabled') === true
   },
-
   makePlural:function(value){
     if(!value) return value;
-    if(!_.isString(value)) return value;
+    if(typeof value !== 'string') return value;
     var lastChar = value.charAt(value.length - 1).toLowerCase();
     var lastTwoChar = value.slice(value.length - 2).toLowerCase();
     // special cases...
@@ -44,12 +34,14 @@ var appConfig = {
     if (lastTwoChar === 'ch') return value + 'es';
     return value + 's';
   },
+
+  // easily get nested value from objects
+  // eg: getPathValue({ name:{ first:'John', last:'Doe'}}, 'name.first')
   getPathValue:function(object, path) {
     var parts = (''+path).split('.');
     if (parts.length === 1) return object[parts[0]];
     var child = object[parts.shift()];
     if (!child) return child;
-    return appConfig.getPathValue(child, parts.join('.'));
+    return appTenant.getPathValue(child, parts.join('.'));
   }
 }
-*/

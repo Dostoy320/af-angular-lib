@@ -1,31 +1,24 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.node', ['af.api', 'af.authManager']);
+  myApp = angular.module('af.node', ['af.apiUtil']);
 
-  myApp.service('node', function($http, api, $q) {
+  myApp.service('node', function($http, apiUtil) {
 
     var node = {
 
       // so you dont have to inject $http in your controllers if you injected this service already..
       call: function(request) {
         return $http(request);
-        //$http(request).success(function(data){
-        //  if(callback) callback(null, data);    // SUCCESS
-        //}).error(function(error, status){
-        //  if(callback) callback(error, status); // ERROR
-        //});
       },
 
       RoadmapNode: {
         serviceUrl: '/roadmap-node',
         // BASE
-        // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = api.newRequest(options);
+          var request = apiUtil.request.create(options);
           request.url = node.RoadmapNode.serviceUrl + url;
           request.data = params || {};
-          request.autoApplyIndex = true;
           return request;
         },
         call:function(url, params, options){
@@ -44,13 +37,13 @@
           return this.find(type, query, options)
             .then(function(response){
               // we don't want an array... we want an object..
-              response.data = (_.isArray(response.data) && response.data.length >= 1) ? response.data[0]:null;
+              response.data = (Object.isArray(response.data) && response.data.length >= 1) ? response.data[0]:null;
               return response;
             })
         },
         remove: function(type, idOrResource, options) {
-          var id = _.isObject(idOrResource) ? idOrResource.id : idOrResource;
-          return this.call('/api/crud/remove', {_type: type, id:api.ensureInt(id)}, options);
+          var id = Object.isObject(idOrResource) ? idOrResource.id : idOrResource;
+          return this.call('/api/crud/remove', {_type: type, id:apiUtil.ensureInt(id)}, options);
         }
       }
 

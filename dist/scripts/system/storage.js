@@ -14,8 +14,8 @@
 
     // ensure options are in correct format: { expires:x }
     var checkOptions = function(options){
-      if(_.isNumber(options)) return { expires:options };
-      if(_.isObject(options) && _.has(options, 'expires')) return options;
+      if(Object.isNumber(options)) return { expires:options };
+      if(Object.isObject(options) && Object.has(options, 'expires')) return options;
       return null;
     };
 
@@ -26,7 +26,8 @@
         if(key) return amplify.store(STORAGE_PREFIX + '_' + key, value, checkOptions(options));
         // get all data
         var appData = {};
-        _.each(amplify.store(), function(value, key){
+        var storedData = amplify.store();
+        storedData.each(function(value, key){
           if (service.isAppData(key)) appData[key] = value;
         });
         return appData;
@@ -41,7 +42,7 @@
 
       clear: function() {
         sessionData = {};
-        _.each(amplify.store(), function(value, key){
+        Object.keys(amplify.store(), function(key, value){
           if(service.isAppData(key)) amplify.store(key, null);
         });
       },
