@@ -2,31 +2,29 @@
 ;
 (function() {
 
-  // this file was pulled out of api service because of circular dependency issues with httpInterceptor
-
-  var myApp = angular.module('af.api', ['af.msg', 'af.loader', 'af.authManager']);
+  var myApp = angular.module('af.apiUtil', ['af.msg', 'af.loader']);
 
   // LOAD DEFAULTS
-  myApp.constant('AF_API_CONFIG', {
+  myApp.constant('API_CONFIG', {
+    disableHttpInterceptor:false, // disable the http interceptor completely
+    // request options:
     method:'POST',
     url:'',
-    // auto add some params:
-    autoApplySession:true,   // should a sessionToken be added to api calls automatically?
-    autoApplyIndex:false,    // should add node db index to api calls automatically?
-    autoApplyDebugInfo:true, // should add node db index to api calls automatically?
-    // request options:
-    urlEncode:false,        // send as application/x-www-form-urlencoded
+    urlEncode:false,              // send as application/x-www-form-urlencoded
+    // auto add some stuff
+    autoApplySession:true,        // adds sessionToken
+    autoApplyIndex:true,          // adds index for node
+    autoApplyDebugInfo:true,      // adds additional info about request for server
     // response options:
-    disableHttpInterceptor:false, // disable the http interceptor completely
     logErrors:true,               // on error, log to sentry (or whatever)
     displayErrors:true            // on error, display error to user
   });
 
 
 
-  myApp.service('api', function($window, $log, $msg, AF_API_CONFIG, authManager, $loader, $q, $log) {
+  myApp.service('apiUtil', function($window, $log, $msg, API_CONFIG, $loader, $q) {
 
-    var api = {
+    var apiUtil = {
 
       // turning this on will allow you to
       // suppress error messages displayed by $http requests
@@ -35,135 +33,163 @@
       // HTTP errors will STILL BE LOGGED!
       suppressErrorMessages:false,
 
-      //
-      // REQUEST API
-      //
-      // creates a request... merges default request, with anything users passes in
-      newRequest:function(options){
-        return _.extend({}, AF_API_CONFIG, options);
-      },
 
-
-      // add debugs info to requests (don't do on Java, Java could blow up)
-      debugInfo: function() {
-        return {
-          url:    $window.location.href,
-          index:  appEnv.index(),
-          tenant: appEnv.tenant(),
-          env:    appEnv.env()
+      //
+      // REQUEST
+      //
+      request:{
+        // creates a request... merges default request, with anything users passes in
+        create:function(options){
+          return Object.merge(API_CONFIG, options || {});
+        },
+        // debug info object for requests
+        debugInfo: function() {
+          return {
+            url: $window.location.href,
+            env: appEnv.env()
+          }
+        },
+        optionEnabled:function(request, optionName){
+          if(Object.isObject(request) && Object.has(request, optionName))
+            return request[optionName];
+          return false;
         }
       },
 
 
+      //
+      // RESPONSE
+      //
+      response:{
+        // response = {status,data,headers}
+        // jsend =    {status,data} or {status, message, code}
+        isJSEND:function(responseOrData) {
+          if(!Object.isObject(responseOrData) || !Object.has(responseOrData, 'status'))
+            return false;
+
+          // get the actual data if its a http response
+          var data = responseOrData;
+          if(Object.isFunction(responseOrData.headers))
+            data = responseOrData.data;
+
+          // check for our two jsend formats
+          if(Object.has(data, 'code') && Object.has(data, 'message')) return true;
+          if(Object.has(data, 'data')) return true;
+          return false;
+        }
+
+      },
+
 
       //
-      // response handlers
+      // ERRORS
       //
       error:{
+        // Basic Error Handler.
+        // This is typically automatically called by a
+        // httpInterceptor, or manually.. if your not using it.
         handler:function(response){
-          $loader.stop(); // stop loader on error
-          // prevents same response from getting handled/logged twice by accident
+          // stop any loaders on error
+          $loader.stop();
+
+          // only handle this once
           if(response.handled === true) return;
 
           var request = response.config;
           var data = response.data;
           var status = response.status;
 
-          if(response.status !== 'InvalidLoginParameter') // don't console.log this
-            $log.error('Whoops: ' + data, response);
+          // log it with appTrack
+          if(apiUtil.request.optionEnabled(request, 'logErrors'))
+            apiUtil.error.logger(response);
 
-          // log it?
-          if(api.optionEnabled(request, 'logErrors'))
-            api.error.log(response);
+          if(response.status !== 'InvalidLoginParameter')
+            $log.error('Whoops!', data, response);
 
           // display it?
-          if(api.optionEnabled(request, 'displayErrors') && !api.suppressErrorMessages)
-            api.error.display(response);
+          if(apiUtil.request.optionEnabled(request, 'displayErrors') && !apiUtil.suppressErrorMessages)
+            apiUtil.error.display(response);
 
+          // store the fact we handled it.
           response.handled = true;
         },
-        log:function(response){
-          if(_.isString(response)) return appCatch.send(response);
+        logger:function(response){
+          // if its a string.. just send that.
+          if(Object.isString(response)) return appCatch.send(response);
+          if(!response) return appCatch.send('Unable To Log. No Response');
 
           var request = response.config || {};
-
           // don't log credentials!!
-          if (request.data && _.isString(request.data))
+          if (Object.isString(request.data))
             request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
-          else if (request.data && request.data.password)
+          else if (Object.isObject(request.data) && Object.has(request.data, 'password'))
             request.data.password = '********';
 
-          // log it
-          var extra = {};
-          if(request.url)  extra.url = request.url;
-          if(request.data) extra.data = request.data;
-          appCatch.send(api.error.getMessage(response), extra);
+          // log it with some info about the request that failed
+          var extra = {
+            url:request.url || '',
+            data:request.data || ''
+          };
+          appCatch.send(apiUtil.error.getMessage(response), extra);
         },
         display:function(response){
-          $msg.error(api.error.getMessage(response))
+          $msg.error(apiUtil.error.getMessage(response))
         },
         // attempts to get a humanized response from an error.
         getMessage: function(response) {
           if(response.status === 502) return 'Unable to communicate with server. Please check your internet connection.';
-          return response.data || api.getHttpCodeString(response.status);
+          return response.data || response.statusText || apiUtil.getHttpCodeString(response.status);
         }
       },
-
 
 
       //
       //  PROMISE
       //
-      // generally used when returning cached data instead of
-      // making an ajax call
-      newResolvedPromise:function(data){
-        var defer = $q.defer();
-        defer.resolve(data);
-        return defer.promise;
-      },
-      // creates a rejection similar to an $http rejection
-      // TODO : dont like these names?
-      reject:function(status, reason, config){
-        if(arguments.length == 1) reason = status;
-        return $q.reject({
-          status:status,
-          data:reason,
-          config:{}
-        });
-      },
-      catcher:function(defer) {
-        return function (response){
-          api.error.handler(response);
-          if(defer)
-            return defer.reject(response);
-          else
-            return $q.reject(response);
+      promise:{
+        // quickly return resolved data
+        resolvedPromise:function(data){
+          var defer = $q.defer();
+          defer.resolve(data);
+          return defer.promise;
+        },
+        // creates a rejection similar to an $http rejection
+        // data and defer are optional
+        rejectedPromise:function(status, data, defer){
+          var response = {
+            status:status,
+            data:data,
+            config:{}
+          };
+          if(arguments.length == 1)
+            response.data = status;
+          if(arguments.length == 2 && Object.isFunction(data)){
+            // data a defer
+            response.data = status;
+            defer = data;
+          }
+          return apiUtil.promise.reject(response, defer);
+        },
+        reject:function(response, defer){
+          if(defer) return defer.reject(response);
+          return $q.reject(defer);
+        },
+        catcher:function(defer){
+          return function (response){
+            apiUtil.error.handler(response);
+            return apiUtil.promise.reject(response, defer);
+          }
         }
       },
+
 
 
 
       //
       // UTIL
       //
-      isJSEND:function(data) {
-        if(!_.object(data) || !_.has(data, 'status')) return false;
-        if(_.isFunction(data.headers)) return false;
-        if(_.has(data, 'code') && _.has(data, 'message')) return true;
-        if(_.has(data, 'data')) return true;
-        return false;
-      },
-      optionEnabled:function(request, optionName){
-        if(request && Object.isObject(request) && request.hasOwnProperty(optionName))
-          return request[optionName];
-        return false;
-      },
-
-
-
-      // VALIDATION
       ensureInt: function(value) {
-        return (_.isString(value)) ? parseInt(value):value;
+        return (Object.isString(value)) ? parseInt(value):value;
       },
       ensureBool: function(value) {
         if (value === 'true' || value === 1 || value === '1')  return true;
@@ -173,14 +199,12 @@
       ensureString: function(value) {
         return '' + value;
       },
-
-
       // HTTP CODES
       isHttpCode: function(code) {
-        return _.isString(api.getHttpCodeString(code));
+        return Object.isString(apiUtil.getHttpCodeString(code));
       },
       getHttpCodeString: function(code) {
-        if (http_codes.hasOwnProperty(code)) return http_codes[code];
+        if(Object.has(http_codes, code)) return http_codes[code];
         return code;
       }
     };
@@ -243,7 +267,7 @@
       510: 'Not Extended'
     };
 
-    return api
+    return apiUtil;
 
   });
 
@@ -252,16 +276,15 @@
 ;
 (function() {
 
-  var myApp = angular.module('af.httpInterceptor', ['af.api', 'af.authManager']);
+  var myApp = angular.module('af.httpInterceptor', ['af.apiUtil', 'af.authManager']);
 
-  //myApp.factory("httpInterceptor", function($q, $injector, api, authManager) {
-  myApp.factory("httpInterceptor", function($q, $injector) {
+  myApp.factory("httpInterceptor", function($q, $injector, apiUtil, authManager) {
 
-    var isDisabled = function(request){
-      return api.optionEnabled(request, 'disableHttpInterceptor');
+    var isEnabled = function(request, key){
+      return apiUtil.request.optionEnabled(request, key);
     };
     var isFile = function(request){
-      // if end of our request contains a period.. probably a file request
+      // if end of our request contains a period.. probably not an api request
       return request.url.substr(request.url.length - 5).indexOf('.') >= 0
     };
 
@@ -269,39 +292,40 @@
 
       request: function(request) {
         // should this even run?
-        if(isDisabled(request) || isFile(request)) return request;
+        if(!isEnabled(request, 'disableHttpInterceptor') || isFile(request))
+          return request;
 
-        // AUTO APPLY SOME REQUEST PARAMS:
+        // auto apply:
         request.method = request.method || 'POST';
         request.data = request.data || {};
-
-        if(api.optionEnabled(request, 'autoApplyDebugInfo'))
-          request.debug = api.debugInfo();
-
-        if(api.optionEnabled(request, 'autoApplySession') && !request.data.hasOwnProperty('sessionToken'))
+        if(isEnabled(request, 'autoApplySession'))
           request.data.sessionToken = authManager.sessionToken();
+        if(isEnabled(request, 'autoApplyIndex'))
+          request.data.index = appEnv.index();
+        if(isEnabled(request, 'autoApplyDebugInfo'))
+          request.debug = apiUtil.debugInfo();
 
-        if(api.optionEnabled(request, 'autoApplyIndex') && !request.data.hasOwnProperty('tenant'))
-          request.data.tenant = appEnv.index();
-
-        // URLENCODED?
-        if (api.optionEnabled(request, 'urlEncode')) {
+        // url encoded?
+        if (isEnabled(request, 'urlEncode')) {
           // add urlencoded header
           request.headers = request.headers || {};
-          _.extend(request.headers, {'Content-Type':'application/x-www-form-urlencoded'});
+          Object.merge({'Content-Type':'application/x-www-form-urlencoded'}, request.headers);
           // data needs to be in string format
-          if(!_.isString(request.data)) request.data = $.param(request.data)
+          if(!Object.isString(request.data))
+            request.data = Object.toQueryString(request.data); //$.param(request.data)
         }
         return request;
       },
+
 
       response: function(response) {
         if(!response.config) return response; // don't mess with a response that has no config
         var request = response.config;
         // should this even run?
-        if(isDisabled(request) || isFile(request)) return response;
+        if(!isEnabled(request, 'disableHttpInterceptor') || isFile(request))
+          return response;
 
-        var isJSEND = api.isJSEND(response.data);
+        var isJSEND = apiUtil.response.isJSEND(response);
 
         // is this actually an error?
         var isSuccess = true;
@@ -311,27 +335,31 @@
 
         // handle response
         if (isSuccess) {
-          if (isJSEND) response.data = response.data.data; // strip status junk
+          if (isJSEND) response.data = response.data.data; // just return data
           return response;
         } else {
-          // convert the jsend response to an actual response
+          // convert the jsend response to something httpHandler expects
           if (isJSEND){
+            // jsend returns status 200, but the error status is in response data:
+            // we should have -> data:{status, code, message}
             response.status = response.data.code;
-            response.statusText = api.getHttpCodeString(response.status);
-            response.data = response.data.message || 'Unknown Error, code:' + response.data.code;
+            response.statusText = apiUtil.getHttpCodeString(response.data.code) + ': ' + response.data.code;
+            response.data = response.data.message || 'Unknown Error. Code:' + response.data.code;
           }
+          // reject it via our error handler
           return interceptor.responseError(response);
         }
       },
 
       responseError: function(response) {
+        console.log('responseError', response);
         if(!response.config) return $q.reject(response); // don't mess with a response that has no config
         var request = response.config;
         // should this even run?
-        if(isDisabled(request) || isFile(request)) return $q.reject(response);
-
+        if(!isEnabled(request, 'disableHttpInterceptor') || isFile(request))
+          return $q.reject(response);
         // handle it
-        api.error.handler(response);
+        apiUtil.error.handler(response);
         return $q.reject(response);
       }
     };
@@ -343,21 +371,17 @@
 ;
 (function() {
 
-  var myApp = angular.module('af.java', ['af.api']);
+  var myApp = angular.module('af.java', ['af.apiUtil']);
 
-  myApp.service('java', function($http, api, $q) {
+  myApp.service('java', function($http, apiUtil) {
 
     var java = {
 
-      // so you don't have to inject $http in your controllers if you injected this service already..
+      // so you no have to include $http in controllers
       call: function(request) {
         return $http(request);
-        //.success(function(data){
-          //if(callback) callback(null, data);    // SUCCESS
-        //}).error(function(error, status){
-        //  if(callback) callback(error, status); // ERROR
-        //});
       },
+
 
       //
       // ROADMAP SERVICE
@@ -366,7 +390,7 @@
         serviceUrl: '/RoadmapService',
         // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = api.newRequest(options);
+          var request = apiUtil.request.create(options);
           request.url = java.RoadmapService.serviceUrl + url;
           request.data = params || {};
           return request;
@@ -382,8 +406,6 @@
       },
 
 
-
-
       //
       // AUTH SERVICE
       //
@@ -391,7 +413,7 @@
         serviceUrl: '/RoadmapService',
         // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = api.newRequest(options);
+          var request = apiUtil.request.create(options);
           request.url = java.AuthService.serviceUrl + url;
           request.data = params || {};
           request.urlEncode = true;
@@ -403,7 +425,7 @@
 
         // METHODS
         login: function(username, password, options) {
-          if(!options) options = { autoApplySession:false, displayErrors:false };
+          Object.merge(options || {}, { displayErrors:false }); // by default.. don't autoHandle errors on this
           return this.call('/login', { username: username, password: password }, options)
         },
         logout: function(options) {
@@ -438,7 +460,7 @@
         },
         loadtoken: function(token) {
           var request = java.AuthService.createRequest('/loadtoken', {token: token}, {autoApplySession:false})
-          api.call(request, {token: token});
+          apiUtil.call(request, {token: token});
         },
         changepassword: function(userId, currentPassword, newPassword) {
           var params = {
@@ -463,31 +485,24 @@
 (function() {
   var myApp;
 
-  myApp = angular.module('af.node', ['af.api', 'af.authManager']);
+  myApp = angular.module('af.node', ['af.apiUtil']);
 
-  myApp.service('node', function($http, api, $q) {
+  myApp.service('node', function($http, apiUtil) {
 
     var node = {
 
       // so you dont have to inject $http in your controllers if you injected this service already..
       call: function(request) {
         return $http(request);
-        //$http(request).success(function(data){
-        //  if(callback) callback(null, data);    // SUCCESS
-        //}).error(function(error, status){
-        //  if(callback) callback(error, status); // ERROR
-        //});
       },
 
       RoadmapNode: {
         serviceUrl: '/roadmap-node',
         // BASE
-        // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = api.newRequest(options);
+          var request = apiUtil.request.create(options);
           request.url = node.RoadmapNode.serviceUrl + url;
           request.data = params || {};
-          request.autoApplyIndex = true;
           return request;
         },
         call:function(url, params, options){
@@ -506,144 +521,15 @@
           return this.find(type, query, options)
             .then(function(response){
               // we don't want an array... we want an object..
-              response.data = (_.isArray(response.data) && response.data.length >= 1) ? response.data[0]:null;
+              response.data = (Object.isArray(response.data) && response.data.length >= 1) ? response.data[0]:null;
               return response;
             })
         },
         remove: function(type, idOrResource, options) {
-          var id = _.isObject(idOrResource) ? idOrResource.id : idOrResource;
-          return this.call('/api/crud/remove', {_type: type, id:api.ensureInt(id)}, options);
+          var id = Object.isObject(idOrResource) ? idOrResource.id : idOrResource;
+          return this.call('/api/crud/remove', {_type: type, id:apiUtil.ensureInt(id)}, options);
         }
       }
-
-
-      /*
-      Batch: {
-        execute: function(method, params, callback) {
-          return node.RoadmapNode.execute('/api/batch' + method, params, callback);
-        }
-      },
-
-
-      QuickContent: {
-        serviceUrl: '/quick-content',
-        execute: function(method, params, callback) {
-          var req;
-          if (params == null) {
-            params = {};
-          }
-          if (params.index == null) {
-            params.index = appConfig.index();
-          }
-          if (autoApplySession) {
-            if (params.sessionToken == null) {
-              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
-            }
-          }
-          req = {
-            url: node.QuickContent.serviceUrl + method,
-            data: params
-          };
-          req = api.addDebugInfo(req);
-          return api.execute(req, callback);
-        },
-        mget: function(body, callback) {
-          var params;
-          params = {
-            type: 'recommendations',
-            body: body
-          };
-          return node.QuickContent.execute('/mget', params, function(data) {
-            if (!onSuccess) {
-              return;
-            }
-            if (data && data.docs) {
-              data.docs = node.QuickContent.flatten(data.docs);
-              return onSuccess(data.docs);
-            } else {
-              return onSuccess(data);
-            }
-          }, onError);
-        },
-        search: function(body, callback) {
-          var params;
-          params = {
-            type: 'recommendations',
-            body: body
-          };
-          return node.QuickContent.execute('/search', params, function(data) {
-            if (!onSuccess) {
-              return;
-            }
-            if (data && data.hits && data.hits.hits) {
-              data.hits.hits = node.QuickContent.flatten(data.hits.hits);
-              return onSuccess(data.hits);
-            } else {
-              return onSuccess(data);
-            }
-          }, onError);
-        },
-        flatten: function(results) {
-          if (!results || results.length === 0) {
-            return [];
-          }
-          return _.map(results, function(row) {
-            var item;
-            item = {};
-            if (row._source) {
-              item = row._source;
-            }
-            if (row.fields) {
-              item = row.fields;
-            }
-            if (row._score && !item._score) {
-              item._score = row._score;
-            }
-            if (row._id && !item.id) {
-              item.id = api.ensureInt(row._id);
-            }
-            return item;
-          });
-        }
-      },
-      ExploreDB: {
-        serviceUrl: '/explore/db',
-        execute: function(method, params, callback) {
-          var req;
-          if (params == null) {
-            params = {};
-          }
-          if (params.index == null) {
-            params.index = appConfig.getTenantIndex();
-          }
-          if (autoApplySession) {
-            if (params.sessionToken == null) {
-              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
-            }
-          }
-          req = {
-            url: node.ExploreDB.serviceUrl + method,
-            data: params
-          };
-          req = api.addDebugInfo(req);
-          return api.execute(req, callback);
-        },
-        findByDate: function(from, to, callback) {
-          return node.ExploreDB.execute('/find-by-date', {
-            from: from,
-            to: to
-          }, callback);
-        },
-        findByEmail: function(email, callback) {
-          return node.ExploreDB.execute('/find-by-email', {
-            email: email
-          }, callback);
-        },
-        save: function(data, callback) {
-          return node.ExploreDB.execute('/save', data, callback);
-        }
-      }
-      */
     };
     return node;
   });
@@ -887,7 +773,7 @@ angular.module('ui.bootstrap.dropdown', [])
       sessionToken: function() {
         // default priority, looks in this class first, then URL, then checks amplify and finally window.sessionToken
         var token = null;
-        _.each(AUTH_MANAGER_CONFIG.tokenPriority, function(place) {
+        AUTH_MANAGER_CONFIG.tokenPriority.each(function(place) {
           if (token) return;
           switch (place) {
             case 'url':     token = $util.GET('sessionToken'); break;
@@ -999,7 +885,7 @@ angular.module('ui.bootstrap.dropdown', [])
 
     logEvent = function(type, eventName, data) {
       var suppress = [service.EVENT_loaderStart, service.EVENT_loaderStop, service.EVENT_msgClear];
-      if (suppress.find(eventName)) {
+      if (!suppress.find(eventName)) {
         if(data) return $log.debug('$event:' + eventName, data);
         $log.debug('$event.' + type + ': ' + eventName);
       }
@@ -1042,13 +928,17 @@ angular.module('ui.bootstrap.dropdown', [])
   myApp.service("$help", function($event) {
     var service;
     service = {
+      isOpen:false,
       controller:{ title:null, body:null },
       open: function(title, body) {
         service.controller.title = title;
         service.controller.body = body;
         $event.shout("Help.open", service.controller);
+        service.isOpen = true;
       },
       close: function(data) {
+        if(!service.isOpen) return;
+        service.isOpen = false;
         $event.shout("Help.close");
       }
     };
@@ -1184,6 +1074,7 @@ angular.module('ui.bootstrap.dropdown', [])
   myApp.service("$modal", function($event, $MODAL_CONFIG) {
     var service;
     service = {
+      isOpen:false,
       url: null,
       controller: null,
       size:null,
@@ -1197,9 +1088,12 @@ angular.module('ui.bootstrap.dropdown', [])
           controller: service.controller,
           size: service.size
         });
+        service.isOpen = true;
       },
       close: function(data) {
+        if(!service.isOpen) return;
         $event.shout("Modal.close", data);
+        service.isOpen = false;
         service.url = null;
         service.size = null;
         service.controller = null;
@@ -1405,8 +1299,8 @@ angular.module('ui.bootstrap.dropdown', [])
 
     // ensure options are in correct format: { expires:x }
     var checkOptions = function(options){
-      if(_.isNumber(options)) return { expires:options };
-      if(_.isObject(options) && _.has(options, 'expires')) return options;
+      if(Object.isNumber(options)) return { expires:options };
+      if(Object.isObject(options) && Object.has(options, 'expires')) return options;
       return null;
     };
 
@@ -1417,7 +1311,8 @@ angular.module('ui.bootstrap.dropdown', [])
         if(key) return amplify.store(STORAGE_PREFIX + '_' + key, value, checkOptions(options));
         // get all data
         var appData = {};
-        _.each(amplify.store(), function(value, key){
+        var storedData = amplify.store();
+        storedData.each(function(value, key){
           if (service.isAppData(key)) appData[key] = value;
         });
         return appData;
@@ -1432,7 +1327,7 @@ angular.module('ui.bootstrap.dropdown', [])
 
       clear: function() {
         sessionData = {};
-        _.each(amplify.store(), function(value, key){
+        Object.keys(amplify.store(), function(key, value){
           if(service.isAppData(key)) amplify.store(key, null);
         });
       },

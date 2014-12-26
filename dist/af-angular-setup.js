@@ -1,8 +1,8 @@
 if (typeof console === "undefined") { var console = { log : function(){} }; }
 ;
-
 //
-// NEEDED TO PROVIDE THE CLIENT WITH INFORMATION ABOUT ITS ENVIRONMENT
+// CLIENT ENVIRONMENT
+// provides client with setup information
 //
 
 var appEnv = {
@@ -10,40 +10,73 @@ var appEnv = {
   // this gets filled out once per page load...
   loaded:false,
 
-  cache:{
+  // stores result
+  config:{
     subDomain:'',       // domain, includes -dev
     subDomainClean:'',  // domain, strips off -dev
     env:'production',   // development / production.
-    isLocal:false       // running locally? (http://localhost/ or http://development/
+    isLocal:false,      // running locally? (http://localhost/ or http://development/
+    app:'',
+    tenant:'',
+    index:''
   },
 
 
+
   //
-  // INIT, this only runs once per page load... (generally)
+  // INIT
   //
-  init:function(){
+  init:function(clientConfig){
     if(appEnv.loaded) return; // do once.
 
-    console.log(window.location.hostname);
+    // 1 - Determine Environment
     // subDomain
-    appEnv.cache.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
-    // clean subDomain (no -dev on it)
-    appEnv.cache.subDomainClean = appEnv.cache.subDomain.split('-').shift();
+    appEnv.config.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
+    // subDomain with no -dev on it
+    appEnv.config.subDomainClean = appEnv.config.subDomain.split('-').shift();
 
     // isLocal?
-    if(appEnv.cache.subDomainClean === 'localhost')   appEnv.cache.isLocal = true;
-    if(appEnv.cache.subDomainClean === 'development') appEnv.cache.isLocal = true;
+    if(appEnv.config.subDomainClean === 'localhost')   appEnv.config.isLocal = true;
+    if(appEnv.config.subDomainClean === 'dev')         appEnv.config.isLocal = true;
+    if(appEnv.config.subDomainClean === 'development') appEnv.config.isLocal = true;
 
     // development?
-    if(appEnv.cache.isLocal)                        appEnv.cache.env = 'development';
-    if(appEnv.cache.subDomain.indexOf('-dev') >= 0) appEnv.cache.env = 'development';
+    if(appEnv.config.isLocal)                        appEnv.config.env = 'development';
+    if(appEnv.config.subDomain.indexOf('-dev') >= 0) appEnv.config.env = 'development';
+
+    // 2 - Merge in Config from client
+    // merge in properties passed in from client during setup
+    if(clientConfig && clientConfig.hasOwnProperty(appEnv.config.env)){
+      // get Production/Development config...
+      var conf = clientConfig[appEnv.config.env];
+      // if local... merge with localhost config
+      if(appEnv.config.isLocal && clientConfig.hasOwnProperty('localhost'))
+        conf = appEnv.mergeConfigs(conf, clientConfig['localhost']);
+      // merge specific domain configs on top of that
+      if(clientConfig.hasOwnProperty(appEnv.config.subDomainClean))
+        conf = appEnv.mergeConfigs(conf, clientConfig[appEnv.config.subDomainClean]);
+
+      // set config
+      appEnv.config = appEnv.mergeConfigs(appEnv.config, conf);
+    }
+
 
     // set app... mainly for logging/sentry/tagging etc...
-    //var parts = window.location.pathname.split('/');
-    //if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
+    var parts = window.location.pathname.split('/');
+    if (parts.length >= 2) appEnv.config.app = parts[1].toLowerCase();
+
+    // load tenant
+    if(appEnv.config.subDomainClean == 'tdai')       appEnv.config.tenant = 'td';     // special case
+    if(appEnv.config.subDomainClean == 'apps')       appEnv.config.tenant = 'actifi'; // special case
+    if(!appEnv.config.tenant) appEnv.config.tenant = appEnv.config.subDomainClean;    // defaults to subDomain
+
+    // load tenant index for node (db uid)
+    if(appEnv.config.subDomainClean == 'tdai')       appEnv.config.index = 'td'; // special case
+    if(appEnv.config.subDomainClean == 'waddell')    appEnv.config.index = 'wr'; // special case
+    if(!appEnv.config.index) appEnv.config.index =  appEnv.config.tenant; // defaults to tenant
 
     // log
-    console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache);
+    console.log(appEnv.config.env.toUpperCase()+' Env Loaded', appEnv.config);
     appEnv.loaded = true;
   },
 
@@ -53,32 +86,56 @@ var appEnv = {
   //
   isProd : function(){
     appEnv.init();
-    return appEnv.cache.env !== 'development';
+    return appEnv.config.env !== 'development';
   },
   isDev : function(){
     appEnv.init();
-    return appEnv.cache.env === 'development';
+    return appEnv.config.env === 'development';
   },
   isLocal : function(){
     appEnv.init();
-    return appEnv.cache.isLocal;
+    return appEnv.config.isLocal;
   },
   subDomain : function(){
     appEnv.init();
-    return appEnv.cache.subDomain;
+    return appEnv.config.subDomain;
   },
   // returns domain with -dev stripped off
   subDomainClean:function(){
     appEnv.init();
-    return appEnv.cache.subDomainClean;
+    return appEnv.config.subDomainClean;
   },
   env : function(){
     appEnv.init();
-    return appEnv.cache.env;
+    return appEnv.config.env;
+  },
+  tenant : function() {
+    appEnv.init();
+    return appEnv.config.tenant;
+  },
+  index : function() {
+    appEnv.init();
+    return appEnv.config.index;
+  },
+  app : function() {
+    appEnv.init();
+    return appEnv.config.app;
+  },
+
+  // merges configs
+  mergeConfigs:function(target, source){
+    for (var prop in source) {
+      if (typeof source[prop] == 'object'){
+        if(!target[prop]) target[prop] = {};
+        target[prop] = appEnv.mergeConfigs(target[prop], source[prop]);
+      } else {
+        target[prop] = source[prop];
+      }
+    }
+    return target;
   }
 };
 
-appEnv.init(); // init
 ;
 //
 // THIS IS GLOBALLY scoped on window because we need it before angular even loads..
@@ -100,27 +157,26 @@ var appCatch = {
   //
   // INITIALIZE
   //
-  init:function(){
-
+  init:function(settings){
+    if(settings) appCatch.loadSettings(settings);
+    // do once
+    if(appCatch.loaded || !appCatch.config.enabled) return;
     // sanity checks
-    if(!appConfig) return alert('Sentry init error. Application Config not defined.');
     if(typeof Raven === "undefined") return alert('Cannot initialize Sentry. Missing Raven library.');
-
-    if(appCatch.loaded || !appCatch.config.enabled) return; // do once
-
-    // populate config
-    var env = appEnv.env();
-    if(appConfig[env] && appConfig[env].sentry){
-      var config = appConfig[env].sentry;
-      for(var key in config){
-        appCatch.config[key] = config[key];
-      }
-    }
+    if(!appCatch.config.url) return alert('Sentry init error. Application Config not defined.');
 
     // init
     Raven.config(appCatch.config.url, appCatch.config.options).install();
     console.log('SENTRY LOADED - '+appEnv.env() + ' - ' + appCatch.config.url, appCatch.config.options);
     appCatch.loaded = true;
+  },
+
+  loadSettings:function(settings){
+    // populate config
+    if(!settings) return;
+    for(var key in settings){
+      appCatch.config[key] = settings[key];
+    }
   },
 
 
@@ -165,32 +221,21 @@ var appCatch = {
   }
 
 };
-
-// run it..
-appCatch.init();
 ;
 //
-// THIS IS GLOBALLY scoped on window because we need it before angular even loads..
+// TENANTS CONFIGURATION (labels, theme, etc)
 //
+var appTenant = {
 
-//
-// CONFIG
-//
-/*
-var appConfig = {
+  config:{}, // holds config (loaded from db or php, or whatever)
 
-  //
-  // METHODS
-  //
-  // send error
   get:function(path, makePlural) {
-    if (!window.config) return null;
-    if (!path) return window.config; // return whole config if no path
-    var value = appConfig.getPathValue(window.config, path);
-    if (makePlural) {
-      var pluralValue = appConfig.getPathValue(window.config, path + '_plural');
+    if (!path) return appTenant.config; // return whole config
+    var value = appTenant.getPathValue(appTenant.config, path);
+    if(makePlural) {
+      var pluralValue = appTenant.getPathValue(appTenant.config, path + '_plural');
       if(pluralValue) return pluralValue;
-      return appConfig.makePlural(value);
+      return appTenant.makePlural(value);
     }
     return value;
   },
@@ -199,15 +244,13 @@ var appConfig = {
   //
   // UTIL
   //
-
   // checks if enabled flag is true on an object
   enabled:function(path){
-    return appConfig.get(path+'.enabled') === true
+    return appTenant.get(path+'.enabled') === true
   },
-
   makePlural:function(value){
     if(!value) return value;
-    if(!_.isString(value)) return value;
+    if(typeof value !== 'string') return value;
     var lastChar = value.charAt(value.length - 1).toLowerCase();
     var lastTwoChar = value.slice(value.length - 2).toLowerCase();
     // special cases...
@@ -215,15 +258,17 @@ var appConfig = {
     if (lastTwoChar === 'ch') return value + 'es';
     return value + 's';
   },
+
+  // easily get nested value from objects
+  // eg: getPathValue({ name:{ first:'John', last:'Doe'}}, 'name.first')
   getPathValue:function(object, path) {
     var parts = (''+path).split('.');
     if (parts.length === 1) return object[parts[0]];
     var child = object[parts.shift()];
     if (!child) return child;
-    return appConfig.getPathValue(child, parts.join('.'));
+    return appTenant.getPathValue(child, parts.join('.'));
   }
 }
-*/
 ;
 //
 // THIS IS GLOBALLY scoped on window because we need it before angular even loads..
@@ -239,64 +284,64 @@ var appConfig = {
 
 var appTrack = {
 
-  loaded:false,
+  loaded: false,
 
   config: {
-    enabled:true,
-    key:'',
-    options:{
-      'cross_subdomain_cookie':false
+    enabled: true,
+    key: '',
+    options: {
+      'cross_subdomain_cookie': false
       //,'debug':true
     },
-    logging:true
+    logging: true
   },
 
   //
   // INITIALIZE
   //
-  init:function(){
-    if(appTrack.loaded || !appTrack.config.enabled) return; // do once
-
+  init: function (settings) {
+    if(settings) appTrack.loadSettings(settings);
+    // do once
+    if (appTrack.loaded || !appTrack.config.enabled) return;
     // sanity checks
-    if(!appConfig) return alert('Sentry init error. Application Config not defined.');
-    if(typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
-
-    // populate config
-    var env = appEnv.env();
-    if(appConfig[env] && appConfig[env].mixpanel){
-      var config = appConfig[env].mixpanel;
-      for(var key in config){
-        appTrack.config[key] = config[key];
-      }
-    }
+    if (typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
+    if (!appTrack.config.key) return alert('Sentry init error. Application Config not defined.');
 
     // init
     mixpanel.init(appTrack.config.key, appTrack.config.options);
-    console.log('MIXPANEL LOADED - '+appEnv.env() + ' - ' + appTrack.config.key, appTrack.config.options);
+    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.key, appTrack.config.options);
     appTrack.loaded = true;
 
     // always pass this with events:
     appTrack.register({
-      domain:appEnv.subDomainClean(),
-      env:appEnv.env()
+      domain: appEnv.subDomainClean(),
+      env: appEnv.env(),
+      app: appEnv.app()
     })
   },
 
+  loadSettings: function (from) {
+    // populate config
+    if (!from) return;
+    for (var key in from) {
+      appTrack.config[key] = from[key];
+    }
+  },
 
 
   //
   // METHODS
   //
   // allows us to track logged in users.... need to call right away.
-  setUser:function(id){
-    if(!appTrack.loaded) return;
+  setUser: function (id) {
+    if (!appTrack.loaded) return;
     console.log('MIXPANEL.identify(): ', id);
     mixpanel.identify(id);
   },
 
   // set info about identified user
   // { key:value }
-  setProfile:function(object){
+  setProfile: function (object) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.people.set():', object);
     mixpanel.people.set(object);
@@ -304,8 +349,10 @@ var appTrack = {
 
   // track an event named "Registered":
   // mixpanel.track("Registered", {"Gender": "Male", "Age": 21});
-  send:function(name, options){ appTrack.track(name, options); }, // alias
-  track:function(name, options){
+  send: function (name, options) {
+    appTrack.track(name, options);
+  }, // alias
+  track: function (name, options) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.track:', name, options);
     mixpanel.track(name, options); //
@@ -313,13 +360,13 @@ var appTrack = {
 
   // Register a set of super properties, which are automatically included with all events.
   // { key:value }
-  register: function(options) {
+  register: function (options) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.register:', options);
     mixpanel.register(options);
   },
   // removes a registered key
-  unregister: function(key) {
+  unregister: function (key) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.unregister: ', key);
     mixpanel.unregister(key);
@@ -328,14 +375,16 @@ var appTrack = {
   //
   //  EVENTS we track
   //
-  TRACK_LOGIN:function(){   appTrack.track('Login') },
-  TRACK_LOGOUT:function(){  appTrack.track('Logout') },
-  TRACK_PAGE_VIEW:function(pageName){
+  TRACK_LOGIN: function () {
+    appTrack.track('Login')
+  },
+  TRACK_LOGOUT: function () {
+    appTrack.track('Logout')
+  },
+  TRACK_PAGE_VIEW: function (pageName) {
     appTrack.track('PageView', {
       'page': pageName,
-      'url':window.location.hash
+      'url': window.location.hash
     });
   }
-}
-
-appTrack.init(); // init
+};

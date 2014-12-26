@@ -11,7 +11,7 @@
     //
     // SESSION/USER CACHE
     //
-    var loggedInUser = amplify.store('loggedInUser'); // for easy reference
+    var loggedInUser = amplify.store('loggedInUser');
 
     var auth = {
 
@@ -19,9 +19,9 @@
       sessionToken: function() {
         // default priority, looks in this class first, then URL, then checks amplify and finally window.sessionToken
         var token = null;
-        _.each(AUTH_MANAGER_CONFIG.tokenPriority, function(place) {
+        AUTH_MANAGER_CONFIG.tokenPriority.each(function(priority) {
           if (token) return;
-          switch (place) {
+          switch (priority) {
             case 'url':     token = $util.GET('sessionToken'); break;
             case 'cache':   token = amplify.store('sessionToken'); break;
             case 'window':  token = window.sessionToken; break;
@@ -49,7 +49,6 @@
       //
       setSessionToken: function(sessionToken) {
         amplify.store('sessionToken', sessionToken, 86400000); // 1 day
-        //$log.debug('authManager.setSessionToken:', sessionToken);
       },
       setLoggedInUser: function(user) {
         user.displayName = $util.createDisplayName(user);      // adds a displayName to the user
@@ -88,23 +87,17 @@
       Role_RoadmapContentAdmin:'Role_RoadmapContentAdmin',  // can edit content
       Role_AccessKeyManager:'Role_AccessKeyManager',        // can view/edit other users data
 
+      numOfMatchingRoles:function(array){
+        return array.intersect(auth.user().roles).length;
+      },
       hasRole: function(role) {
-        if (!auth.loggedIn()) return false;
-        return _.contains(auth.user().authorities, role);
+        return [role].intersect(auth.user().roles).length > 0
       },
       hasAnyRole: function(array) {
-        var matched = 0;
-        _.each(array, function(role) {
-          if (auth.hasRole(role)) matched += 1;
-        });
-        return matched > 0;
+        return array.intersect(auth.user().roles).length > 0
       },
       hasAllRoles: function(array) {
-        var matched = 0;
-        _.each(array, function(role) {
-          if (auth.hasRole(role)) matched += 1;
-        });
-        return array.length === matched;
+        return array.intersect(auth.user().roles).length === array.length;
       },
 
       isAdmin: function() { return auth.hasAnyRole([auth.Role_Admin, auth.Role_RoadmapUserAdmin, auth.Role_RoadmapContentAdmin]); },

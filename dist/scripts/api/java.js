@@ -1,8 +1,8 @@
 (function() {
 
-  var myApp = angular.module('af.java', ['af.apiUtil', 'af.authManager']);
+  var myApp = angular.module('af.java', ['af.apiUtil']);
 
-  myApp.service('java', function($http, apiUtil, authManager) {
+  myApp.service('java', function($http, apiUtil) {
 
     var java = {
 
