@@ -2,7 +2,7 @@
 
   var myApp = angular.module('af.httpInterceptor', ['af.apiUtil', 'af.authManager']);
 
-  myApp.factory("httpInterceptor", function($q, $injector, apiUtil, authManager) {
+  myApp.factory("httpInterceptor", function($q, $injector, apiUtil, sessionManager) {
 
     var isEnabled = function(request, key){
       return apiUtil.request.optionEnabled(request, key);
@@ -23,7 +23,7 @@
         request.method = request.method || 'POST';
         request.data = request.data || {};
         if(isEnabled(request, 'autoApplySession'))
-          request.data.sessionToken = authManager.sessionToken();
+          request.data.sessionToken = sessionManager.getSessionToken();
         if(isEnabled(request, 'autoApplyIndex'))
           request.data.index = appEnv.index();
         if(isEnabled(request, 'autoApplyDebugInfo'))

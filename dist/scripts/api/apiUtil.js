@@ -38,7 +38,7 @@
       request:{
         // creates a request... merges default request, with anything users passes in
         create:function(options){
-          return Object.merge(API_CONFIG, options || {});
+          return _.defaults(API_CONFIG, options || {});
         },
         // debug info object for requests
         debugInfo: function() {
@@ -48,7 +48,7 @@
           }
         },
         optionEnabled:function(request, optionName){
-          if(Object.isObject(request) && Object.has(request, optionName))
+          if(_.isObject(request) && _.has(request, optionName))
             return request[optionName];
           return false;
         }
@@ -62,17 +62,17 @@
         // response = {status,data,headers}
         // jsend =    {status,data} or {status, message, code}
         isJSEND:function(responseOrData) {
-          if(!Object.isObject(responseOrData) || !Object.has(responseOrData, 'status'))
+          if(!_.isObject(responseOrData) || !_.has(responseOrData, 'status'))
             return false;
 
           // get the actual data if its a http response
           var data = responseOrData;
-          if(Object.isFunction(responseOrData.headers))
+          if(_.isFunction(responseOrData.headers))
             data = responseOrData.data;
 
           // check for our two jsend formats
-          if(Object.has(data, 'code') && Object.has(data, 'message')) return true;
-          if(Object.has(data, 'data')) return true;
+          if(_.has(data, 'code') && _.has(data, 'message')) return true;
+          if(_.has(data, 'data')) return true;
           return false;
         }
 
@@ -113,14 +113,14 @@
         },
         logger:function(response){
           // if its a string.. just send that.
-          if(Object.isString(response)) return appCatch.send(response);
+          if(_.isString(response)) return appCatch.send(response);
           if(!response) return appCatch.send('Unable To Log. No Response');
 
           var request = response.config || {};
           // don't log credentials!!
-          if (Object.isString(request.data))
+          if (_.isString(request.data))
             request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
-          else if (Object.isObject(request.data) && Object.has(request.data, 'password'))
+          else if (_.isObject(request.data) && _.has(request.data, 'password'))
             request.data.password = '********';
 
           // log it with some info about the request that failed
@@ -161,7 +161,7 @@
           };
           if(arguments.length == 1)
             response.data = status;
-          if(arguments.length == 2 && Object.isFunction(data)){
+          if(arguments.length == 2 && _.isFunction(data)){
             // data a defer
             response.data = status;
             defer = data;
@@ -187,7 +187,7 @@
       // UTIL
       //
       ensureInt: function(value) {
-        return (Object.isString(value)) ? parseInt(value):value;
+        return (_.isString(value)) ? parseInt(value):value;
       },
       ensureBool: function(value) {
         if (value === 'true' || value === 1 || value === '1')  return true;
@@ -199,10 +199,10 @@
       },
       // HTTP CODES
       isHttpCode: function(code) {
-        return Object.isString(apiUtil.getHttpCodeString(code));
+        return _.isString(apiUtil.getHttpCodeString(code));
       },
       getHttpCodeString: function(code) {
-        if(Object.has(http_codes, code)) return http_codes[code];
+        if(_.has(http_codes, code)) return http_codes[code];
         return code;
       }
     };

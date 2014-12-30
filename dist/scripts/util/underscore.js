@@ -1,9 +1,10 @@
-/*
 
 _.mixin({
 
+  // merges two arrays based on a common key or id
   mergeByKey: function (arrayOne, arrayTwo, arrayOneKey, arrayTwoKey){
     var merged = [];
+    // merge by id if none provided
     if(!arrayOneKey) arrayOneKey = 'id';
     if(!arrayTwoKey) arrayTwoKey = arrayOneKey;
     // merge
@@ -38,5 +39,3 @@ _.mixin({
   }
 
 });
-
-*/
