@@ -1,87 +1,81 @@
-
 //
-// THIS FILE CONTAINS ALL THE INFORMATION NEEDED TO PROVIDE
-// THE CLIENT WITH INFORMATION ABOUT ITS ENVIRONMENT
+// CLIENT ENVIRONMENT
+// provides client with setup information
 //
 
 var appEnv = {
 
-
   // this gets filled out once per page load...
   loaded:false,
-  cache:{
-    subDomain:'',
-    subDomainClean:'',
+
+  // stores result
+  config:{
+    subDomain:'',       // domain, includes -dev
+    subDomainClean:'',  // domain, strips off -dev
+    env:'production',   // development / production.
+    isLocal:false,      // running locally? (http://localhost/ or http://development/
+    app:'',
     tenant:'',
-    index:'',
-    isLocal:'',
-    env:'',
-    app:''
-  },
-
-
-  // DEVELOPMENT OVERRIDES (SEE BOTTOM OF PAGE!!!!!)
-  // these can get overwritten by window.devConfig
-  // index essentially provides node with the database
-  dev:{
-    alpha:{     tenant:'actifi', index:'alpha'  },
-    alpha2:{    tenant:'actifi', index:'alpha2' },
-    localhost:{ tenant:'actifi', index:'alpha2' }
+    index:''
   },
 
 
 
   //
-  // INIT, this only runs once per page load... (generally)
+  // INIT
   //
-  init:function(){
-    appEnv.cache = {};
+  init:function(clientConfig){
+    if(appEnv.loaded) return; // do once.
 
+    // 1 - Determine Environment
     // subDomain
-    appEnv.cache.subDomain = (window.location.host).split('.').shift().toLowerCase();
-    // clean subDomain (with no -dev on it)
-    appEnv.cache.subDomainClean = appEnv.cache.subDomain.split('-').shift();
+    appEnv.config.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
+    // subDomain with no -dev on it
+    appEnv.config.subDomainClean = appEnv.config.subDomain.split('-').shift();
 
     // isLocal?
-    appEnv.cache.isLocal = false;
-    if(appEnv.cache.subDomainClean === 'localhost')           appEnv.cache.isLocal = true;
-    if(appEnv.cache.subDomainClean === 'dev')                 appEnv.cache.isLocal = true;
-    if(appEnv.cache.subDomainClean.indexOf('192.168.') === 0) appEnv.cache.isLocal = true;
+    if(appEnv.config.subDomainClean === 'localhost')   appEnv.config.isLocal = true;
+    if(appEnv.config.subDomainClean === 'dev')         appEnv.config.isLocal = true;
+    if(appEnv.config.subDomainClean === 'development') appEnv.config.isLocal = true;
 
-    // environment
-    appEnv.cache.env = 'prod';
-    if(appEnv.cache.isLocal)                            appEnv.cache.env = 'dev';
-    if(appEnv.cache.subDomain.indexOf('alpha') === 0)   appEnv.cache.env = 'dev';
-    if(appEnv.cache.subDomain.indexOf('-dev') >= 0)     appEnv.cache.env = 'dev';
+    // development?
+    if(appEnv.config.isLocal)                        appEnv.config.env = 'development';
+    if(appEnv.config.subDomain.indexOf('-dev') >= 0) appEnv.config.env = 'development';
 
-    // load tenant
-    if(appEnv.cache.isLocal)                        appEnv.cache.tenant = appEnv.dev.localhost.tenant;
-    if(appEnv.cache.subDomainClean == 'alpha')      appEnv.cache.tenant = appEnv.dev.alpha.tenant;
-    if(appEnv.cache.subDomainClean == 'alpha2')     appEnv.cache.tenant = appEnv.dev.alpha2.tenant;
-    if(appEnv.cache.subDomainClean == 'tdai')       appEnv.cache.tenant = 'td';     // special case
-    if(appEnv.cache.subDomainClean == 'apps')       appEnv.cache.tenant = 'actifi'; // special case
-    if(!appEnv.cache.tenant)  appEnv.cache.tenant = appEnv.cache.subDomainClean;    // defaults to subDomain
+    // 2 - Merge in Config from client
+    // merge in properties passed in from client during setup
+    if(clientConfig && clientConfig.hasOwnProperty(appEnv.config.env)){
+      // get Production/Development config...
+      var conf = clientConfig[appEnv.config.env];
+      // if local... merge with localhost config
+      if(appEnv.config.isLocal && clientConfig.hasOwnProperty('localhost'))
+        conf = appEnv.mergeConfigs(conf, clientConfig['localhost']);
+      // merge specific domain configs on top of that
+      if(clientConfig.hasOwnProperty(appEnv.config.subDomainClean))
+        conf = appEnv.mergeConfigs(conf, clientConfig[appEnv.config.subDomainClean]);
 
-    // load tenant index for node (db uid)
-    if(appEnv.cache.isLocal)                        appEnv.cache.index = appEnv.dev.localhost.index;
-    if(appEnv.cache.subDomainClean == 'alpha')      appEnv.cache.index = appEnv.dev.alpha.index;
-    if(appEnv.cache.subDomainClean == 'alpha2')     appEnv.cache.index = appEnv.dev.alpha2.index;
-    if(appEnv.cache.subDomainClean == 'tdai')       appEnv.cache.index = 'td'; // special case
-    if(appEnv.cache.subDomainClean == 'waddell')    appEnv.cache.index = 'wr'; // special case
-    if(!appEnv.cache.tenant)  appEnv.cache.index =  appEnv.cache.tenant; // defaults to tenant
-
-    // set app... mainly for logging/sentry/tagging etc...
-    if(!appEnv.cache.app){
-      // attempt to auto get app from pathname....
-      appEnv.cache.app = '';
-      var parts = window.location.pathname.split('/');
-      if (parts.length >= 2) appEnv.cache.app = parts[1].toLowerCase();
+      // set config
+      appEnv.config = appEnv.mergeConfigs(appEnv.config, conf);
     }
 
-    // save that it loaded... and log it...
+
+    // set app... mainly for logging/sentry/tagging etc...
+    var parts = window.location.pathname.split('/');
+    if (parts.length >= 2) appEnv.config.app = parts[1].toLowerCase();
+
+    // load tenant
+    if(appEnv.config.subDomainClean == 'tdai')       appEnv.config.tenant = 'td';     // special case
+    if(appEnv.config.subDomainClean == 'apps')       appEnv.config.tenant = 'actifi'; // special case
+    if(!appEnv.config.tenant) appEnv.config.tenant = appEnv.config.subDomainClean;    // defaults to subDomain
+
+    // load tenant index for node (db uid)
+    if(appEnv.config.subDomainClean == 'tdai')       appEnv.config.index = 'td'; // special case
+    if(appEnv.config.subDomainClean == 'waddell')    appEnv.config.index = 'wr'; // special case
+    if(!appEnv.config.index) appEnv.config.index =  appEnv.config.tenant; // defaults to tenant
+
+    // log
+    console.log(appEnv.config.env.toUpperCase()+' Env Loaded', appEnv.config);
     appEnv.loaded = true;
-    if(typeof console !== 'undefined')
-      console.log(appEnv.cache.env.toUpperCase()+' Env Loaded', appEnv.cache);
   },
 
 
@@ -89,51 +83,53 @@ var appEnv = {
   // GETTERS
   //
   isProd : function(){
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.env !== 'dev';
+    appEnv.init();
+    return appEnv.config.env !== 'development';
   },
   isDev : function(){
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.env === 'dev';
+    appEnv.init();
+    return appEnv.config.env === 'development';
   },
   isLocal : function(){
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.isLocal;
+    appEnv.init();
+    return appEnv.config.isLocal;
   },
   subDomain : function(){
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.subDomain;
+    appEnv.init();
+    return appEnv.config.subDomain;
   },
   // returns domain with -dev stripped off
   subDomainClean:function(){
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.subDomainClean;
+    appEnv.init();
+    return appEnv.config.subDomainClean;
   },
   env : function(){
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.env;
+    appEnv.init();
+    return appEnv.config.env;
   },
   tenant : function() {
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.tenant;
+    appEnv.init();
+    return appEnv.config.tenant;
   },
   index : function() {
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.index;
+    appEnv.init();
+    return appEnv.config.index;
   },
   app : function() {
-    if(!appEnv.loaded) appEnv.init();
-    return appEnv.cache.app;
-  }
-}
+    appEnv.init();
+    return appEnv.config.app;
+  },
 
-// if this is set.. use it...
-if(window.localEnv){
-  // copy over dev configurations if exist...
-  for (var key in window.localEnv){
-    appEnv.dev[key] = window.localEnv[key];
+  // merges configs
+  mergeConfigs:function(target, source){
+    for (var prop in source) {
+      if (typeof source[prop] == 'object'){
+        if(!target[prop]) target[prop] = {};
+        target[prop] = appEnv.mergeConfigs(target[prop], source[prop]);
+      } else {
+        target[prop] = source[prop];
+      }
+    }
+    return target;
   }
-}
-
-// run it..
-appEnv.init();
+};

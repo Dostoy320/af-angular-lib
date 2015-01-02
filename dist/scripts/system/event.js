@@ -8,10 +8,8 @@
 
     logEvent = function(type, eventName, data) {
       var suppress = [service.EVENT_loaderStart, service.EVENT_loaderStop, service.EVENT_msgClear];
-      if (_.indexOf(suppress, eventName) === -1) {
-        if(data) return $log.debug('$event:' + eventName, data);
-        $log.debug('$event.' + type + ': ' + eventName);
-      }
+      if (!_.contains(suppress, eventName))
+        $log.debug('$event.' + type + ': ' + eventName, data);
     };
 
     return service = {

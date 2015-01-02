@@ -10,13 +10,17 @@
   myApp.service("$help", function($event) {
     var service;
     service = {
+      isOpen:false,
       controller:{ title:null, body:null },
       open: function(title, body) {
         service.controller.title = title;
         service.controller.body = body;
         $event.shout("Help.open", service.controller);
+        service.isOpen = true;
       },
       close: function(data) {
+        if(!service.isOpen) return;
+        service.isOpen = false;
         $event.shout("Help.close");
       }
     };

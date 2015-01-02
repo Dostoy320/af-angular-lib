@@ -1,20 +1,16 @@
 (function() {
 
-  var myApp = angular.module('af.java', ['af.api']);
+  var myApp = angular.module('af.java', ['af.apiUtil']);
 
-  myApp.service('java', function($http, api, $q) {
+  myApp.service('java', function($http, apiUtil) {
 
     var java = {
 
-      // so you don't have to inject $http in your controllers if you injected this service already..
+      // so you no have to include $http in controllers
       call: function(request) {
         return $http(request);
-        //.success(function(data){
-          //if(callback) callback(null, data);    // SUCCESS
-        //}).error(function(error, status){
-        //  if(callback) callback(error, status); // ERROR
-        //});
       },
+
 
       //
       // ROADMAP SERVICE
@@ -23,7 +19,7 @@
         serviceUrl: '/RoadmapService',
         // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = api.newRequest(options);
+          var request = apiUtil.request.create(options);
           request.url = java.RoadmapService.serviceUrl + url;
           request.data = params || {};
           return request;
@@ -39,8 +35,6 @@
       },
 
 
-
-
       //
       // AUTH SERVICE
       //
@@ -48,7 +42,7 @@
         serviceUrl: '/RoadmapService',
         // creates standard request object for this service
         createRequest:function(url, params, options){
-          var request = api.newRequest(options);
+          var request = apiUtil.request.create(options);
           request.url = java.AuthService.serviceUrl + url;
           request.data = params || {};
           request.urlEncode = true;
@@ -60,7 +54,7 @@
 
         // METHODS
         login: function(username, password, options) {
-          if(!options) options = { autoApplySession:false, displayErrors:false };
+          Object.merge(options || {}, { displayErrors:false }); // by default.. don't autoHandle errors on this
           return this.call('/login', { username: username, password: password }, options)
         },
         logout: function(options) {
@@ -95,7 +89,7 @@
         },
         loadtoken: function(token) {
           var request = java.AuthService.createRequest('/loadtoken', {token: token}, {autoApplySession:false})
-          api.call(request, {token: token});
+          apiUtil.call(request, {token: token});
         },
         changepassword: function(userId, currentPassword, newPassword) {
           var params = {
