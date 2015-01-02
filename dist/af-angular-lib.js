@@ -2,27 +2,23 @@
 ;
 (function() {
 
-  var myApp = angular.module('af.apiUtil', ['af.msg', 'af.loader']);
+angular.module('af.apiUtil', ['af.msg', 'af.loader'])
 
-  // LOAD DEFAULTS
-  myApp.constant('API_CONFIG', {
+  // DEFAULT HTTP REQUEST OPTIONS
+  .constant('HTTP_REQUEST_OPTIONS', {
     disableHttpInterceptor:false, // disable the http interceptor completely
     // request options:
     method:'POST',
     url:'',
     urlEncode:false,              // send as application/x-www-form-urlencoded
-    // auto add some stuff
-    autoApplySession:true,        // adds sessionToken
-    autoApplyIndex:true,          // adds index for node
-    autoApplyDebugInfo:true,      // adds additional info about request for server
     // response options:
     logErrors:true,               // on error, log to sentry (or whatever)
     displayErrors:true            // on error, display error to user
-  });
+  })
 
 
 
-  myApp.service('apiUtil', function($window, $log, $msg, API_CONFIG, $loader, $q) {
+  .service('apiUtil', function($window, $log, $msg, HTTP_REQUEST_OPTIONS, $loader, $q) {
 
     var apiUtil = {
 
@@ -40,7 +36,7 @@
       request:{
         // creates a request... merges default request, with anything users passes in
         create:function(options){
-          return Object.merge(API_CONFIG, options || {});
+          return _.extend({}, HTTP_REQUEST_OPTIONS, options || {});
         },
         // debug info object for requests
         debugInfo: function() {
@@ -49,10 +45,23 @@
             env: appEnv.env()
           }
         },
+        isFile:function(request){
+          // if end of our request contains a period.. probably not an api request
+          if(!request || !request.url) return false;
+          return request.url.substr(request.url.length - 5).indexOf('.') >= 0
+        },
         optionEnabled:function(request, optionName){
-          if(Object.isObject(request) && Object.has(request, optionName))
+          if(_.isObject(request) && _.has(request, optionName))
             return request[optionName];
           return false;
+        },
+        urlEncode:function(request){
+          // add urlencoded header
+          request.headers = request.headers || {};
+          _.extend(request.headers, {'Content-Type':'application/x-www-form-urlencoded'});
+          // data needs to be in string format
+          if(!_.isString(request.data)) request.data = $.param(request.data);
+          return request;
         }
       },
 
@@ -64,17 +73,17 @@
         // response = {status,data,headers}
         // jsend =    {status,data} or {status, message, code}
         isJSEND:function(responseOrData) {
-          if(!Object.isObject(responseOrData) || !Object.has(responseOrData, 'status'))
+          if(!_.isObject(responseOrData) || !_.has(responseOrData, 'status'))
             return false;
 
           // get the actual data if its a http response
           var data = responseOrData;
-          if(Object.isFunction(responseOrData.headers))
+          if(_.isFunction(responseOrData.headers))
             data = responseOrData.data;
 
           // check for our two jsend formats
-          if(Object.has(data, 'code') && Object.has(data, 'message')) return true;
-          if(Object.has(data, 'data')) return true;
+          if(_.has(data, 'code') && _.has(data, 'message')) return true;
+          if(_.has(data, 'data')) return true;
           return false;
         }
 
@@ -103,7 +112,7 @@
           if(apiUtil.request.optionEnabled(request, 'logErrors'))
             apiUtil.error.logger(response);
 
-          if(response.status !== 'InvalidLoginParameter')
+          if(response.status !== 'InvalidLoginParameter') // don't log auth type-o to console.
             $log.error('Whoops!', data, response);
 
           // display it?
@@ -114,15 +123,16 @@
           response.handled = true;
         },
         logger:function(response){
-          // if its a string.. just send that.
-          if(Object.isString(response)) return appCatch.send(response);
           if(!response) return appCatch.send('Unable To Log. No Response');
+
+          // if its a string.. just send that.
+          if(_.isString(response)) return appCatch.send(response);
 
           var request = response.config || {};
           // don't log credentials!!
-          if (Object.isString(request.data))
+          if (_.isString(request.data))
             request.data = request.data.replace(/(password=)[^\&]+/, 'password=********');
-          else if (Object.isObject(request.data) && Object.has(request.data, 'password'))
+          else if (_.isObject(request.data) && _.has(request.data, 'password'))
             request.data.password = '********';
 
           // log it with some info about the request that failed
@@ -163,7 +173,7 @@
           };
           if(arguments.length == 1)
             response.data = status;
-          if(arguments.length == 2 && Object.isFunction(data)){
+          if(arguments.length == 2 && _.isFunction(data)){
             // data a defer
             response.data = status;
             defer = data;
@@ -189,7 +199,7 @@
       // UTIL
       //
       ensureInt: function(value) {
-        return (Object.isString(value)) ? parseInt(value):value;
+        return (_.isString(value)) ? parseInt(value):value;
       },
       ensureBool: function(value) {
         if (value === 'true' || value === 1 || value === '1')  return true;
@@ -201,10 +211,10 @@
       },
       // HTTP CODES
       isHttpCode: function(code) {
-        return Object.isString(apiUtil.getHttpCodeString(code));
+        return _.isString(apiUtil.getHttpCodeString(code));
       },
       getHttpCodeString: function(code) {
-        if(Object.has(http_codes, code)) return http_codes[code];
+        if(_.has(http_codes, code)) return http_codes[code];
         return code;
       }
     };
@@ -274,452 +284,195 @@
 }).call(this);
 
 ;
-(function() {
-
-  var myApp = angular.module('af.httpInterceptor', ['af.apiUtil', 'af.authManager']);
-
-  myApp.factory("httpInterceptor", function($q, $injector, apiUtil, authManager) {
-
-    var isEnabled = function(request, key){
-      return apiUtil.request.optionEnabled(request, key);
-    };
-    var isFile = function(request){
-      // if end of our request contains a period.. probably not an api request
-      return request.url.substr(request.url.length - 5).indexOf('.') >= 0
-    };
-
-    var interceptor = {
-
-      request: function(request) {
-        // should this even run?
-        if(!isEnabled(request, 'disableHttpInterceptor') || isFile(request))
-          return request;
-
-        // auto apply:
-        request.method = request.method || 'POST';
-        request.data = request.data || {};
-        if(isEnabled(request, 'autoApplySession'))
-          request.data.sessionToken = authManager.sessionToken();
-        if(isEnabled(request, 'autoApplyIndex'))
-          request.data.index = appEnv.index();
-        if(isEnabled(request, 'autoApplyDebugInfo'))
-          request.debug = apiUtil.debugInfo();
-
-        // url encoded?
-        if (isEnabled(request, 'urlEncode')) {
-          // add urlencoded header
-          request.headers = request.headers || {};
-          Object.merge({'Content-Type':'application/x-www-form-urlencoded'}, request.headers);
-          // data needs to be in string format
-          if(!Object.isString(request.data))
-            request.data = Object.toQueryString(request.data); //$.param(request.data)
-        }
-        return request;
-      },
-
-
-      response: function(response) {
-        if(!response.config) return response; // don't mess with a response that has no config
-        var request = response.config;
-        // should this even run?
-        if(!isEnabled(request, 'disableHttpInterceptor') || isFile(request))
-          return response;
-
-        var isJSEND = apiUtil.response.isJSEND(response);
-
-        // is this actually an error?
-        var isSuccess = true;
-        if (response.status !== 200) isSuccess = false;
-        if (isJSEND && response.data.status !== 'success') isSuccess = false;
-
-
-        // handle response
-        if (isSuccess) {
-          if (isJSEND) response.data = response.data.data; // just return data
-          return response;
-        } else {
-          // convert the jsend response to something httpHandler expects
-          if (isJSEND){
-            // jsend returns status 200, but the error status is in response data:
-            // we should have -> data:{status, code, message}
-            response.status = response.data.code;
-            response.statusText = apiUtil.getHttpCodeString(response.data.code) + ': ' + response.data.code;
-            response.data = response.data.message || 'Unknown Error. Code:' + response.data.code;
-          }
-          // reject it via our error handler
-          return interceptor.responseError(response);
-        }
-      },
-
-      responseError: function(response) {
-        console.log('responseError', response);
-        if(!response.config) return $q.reject(response); // don't mess with a response that has no config
-        var request = response.config;
-        // should this even run?
-        if(!isEnabled(request, 'disableHttpInterceptor') || isFile(request))
-          return $q.reject(response);
-        // handle it
-        apiUtil.error.handler(response);
-        return $q.reject(response);
-      }
-    };
-    return interceptor;
-  });
-
-}).call(this);
 
 ;
 (function() {
 
-  var myApp = angular.module('af.java', ['af.apiUtil']);
-
-  myApp.service('java', function($http, apiUtil) {
-
-    var java = {
-
-      // so you no have to include $http in controllers
-      call: function(request) {
-        return $http(request);
-      },
-
-
-      //
-      // ROADMAP SERVICE
-      //
-      RoadmapService: {
-        serviceUrl: '/RoadmapService',
-        // creates standard request object for this service
-        createRequest:function(url, params, options){
-          var request = apiUtil.request.create(options);
-          request.url = java.RoadmapService.serviceUrl + url;
-          request.data = params || {};
-          return request;
-        },
-        call:function(url, params, options){
-          return java.call(this.createRequest(url, params, options));
-        },
-
-        // METHODS
-        invoke: function(params, callback, options){
-          return this.call('/invoke', params, callback, options);
-        }
-      },
-
-
-      //
-      // AUTH SERVICE
-      //
-      AuthService: {
-        serviceUrl: '/RoadmapService',
-        // creates standard request object for this service
-        createRequest:function(url, params, options){
-          var request = apiUtil.request.create(options);
-          request.url = java.AuthService.serviceUrl + url;
-          request.data = params || {};
-          request.urlEncode = true;
-          return request;
-        },
-        call:function(url, params, options){
-          return java.call(this.createRequest(url, params, options));
-        },
-
-        // METHODS
-        login: function(username, password, options) {
-          Object.merge(options || {}, { displayErrors:false }); // by default.. don't autoHandle errors on this
-          return this.call('/login', { username: username, password: password }, options)
-        },
-        logout: function(options) {
-          return this.call('/logout', null, options);
-        },
-        loadsession: function(sessionToken, options) {
-          return this.call('/loadsession', {sessionToken: sessionToken}, options);
-        }
-
-        /*
-
-        UNTESTED
-        ,
-        logout: function(onSuccess, onError) {
-          this.call('/logout', onSuccess, onError);
-        },
-        validatesession:function(sessionToken) {
-          var params = {};
-          if (sessionToken) params.sessionToken = sessionToken;
-          this.call('/validatesession', params);
-        },
-        createtoken: function(loginAsUserId, expiresOn, url) {
-          var params = {
-            loginAsUserId: loginAsUserId,
-            expiresOn: expiresOn,
-            url: url
-          };
-          this.call('/createtoken', params);
-        },
-        updatetoken: function(tokenString, url) {
-          this.call('/updatetoken', {tokenString: tokenString, url: url});
-        },
-        loadtoken: function(token) {
-          var request = java.AuthService.createRequest('/loadtoken', {token: token}, {autoApplySession:false})
-          apiUtil.call(request, {token: token});
-        },
-        changepassword: function(userId, currentPassword, newPassword) {
-          var params = {
-            userId: userId,
-            currentPassword: currentPassword,
-            newPassword: newPassword
-          };
-          this.call('/changepassword', params);
-        },
-        getuserfromuserid: function(userId) {
-          this.call('/getuserfromuserid', {userId: userId});
-        },
-        */
-      }
-    };
-    return java;
-  });
-
-}).call(this);
-
-;
-(function() {
-  var myApp;
-
-  myApp = angular.module('af.node', ['af.apiUtil']);
-
-  myApp.service('node', function($http, apiUtil) {
-
-    var node = {
-
-      // so you dont have to inject $http in your controllers if you injected this service already..
-      call: function(request) {
-        return $http(request);
-      },
-
-      RoadmapNode: {
-        serviceUrl: '/roadmap-node',
-        // BASE
-        createRequest:function(url, params, options){
-          var request = apiUtil.request.create(options);
-          request.url = node.RoadmapNode.serviceUrl + url;
-          request.data = params || {};
-          return request;
-        },
-        call:function(url, params, options){
-          return node.call(this.createRequest(url, params, options));
-        },
-
-        // METHODS
-        save: function(type, resource, options) {
-          return this.call('/api/crud/save', {_type: type, resource: resource}, options);
-        },
-        find: function(type, query, options) {
-          return this.call('/api/crud/find', {_type: type, query: query}, options);
-        },
-        findOne: function(type, query, options) {
-          if(query) query.limit = 1; // we only want 1
-          return this.find(type, query, options)
-            .then(function(response){
-              // we don't want an array... we want an object..
-              response.data = (Object.isArray(response.data) && response.data.length >= 1) ? response.data[0]:null;
-              return response;
-            })
-        },
-        remove: function(type, idOrResource, options) {
-          var id = Object.isObject(idOrResource) ? idOrResource.id : idOrResource;
-          return this.call('/api/crud/remove', {_type: type, id:apiUtil.ensureInt(id)}, options);
-        }
-      }
-    };
-    return node;
-  });
-
-}).call(this);
-
-;
-
-;
 angular.module('ui.bootstrap.dropdown', [])
 
-.constant('dropdownConfig', {
-  openClass: 'open'
-})
+  .constant('dropdownConfig', {
+    openClass: 'open'
+  })
 
-.service('dropdownService', ['$document', function($document) {
-  var openScope = null;
+  .service('dropdownService', ['$document', function($document) {
+    var openScope = null;
 
-  this.open = function( dropdownScope ) {
-    if ( !openScope ) {
-      $document.bind('click', closeDropdown);
-      $document.bind('keydown', escapeKeyBind);
-    }
-
-    if ( openScope && openScope !== dropdownScope ) {
-        openScope.isOpen = false;
-    }
-
-    openScope = dropdownScope;
-  };
-
-  this.close = function( dropdownScope ) {
-    if ( openScope === dropdownScope ) {
-      openScope = null;
-      $document.unbind('click', closeDropdown);
-      $document.unbind('keydown', escapeKeyBind);
-    }
-  };
-
-  var closeDropdown = function( evt ) {
-    // This method may still be called during the same mouse event that
-    // unbound this event handler. So check openScope before proceeding.
-    if (!openScope) { return; }
-
-    var toggleElement = openScope.getToggleElement();
-    if ( evt && toggleElement && toggleElement[0].contains(evt.target) ) {
-        return;
-    }
-
-    openScope.$apply(function() {
-      openScope.isOpen = false;
-    });
-  };
-
-  var escapeKeyBind = function( evt ) {
-    if ( evt.which === 27 ) {
-      openScope.focusToggleElement();
-      closeDropdown();
-    }
-  };
-}])
-
-.controller('DropdownController', ['$scope', '$attrs', '$parse', 'dropdownConfig', 'dropdownService', '$animate', function($scope, $attrs, $parse, dropdownConfig, dropdownService, $animate) {
-  var self = this,
-      scope = $scope.$new(), // create a child scope so we are not polluting original one
-      openClass = dropdownConfig.openClass,
-      getIsOpen,
-      setIsOpen = angular.noop,
-      toggleInvoker = $attrs.onToggle ? $parse($attrs.onToggle) : angular.noop;
-
-  this.init = function( element ) {
-    self.$element = element;
-
-    if ( $attrs.isOpen ) {
-      getIsOpen = $parse($attrs.isOpen);
-      setIsOpen = getIsOpen.assign;
-
-      $scope.$watch(getIsOpen, function(value) {
-        scope.isOpen = !!value;
-      });
-    }
-  };
-
-  this.toggle = function( open ) {
-    return scope.isOpen = arguments.length ? !!open : !scope.isOpen;
-  };
-
-  // Allow other directives to watch status
-  this.isOpen = function() {
-    return scope.isOpen;
-  };
-
-  scope.getToggleElement = function() {
-    return self.toggleElement;
-  };
-
-  scope.focusToggleElement = function() {
-    if ( self.toggleElement ) {
-      self.toggleElement[0].focus();
-    }
-  };
-
-  scope.$watch('isOpen', function( isOpen, wasOpen ) {
-    $animate[isOpen ? 'addClass' : 'removeClass'](self.$element, openClass);
-
-    if ( isOpen ) {
-      scope.focusToggleElement();
-      dropdownService.open( scope );
-    } else {
-      dropdownService.close( scope );
-    }
-
-    setIsOpen($scope, isOpen);
-    if (angular.isDefined(isOpen) && isOpen !== wasOpen) {
-      toggleInvoker($scope, { open: !!isOpen });
-    }
-  });
-
-  $scope.$on('$locationChangeSuccess', function() {
-    scope.isOpen = false;
-  });
-
-  $scope.$on('$destroy', function() {
-    scope.$destroy();
-  });
-}])
-
-.directive('dropdown', function() {
-  return {
-    controller: 'DropdownController',
-    link: function(scope, element, attrs, dropdownCtrl) {
-      dropdownCtrl.init( element );
-    }
-  };
-})
-
-.directive('dropdownToggle', function() {
-  return {
-    require: '?^dropdown',
-    link: function(scope, element, attrs, dropdownCtrl) {
-      if ( !dropdownCtrl ) {
-        return;
+    this.open = function( dropdownScope ) {
+      if ( !openScope ) {
+        $document.bind('click', closeDropdown);
+        $document.bind('keydown', escapeKeyBind);
       }
 
-      dropdownCtrl.toggleElement = element;
+      if ( openScope && openScope !== dropdownScope ) {
+          openScope.isOpen = false;
+      }
 
-      var toggleDropdown = function(event) {
-        event.preventDefault();
+      openScope = dropdownScope;
+    };
 
-        if ( !element.hasClass('disabled') && !attrs.disabled ) {
-          scope.$apply(function() {
-            dropdownCtrl.toggle();
-          });
+    this.close = function( dropdownScope ) {
+      if ( openScope === dropdownScope ) {
+        openScope = null;
+        $document.unbind('click', closeDropdown);
+        $document.unbind('keydown', escapeKeyBind);
+      }
+    };
+
+    var closeDropdown = function( evt ) {
+      // This method may still be called during the same mouse event that
+      // unbound this event handler. So check openScope before proceeding.
+      if (!openScope) { return; }
+
+      var toggleElement = openScope.getToggleElement();
+      if ( evt && toggleElement && toggleElement[0].contains(evt.target) ) {
+          return;
+      }
+
+      openScope.$apply(function() {
+        openScope.isOpen = false;
+      });
+    };
+
+    var escapeKeyBind = function( evt ) {
+      if ( evt.which === 27 ) {
+        openScope.focusToggleElement();
+        closeDropdown();
+      }
+    };
+  }])
+
+  .controller('DropdownController', ['$scope', '$attrs', '$parse', 'dropdownConfig', 'dropdownService', '$animate', function($scope, $attrs, $parse, dropdownConfig, dropdownService, $animate) {
+    var self = this,
+        scope = $scope.$new(), // create a child scope so we are not polluting original one
+        openClass = dropdownConfig.openClass,
+        getIsOpen,
+        setIsOpen = angular.noop,
+        toggleInvoker = $attrs.onToggle ? $parse($attrs.onToggle) : angular.noop;
+
+    this.init = function( element ) {
+      self.$element = element;
+
+      if ( $attrs.isOpen ) {
+        getIsOpen = $parse($attrs.isOpen);
+        setIsOpen = getIsOpen.assign;
+
+        $scope.$watch(getIsOpen, function(value) {
+          scope.isOpen = !!value;
+        });
+      }
+    };
+
+    this.toggle = function( open ) {
+      return scope.isOpen = arguments.length ? !!open : !scope.isOpen;
+    };
+
+    // Allow other directives to watch status
+    this.isOpen = function() {
+      return scope.isOpen;
+    };
+
+    scope.getToggleElement = function() {
+      return self.toggleElement;
+    };
+
+    scope.focusToggleElement = function() {
+      if ( self.toggleElement ) {
+        self.toggleElement[0].focus();
+      }
+    };
+
+    scope.$watch('isOpen', function( isOpen, wasOpen ) {
+      $animate[isOpen ? 'addClass' : 'removeClass'](self.$element, openClass);
+
+      if ( isOpen ) {
+        scope.focusToggleElement();
+        dropdownService.open( scope );
+      } else {
+        dropdownService.close( scope );
+      }
+
+      setIsOpen($scope, isOpen);
+      if (angular.isDefined(isOpen) && isOpen !== wasOpen) {
+        toggleInvoker($scope, { open: !!isOpen });
+      }
+    });
+
+    $scope.$on('$locationChangeSuccess', function() {
+      scope.isOpen = false;
+    });
+
+    $scope.$on('$destroy', function() {
+      scope.$destroy();
+    });
+  }])
+
+  .directive('dropdown', function() {
+    return {
+      controller: 'DropdownController',
+      link: function(scope, element, attrs, dropdownCtrl) {
+        dropdownCtrl.init( element );
+      }
+    };
+  })
+
+  .directive('dropdownToggle', function() {
+    return {
+      require: '?^dropdown',
+      link: function(scope, element, attrs, dropdownCtrl) {
+        if ( !dropdownCtrl ) {
+          return;
         }
-      };
 
-      element.bind('click', toggleDropdown);
+        dropdownCtrl.toggleElement = element;
 
-      // WAI-ARIA
-      element.attr({ 'aria-haspopup': true, 'aria-expanded': false });
-      scope.$watch(dropdownCtrl.isOpen, function( isOpen ) {
-        element.attr('aria-expanded', !!isOpen);
-      });
+        var toggleDropdown = function(event) {
+          event.preventDefault();
 
-      scope.$on('$destroy', function() {
-        element.unbind('click', toggleDropdown);
-      });
-    }
-  };
-});
+          if ( !element.hasClass('disabled') && !attrs.disabled ) {
+            scope.$apply(function() {
+              dropdownCtrl.toggle();
+            });
+          }
+        };
+
+        element.bind('click', toggleDropdown);
+
+        // WAI-ARIA
+        element.attr({ 'aria-haspopup': true, 'aria-expanded': false });
+        scope.$watch(dropdownCtrl.isOpen, function( isOpen ) {
+          element.attr('aria-expanded', !!isOpen);
+        });
+
+        scope.$on('$destroy', function() {
+          element.unbind('click', toggleDropdown);
+        });
+      }
+    };
+  })
+
+}).call(this);
 
 ;
 (function() {
-  var myApp = angular.module('af.bsIcons', []);
 
-  myApp.directive('bsIcon', function() {
+
+  angular.module('af.bsIcons', [])
+
+  .directive('bsIcon', function() {
     return {
       compile:function(elm, attrs){
         angular.element(elm).addClass('ng-show-inline glyphicon glyphicon-' + attrs.bsIcon);
       }
     };
-  });
+  })
 
-  myApp.directive("faIcon", function() {
+  .directive("faIcon", function() {
     return {
       compile: function(elm, attrs) {
         angular.element(elm).addClass('ng-show-inline fa fa-' + attrs.faIcon);
       }
     };
-  });
+  })
 
 }).call(this);
 
@@ -729,21 +482,22 @@ angular.module('ui.bootstrap.dropdown', [])
 (function() {
 
 
-  //
-  // ANGULAR wrapper for appConfig
-  //
-  var myApp = angular.module('af.filters', []);
+//
+// ANGULAR wrapper for appConfig
+//
+angular.module('af.filters', [])
 
   // plural filter for config
-  myApp.filter('plural', function($config) {
+  .filter('plural', function($config) {
     return function(value){
-      return appConfig.makePlural(value)
+      return appTenant.makePlural(value)
     }
   })
+
   // label filter
-  myApp.filter('label', function($config) {
+  .filter('label', function($config) {
     return function(path, makePlural){
-      return appConfig.get(path, makePlural)
+      return appTenant.get(path, makePlural)
     }
   })
 
@@ -754,141 +508,15 @@ angular.module('ui.bootstrap.dropdown', [])
 ;
 (function() {
 
-  var myApp = angular.module('af.authManager', ['af.util']);
+angular.module('af.event', [])
 
-  myApp.constant('AUTH_MANAGER_CONFIG', {
-    tokenPriority:['url', 'cache', 'window']
-  });
-
-  myApp.service('authManager', function($util, $log, AUTH_MANAGER_CONFIG) {
-
-    //
-    // SESSION/USER CACHE
-    //
-    var loggedInUser = amplify.store('loggedInUser'); // for easy reference
-
-    var auth = {
-
-      // finds sessionToken based on priority
-      sessionToken: function() {
-        // default priority, looks in this class first, then URL, then checks amplify and finally window.sessionToken
-        var token = null;
-        AUTH_MANAGER_CONFIG.tokenPriority.each(function(place) {
-          if (token) return;
-          switch (place) {
-            case 'url':     token = $util.GET('sessionToken'); break;
-            case 'cache':   token = amplify.store('sessionToken'); break;
-            case 'window':  token = window.sessionToken; break;
-          }
-        });
-        return token;
-      },
-
-      // return object if null to prevent auth.user().firstName from blowing up.
-      user:function(){      return auth.loggedIn() ? loggedInUser : {} },
-      // quickie makers for things we get often:
-      user_id:function(){   return auth.loggedIn() ? auth.user()['id']:null; },
-      userId:function(){    return auth.loggedIn() ? auth.user()['userId']:null; },
-      userEmail:function(){ return auth.loggedIn() ? auth.user()['email']:null;  },
-
-      // is logged in?
-      loggedIn: function() {
-        return (auth.sessionToken() && loggedInUser && loggedInUser.userId) ? true:false;
-      },
-
-
-
-      //
-      // SET
-      //
-      setSessionToken: function(sessionToken) {
-        amplify.store('sessionToken', sessionToken, 86400000); // 1 day
-        //$log.debug('authManager.setSessionToken:', sessionToken);
-      },
-      setLoggedInUser: function(user) {
-        user.displayName = $util.createDisplayName(user);      // adds a displayName to the user
-        loggedInUser = user;
-        amplify.store('loggedInUser', loggedInUser, 86400000); // 1 day
-        $log.debug('authManager.setLoggedInUser:', loggedInUser);
-      },
-      setUserProperty: function(key, value){
-        loggedInUser[key] = value;
-        auth.setLoggedInUser(loggedInUser); // update/cache it
-      },
-      getUserProperty: function(key){
-        // (you can just do .user()[key] also)
-        return loggedInUser[key];
-      },
-
-
-      //
-      // DESTROY
-      //
-      logout:function(){ auth.clear(); },
-      clear: function() {
-        amplify.store('loggedInUser', null);
-        amplify.store('sessionToken', null);
-        loggedInUser = null;
-      },
-
-
-
-      //
-      // ROLES
-      //
-      // ENUMS
-      Role_Admin:'Role_Admin',                              // has access to everything
-      Role_RoadmapUserAdmin:'Role_RoadmapUserAdmin',        // can edit/create users
-      Role_RoadmapContentAdmin:'Role_RoadmapContentAdmin',  // can edit content
-      Role_AccessKeyManager:'Role_AccessKeyManager',        // can view/edit other users data
-
-      hasRole: function(role) {
-        if (!auth.loggedIn()) return false;
-        return _.contains(auth.user().authorities, role);
-      },
-      hasAnyRole: function(array) {
-        var matched = 0;
-        _.each(array, function(role) {
-          if (auth.hasRole(role)) matched += 1;
-        });
-        return matched > 0;
-      },
-      hasAllRoles: function(array) {
-        var matched = 0;
-        _.each(array, function(role) {
-          if (auth.hasRole(role)) matched += 1;
-        });
-        return array.length === matched;
-      },
-
-      isAdmin: function() { return auth.hasAnyRole([auth.Role_Admin, auth.Role_RoadmapUserAdmin, auth.Role_RoadmapContentAdmin]); },
-      isCoach: function() { return auth.hasAnyRole([auth.Role_AccessKeyManager]);  }
-
-
-    };
-
-    return auth;
-  });
-
-}).call(this);
-
-;
-
-;
-(function() {
-  var myApp;
-
-  myApp = angular.module('af.event', []);
-
-  myApp.service('$event', function($rootScope, $log) {
+  .service('$event', function($rootScope, $log) {
     var logEvent, service;
 
     logEvent = function(type, eventName, data) {
       var suppress = [service.EVENT_loaderStart, service.EVENT_loaderStop, service.EVENT_msgClear];
-      if (!suppress.find(eventName)) {
-        if(data) return $log.debug('$event:' + eventName, data);
-        $log.debug('$event.' + type + ': ' + eventName);
-      }
+      if (!_.contains(suppress, eventName))
+        $log.debug('$event.' + type + ': ' + eventName, data);
     };
 
     return service = {
@@ -911,21 +539,20 @@ angular.module('ui.bootstrap.dropdown', [])
         return $scope.$emit(eventName, data);
       }
     };
-  });
+  })
 
 }).call(this);
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.help', ['af.event', 'af.modal']);
+angular.module('af.help', ['af.event', 'af.modal'])
 
-  myApp.constant('$HELP_CONFIG', {
+  .constant('$HELP_CONFIG', {
     genericHelpPath:'src/views/templates/generic.help.view.html'
   })
 
-  myApp.service("$help", function($event) {
+  .service("$help", function($event) {
     var service;
     service = {
       isOpen:false,
@@ -943,9 +570,9 @@ angular.module('ui.bootstrap.dropdown', [])
       }
     };
     return service;
-  });
+  })
 
-  myApp.directive("helpHolder", function($modal, $timeout, $HELP_CONFIG) {
+  .directive("helpHolder", function($modal, $timeout, $HELP_CONFIG) {
     return {
       restrict: "A",
       scope: {},
@@ -976,9 +603,9 @@ angular.module('ui.bootstrap.dropdown', [])
         };
       }
     };
-  });
+  })
 
-  myApp.GenericHelpCtrl = myApp.controller('GenericHelpCtrl', function($scope, $help) {
+  .controller('GenericHelpCtrl', function($scope, $help) {
     var defaultController = {
       title:null,
       body:null,
@@ -986,7 +613,7 @@ angular.module('ui.bootstrap.dropdown', [])
       clickClose: function() { return $help.close(); }
     };
     _.extend($scope, defaultController, $help.controller);
-  });
+  })
 
 
 }).call(this);
@@ -994,9 +621,9 @@ angular.module('ui.bootstrap.dropdown', [])
 ;
 (function() {
 
-  var myApp = angular.module('af.loader', ['af.event']);
+angular.module('af.loader', ['af.event'])
 
-  myApp.service('$loader', function($event) {
+  .service('$loader', function($event) {
     var srv, isRunning = false;
     srv = {
       start: function(options) {
@@ -1016,9 +643,9 @@ angular.module('ui.bootstrap.dropdown', [])
       mask: function() { srv.start({bar:false, mask:true});  }
     };
     return srv;
-  });
+  })
 
-  myApp.directive('loaderHolder', function($event) {
+  .directive('loaderHolder', function($event) {
     return {
       restrict: 'A',
       scope: {},
@@ -1038,11 +665,11 @@ angular.module('ui.bootstrap.dropdown', [])
         scope.loadMask = null;
         scope.loaderText = null;
         scope.start = function(options) {
-          if(Object.isString(options)){
+          if(_.isString(options)){
             scope.loaderText = options;
             scope.loadMask = true;
             scope.loaderBar = true;
-          } else if(Object.isObject(options)){
+          } else if(_.isPlainObject(options)){
             scope.loaderText = options.hasOwnProperty('text') ? options.text : '';
             scope.loadMask = options.hasOwnProperty('mask') ? options.mask : scope.loaderText; // show mask if text
             scope.loaderBar = options.hasOwnProperty('bar') ? options.bar : true
@@ -1057,21 +684,20 @@ angular.module('ui.bootstrap.dropdown', [])
         scope.$on($event.EVENT_loaderStop, scope.stop);
       }
     };
-  });
+  })
 
 }).call(this);
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.modal', ['af.event']);
+angular.module('af.modal', ['af.event'])
 
-  myApp.constant('$MODAL_CONFIG', {
+  .constant('$MODAL_CONFIG', {
     genericModalPath:'src/views/templates/generic.modal.view.html'
   })
 
-  myApp.service("$modal", function($event, $MODAL_CONFIG) {
+  .service("$modal", function($event, $MODAL_CONFIG) {
     var service;
     service = {
       isOpen:false,
@@ -1110,9 +736,9 @@ angular.module('ui.bootstrap.dropdown', [])
       }
     };
     return service;
-  });
+  })
 
-  myApp.directive("modalHolder", function($modal, $timeout) {
+  .directive("modalHolder", function($modal, $timeout) {
     return {
       restrict: "A",
       scope: {},
@@ -1152,9 +778,9 @@ angular.module('ui.bootstrap.dropdown', [])
         };
       }
     };
-  });
+  })
 
-  myApp.GenericModalCtrl = myApp.controller('GenericModalCtrl', function($scope, $modal) {
+  .controller('GenericModalCtrl', function($scope, $modal) {
 
     /*
     Example usage
@@ -1194,11 +820,10 @@ angular.module('ui.bootstrap.dropdown', [])
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.msg', ['af.event']);
+angular.module('af.msg', ['af.event'])
 
-  myApp.service('$msg', function($event) {
+  .service('$msg', function($event) {
     var msg;
     return msg = {
       shownAt: null,
@@ -1232,9 +857,9 @@ angular.module('ui.bootstrap.dropdown', [])
       info: function(message, closable, delay) {    return msg.show(message, 'info',    closable, delay); },
       success: function(message, closable, delay) { return msg.show(message, 'success', closable, delay); }
     };
-  });
+  })
 
-  myApp.directive('msgHolder', function($timeout, $window, $event) {
+  .directive('msgHolder', function($timeout, $window, $event) {
     var timer = null;
     return {
       restrict: 'A',
@@ -1278,7 +903,7 @@ angular.module('ui.bootstrap.dropdown', [])
         return scope.$on($event.EVENT_msgClear, scope.clear);
       }
     };
-  });
+  })
 
 }).call(this);
 
@@ -1289,11 +914,11 @@ angular.module('ui.bootstrap.dropdown', [])
   //
   // SIMPLE WRAPPER AROUND AMPLIFY.STORE TO ALLOW NAME SPACING...
   //
-  var myApp = angular.module('af.storage', []);
+angular.module('af.storage', [])
 
-  myApp.constant('STORAGE_PREFIX', 'myApp');
+  .constant('STORAGE_PREFIX', 'myApp')
 
-  myApp.service('$storage', function(STORAGE_PREFIX, $log) {
+  .service('$storage', function(STORAGE_PREFIX, $log) {
 
     var sessionData = {};
 
@@ -1337,7 +962,7 @@ angular.module('ui.bootstrap.dropdown', [])
     };
 
     return service;
-  });
+  })
 
 }).call(this);
 
@@ -1345,11 +970,10 @@ angular.module('ui.bootstrap.dropdown', [])
 
 ;
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.apply', []);
+  angular.module('af.apply', [])
 
-  myApp.factory('apply', function($rootScope) {
+  .factory('apply', function($rootScope) {
     return function() {
       if (!$rootScope.$$phase) {
         return $rootScope.$apply();
@@ -1360,12 +984,17 @@ angular.module('ui.bootstrap.dropdown', [])
 }).call(this);
 
 ;
-/*
 
 _.mixin({
 
+  // merges two arrays based on a common property
+  // Example:
+  // array1: [{userId:1, firstName:'Bob'}]
+  // array2: [{userId:1, lastName:'Smith'}]
+  // _.mergeByKey(array1, array2, 'userId') ---> [{userId:1, firstName:'Bob', lastName:'Smith'}]
   mergeByKey: function (arrayOne, arrayTwo, arrayOneKey, arrayTwoKey){
     var merged = [];
+    // merge by id if none provided
     if(!arrayOneKey) arrayOneKey = 'id';
     if(!arrayTwoKey) arrayTwoKey = arrayOneKey;
     // merge
@@ -1374,7 +1003,7 @@ _.mixin({
         if (arrayOneItem.hasOwnProperty(arrayOneKey) &&
             arrayTwoItem.hasOwnProperty(arrayTwoKey) &&
             arrayOneItem[arrayOneKey] === arrayTwoItem[arrayTwoKey]){
-          merged.push(_.extend(arrayOneItem, arrayTwoItem))
+          merged.push(_.extend({}, arrayOneItem, arrayTwoItem))
         }
       })
     });
@@ -1400,12 +1029,8 @@ _.mixin({
   }
 
 });
-
-*/
 ;
 (function() {
-
-  var myApp = angular.module('af.util', []);
 
   Number.prototype.formatNumber = function(precision, decimal, seperator) {
     var i, j, n, s;
@@ -1419,7 +1044,8 @@ _.mixin({
     return s + (j ? i.substr(0, j) + seperator : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + seperator) + (precision ? decimal + Math.abs(n - i).toFixed(precision).slice(2) : "");
   };
 
-  myApp.service('$util', function($window, $location) {
+  angular.module('af.util', [])
+  .service('$util', function($window, $location) {
 
     var util = {
 
@@ -1485,7 +1111,7 @@ _.mixin({
         if(!user) return '';
 
         // return preferred name if it exists...
-        var preferredDisplayName = appConfig.get('preferredDisplayName')
+        var preferredDisplayName = appTenant.get('preferredDisplayName')
         if(preferredDisplayName && user[preferredDisplayName])
           return user[preferredDisplayName];
 

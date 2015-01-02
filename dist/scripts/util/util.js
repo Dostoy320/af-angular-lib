@@ -1,7 +1,5 @@
 (function() {
 
-  var myApp = angular.module('af.util', []);
-
   Number.prototype.formatNumber = function(precision, decimal, seperator) {
     var i, j, n, s;
     n = this;
@@ -14,7 +12,8 @@
     return s + (j ? i.substr(0, j) + seperator : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + seperator) + (precision ? decimal + Math.abs(n - i).toFixed(precision).slice(2) : "");
   };
 
-  myApp.service('$util', function($window, $location) {
+  angular.module('af.util', [])
+  .service('$util', function($window, $location) {
 
     var util = {
 
@@ -80,7 +79,7 @@
         if(!user) return '';
 
         // return preferred name if it exists...
-        var preferredDisplayName = appConfig.get('preferredDisplayName')
+        var preferredDisplayName = appTenant.get('preferredDisplayName')
         if(preferredDisplayName && user[preferredDisplayName])
           return user[preferredDisplayName];
 

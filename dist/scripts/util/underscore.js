@@ -1,7 +1,11 @@
 
 _.mixin({
 
-  // merges two arrays based on a common key or id
+  // merges two arrays based on a common property
+  // Example:
+  // array1: [{userId:1, firstName:'Bob'}]
+  // array2: [{userId:1, lastName:'Smith'}]
+  // _.mergeByKey(array1, array2, 'userId') ---> [{userId:1, firstName:'Bob', lastName:'Smith'}]
   mergeByKey: function (arrayOne, arrayTwo, arrayOneKey, arrayTwoKey){
     var merged = [];
     // merge by id if none provided
@@ -13,7 +17,7 @@ _.mixin({
         if (arrayOneItem.hasOwnProperty(arrayOneKey) &&
             arrayTwoItem.hasOwnProperty(arrayTwoKey) &&
             arrayOneItem[arrayOneKey] === arrayTwoItem[arrayTwoKey]){
-          merged.push(_.extend(arrayOneItem, arrayTwoItem))
+          merged.push(_.extend({}, arrayOneItem, arrayTwoItem))
         }
       })
     });

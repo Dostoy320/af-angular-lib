@@ -16,7 +16,7 @@ var appTrack = {
 
   config: {
     enabled: true,
-    key: '',
+    uid: '',
     options: {
       'cross_subdomain_cookie': false
       //,'debug':true
@@ -33,11 +33,11 @@ var appTrack = {
     if (appTrack.loaded || !appTrack.config.enabled) return;
     // sanity checks
     if (typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
-    if (!appTrack.config.key) return alert('Sentry init error. Application Config not defined.');
+    if (!appTrack.config.uid) return alert('Sentry init error. Application Config not defined.');
 
     // init
-    mixpanel.init(appTrack.config.key, appTrack.config.options);
-    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.key, appTrack.config.options);
+    mixpanel.init(appTrack.config.uid, appTrack.config.options);
+    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.uid, appTrack.config.options);
     appTrack.loaded = true;
 
     // always pass this with events:

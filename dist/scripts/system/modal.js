@@ -1,13 +1,12 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.modal', ['af.event']);
+angular.module('af.modal', ['af.event'])
 
-  myApp.constant('$MODAL_CONFIG', {
+  .constant('$MODAL_CONFIG', {
     genericModalPath:'src/views/templates/generic.modal.view.html'
   })
 
-  myApp.service("$modal", function($event, $MODAL_CONFIG) {
+  .service("$modal", function($event, $MODAL_CONFIG) {
     var service;
     service = {
       isOpen:false,
@@ -46,9 +45,9 @@
       }
     };
     return service;
-  });
+  })
 
-  myApp.directive("modalHolder", function($modal, $timeout) {
+  .directive("modalHolder", function($modal, $timeout) {
     return {
       restrict: "A",
       scope: {},
@@ -88,9 +87,9 @@
         };
       }
     };
-  });
+  })
 
-  myApp.GenericModalCtrl = myApp.controller('GenericModalCtrl', function($scope, $modal) {
+  .controller('GenericModalCtrl', function($scope, $modal) {
 
     /*
     Example usage

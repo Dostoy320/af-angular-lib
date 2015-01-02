@@ -1,9 +1,8 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.event', []);
+angular.module('af.event', [])
 
-  myApp.service('$event', function($rootScope, $log) {
+  .service('$event', function($rootScope, $log) {
     var logEvent, service;
 
     logEvent = function(type, eventName, data) {
@@ -32,6 +31,6 @@
         return $scope.$emit(eventName, data);
       }
     };
-  });
+  })
 
 }).call(this);

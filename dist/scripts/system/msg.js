@@ -1,9 +1,8 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.msg', ['af.event']);
+angular.module('af.msg', ['af.event'])
 
-  myApp.service('$msg', function($event) {
+  .service('$msg', function($event) {
     var msg;
     return msg = {
       shownAt: null,
@@ -37,9 +36,9 @@
       info: function(message, closable, delay) {    return msg.show(message, 'info',    closable, delay); },
       success: function(message, closable, delay) { return msg.show(message, 'success', closable, delay); }
     };
-  });
+  })
 
-  myApp.directive('msgHolder', function($timeout, $window, $event) {
+  .directive('msgHolder', function($timeout, $window, $event) {
     var timer = null;
     return {
       restrict: 'A',
@@ -83,6 +82,6 @@
         return scope.$on($event.EVENT_msgClear, scope.clear);
       }
     };
-  });
+  })
 
 }).call(this);

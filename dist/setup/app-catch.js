@@ -6,7 +6,7 @@ var appCatch = {
   loaded:false,
 
   config: {
-    url:'',
+    uid:'',
     enabled: true,
     logging:true,
     options: {
@@ -24,11 +24,11 @@ var appCatch = {
     if(appCatch.loaded || !appCatch.config.enabled) return;
     // sanity checks
     if(typeof Raven === "undefined") return alert('Cannot initialize Sentry. Missing Raven library.');
-    if(!appCatch.config.url) return alert('Sentry init error. Application Config not defined.');
+    if(!appCatch.config.uid) return alert('Sentry init error. Application Config not defined.');
 
     // init
-    Raven.config(appCatch.config.url, appCatch.config.options).install();
-    console.log('SENTRY LOADED - '+appEnv.env() + ' - ' + appCatch.config.url, appCatch.config.options);
+    Raven.config(appCatch.config.uid, appCatch.config.options).install();
+    console.log('SENTRY LOADED - '+appEnv.env() + ' - ' + appCatch.config.uid, appCatch.config.options);
     appCatch.loaded = true;
   },
 

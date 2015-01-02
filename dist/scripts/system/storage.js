@@ -4,18 +4,18 @@
   //
   // SIMPLE WRAPPER AROUND AMPLIFY.STORE TO ALLOW NAME SPACING...
   //
-  var myApp = angular.module('af.storage', []);
+angular.module('af.storage', [])
 
-  myApp.constant('STORAGE_PREFIX', 'myApp');
+  .constant('STORAGE_PREFIX', 'myApp')
 
-  myApp.service('$storage', function(STORAGE_PREFIX, $log) {
+  .service('$storage', function(STORAGE_PREFIX, $log) {
 
     var sessionData = {};
 
     // ensure options are in correct format: { expires:x }
     var checkOptions = function(options){
-      if(Object.isNumber(options)) return { expires:options };
-      if(Object.isObject(options) && Object.has(options, 'expires')) return options;
+      if(_.isNumber(options)) return { expires:options };
+      if(_.isObject(options) && _.has(options, 'expires')) return options;
       return null;
     };
 
@@ -42,7 +42,7 @@
 
       clear: function() {
         sessionData = {};
-        Object.keys(amplify.store(), function(key, value){
+        _.keys(amplify.store(), function(key, value){
           if(service.isAppData(key)) amplify.store(key, null);
         });
       },
@@ -52,6 +52,6 @@
     };
 
     return service;
-  });
+  })
 
 }).call(this);

@@ -1,13 +1,12 @@
 (function() {
-  var myApp;
 
-  myApp = angular.module('af.help', ['af.event', 'af.modal']);
+angular.module('af.help', ['af.event', 'af.modal'])
 
-  myApp.constant('$HELP_CONFIG', {
+  .constant('$HELP_CONFIG', {
     genericHelpPath:'src/views/templates/generic.help.view.html'
   })
 
-  myApp.service("$help", function($event) {
+  .service("$help", function($event) {
     var service;
     service = {
       isOpen:false,
@@ -25,9 +24,9 @@
       }
     };
     return service;
-  });
+  })
 
-  myApp.directive("helpHolder", function($modal, $timeout, $HELP_CONFIG) {
+  .directive("helpHolder", function($modal, $timeout, $HELP_CONFIG) {
     return {
       restrict: "A",
       scope: {},
@@ -58,9 +57,9 @@
         };
       }
     };
-  });
+  })
 
-  myApp.GenericHelpCtrl = myApp.controller('GenericHelpCtrl', function($scope, $help) {
+  .controller('GenericHelpCtrl', function($scope, $help) {
     var defaultController = {
       title:null,
       body:null,
@@ -68,7 +67,7 @@
       clickClose: function() { return $help.close(); }
     };
     _.extend($scope, defaultController, $help.controller);
-  });
+  })
 
 
 }).call(this);

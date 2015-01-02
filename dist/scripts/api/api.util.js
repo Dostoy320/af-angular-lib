@@ -1,26 +1,22 @@
 (function() {
 
-  var myApp = angular.module('af.apiUtil', ['af.msg', 'af.loader']);
+angular.module('af.apiUtil', ['af.msg', 'af.loader'])
 
-  // LOAD DEFAULTS
-  myApp.constant('API_CONFIG', {
+  // DEFAULT HTTP REQUEST OPTIONS
+  .constant('HTTP_REQUEST_OPTIONS', {
     disableHttpInterceptor:false, // disable the http interceptor completely
     // request options:
     method:'POST',
     url:'',
     urlEncode:false,              // send as application/x-www-form-urlencoded
-    // auto add some stuff
-    autoApplySession:true,        // adds sessionToken
-    autoApplyIndex:true,          // adds index for node
-    autoApplyDebugInfo:true,      // adds additional info about request for server
     // response options:
     logErrors:true,               // on error, log to sentry (or whatever)
     displayErrors:true            // on error, display error to user
-  });
+  })
 
 
 
-  myApp.service('apiUtil', function($window, $log, $msg, API_CONFIG, $loader, $q) {
+  .service('apiUtil', function($window, $log, $msg, HTTP_REQUEST_OPTIONS, $loader, $q) {
 
     var apiUtil = {
 
@@ -38,7 +34,7 @@
       request:{
         // creates a request... merges default request, with anything users passes in
         create:function(options){
-          return _.defaults(API_CONFIG, options || {});
+          return _.extend({}, HTTP_REQUEST_OPTIONS, options || {});
         },
         // debug info object for requests
         debugInfo: function() {
@@ -47,10 +43,23 @@
             env: appEnv.env()
           }
         },
+        isFile:function(request){
+          // if end of our request contains a period.. probably not an api request
+          if(!request || !request.url) return false;
+          return request.url.substr(request.url.length - 5).indexOf('.') >= 0
+        },
         optionEnabled:function(request, optionName){
           if(_.isObject(request) && _.has(request, optionName))
             return request[optionName];
           return false;
+        },
+        urlEncode:function(request){
+          // add urlencoded header
+          request.headers = request.headers || {};
+          _.extend(request.headers, {'Content-Type':'application/x-www-form-urlencoded'});
+          // data needs to be in string format
+          if(!_.isString(request.data)) request.data = $.param(request.data);
+          return request;
         }
       },
 
@@ -101,7 +110,8 @@
           if(apiUtil.request.optionEnabled(request, 'logErrors'))
             apiUtil.error.logger(response);
 
-          if(response.status !== 'InvalidLoginParameter')
+          // don't log these ones to console...
+          if(response.status !== 'InvalidLoginParameter' &&  response.status !== 'InvalidSession')
             $log.error('Whoops!', data, response);
 
           // display it?
@@ -112,9 +122,10 @@
           response.handled = true;
         },
         logger:function(response){
+          if(!response) return appCatch.send('Unable To Log. No Response');
+
           // if its a string.. just send that.
           if(_.isString(response)) return appCatch.send(response);
-          if(!response) return appCatch.send('Unable To Log. No Response');
 
           var request = response.config || {};
           // don't log credentials!!
@@ -170,13 +181,11 @@
         },
         reject:function(response, defer){
           if(defer) return defer.reject(response);
-          return $q.reject(defer);
+          return $q.reject(response);
         },
-        catcher:function(defer){
-          return function (response){
-            apiUtil.error.handler(response);
-            return apiUtil.promise.reject(response, defer);
-          }
+        catcher:function(response){
+          apiUtil.error.handler(response);
+          return apiUtil.promise.reject(response);
         }
       },
 

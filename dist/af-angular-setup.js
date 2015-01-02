@@ -145,7 +145,7 @@ var appCatch = {
   loaded:false,
 
   config: {
-    url:'',
+    uid:'',
     enabled: true,
     logging:true,
     options: {
@@ -163,11 +163,11 @@ var appCatch = {
     if(appCatch.loaded || !appCatch.config.enabled) return;
     // sanity checks
     if(typeof Raven === "undefined") return alert('Cannot initialize Sentry. Missing Raven library.');
-    if(!appCatch.config.url) return alert('Sentry init error. Application Config not defined.');
+    if(!appCatch.config.uid) return alert('Sentry init error. Application Config not defined.');
 
     // init
-    Raven.config(appCatch.config.url, appCatch.config.options).install();
-    console.log('SENTRY LOADED - '+appEnv.env() + ' - ' + appCatch.config.url, appCatch.config.options);
+    Raven.config(appCatch.config.uid, appCatch.config.options).install();
+    console.log('SENTRY LOADED - '+appEnv.env() + ' - ' + appCatch.config.uid, appCatch.config.options);
     appCatch.loaded = true;
   },
 
@@ -288,7 +288,7 @@ var appTrack = {
 
   config: {
     enabled: true,
-    key: '',
+    uid: '',
     options: {
       'cross_subdomain_cookie': false
       //,'debug':true
@@ -305,17 +305,17 @@ var appTrack = {
     if (appTrack.loaded || !appTrack.config.enabled) return;
     // sanity checks
     if (typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
-    if (!appTrack.config.key) return alert('Sentry init error. Application Config not defined.');
+    if (!appTrack.config.uid) return alert('Sentry init error. Application Config not defined.');
 
     // init
-    mixpanel.init(appTrack.config.key, appTrack.config.options);
-    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.key, appTrack.config.options);
+    mixpanel.init(appTrack.config.uid, appTrack.config.options);
+    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.uid, appTrack.config.options);
     appTrack.loaded = true;
 
     // always pass this with events:
     appTrack.register({
       domain: appEnv.subDomainClean(),
-      env: appEnv.env(),
+      //env: appEnv.env(),
       app: appEnv.app()
     })
   },
@@ -333,7 +333,7 @@ var appTrack = {
   // METHODS
   //
   // allows us to track logged in users.... need to call right away.
-  setUser: function (id) {
+  setUserId: function (id) {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.identify(): ', id);
     mixpanel.identify(id);
@@ -356,6 +356,12 @@ var appTrack = {
     if (!appTrack.loaded) return;
     console.log('MIXPANEL.track:', name, options);
     mixpanel.track(name, options); //
+    // spenser's global usage
+    if(name !== 'Login' && name !== 'Page View')
+      mixpanel.track('Key Metrics', {'Metric Name':name})
+  },
+  increment:function(name){
+    mixpanel.people.increment(name);
   },
 
   // Register a set of super properties, which are automatically included with all events.

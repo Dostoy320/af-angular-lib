@@ -1,8 +1,8 @@
 (function() {
 
-  var myApp = angular.module('af.loader', ['af.event']);
+angular.module('af.loader', ['af.event'])
 
-  myApp.service('$loader', function($event) {
+  .service('$loader', function($event) {
     var srv, isRunning = false;
     srv = {
       start: function(options) {
@@ -22,9 +22,9 @@
       mask: function() { srv.start({bar:false, mask:true});  }
     };
     return srv;
-  });
+  })
 
-  myApp.directive('loaderHolder', function($event) {
+  .directive('loaderHolder', function($event) {
     return {
       restrict: 'A',
       scope: {},
@@ -63,6 +63,6 @@
         scope.$on($event.EVENT_loaderStop, scope.stop);
       }
     };
-  });
+  })
 
 }).call(this);
