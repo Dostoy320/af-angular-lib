@@ -33,8 +33,8 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
       //
       request:{
         // creates a request... merges default request, with anything users passes in
-        create:function(options){
-          return _.extend({}, HTTP_REQUEST_OPTIONS, options || {});
+        defaults:function(){
+          return _.clone(HTTP_REQUEST_OPTIONS);
         },
         // debug info object for requests
         debugInfo: function() {
