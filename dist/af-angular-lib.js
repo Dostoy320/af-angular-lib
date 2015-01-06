@@ -36,10 +36,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
       request:{
         // creates a request... merges default request, with anything users passes in
         defaults:function(){
-          return HTTP_REQUEST_OPTIONS;
-        },
-        create:function(options, defaults){
-          return _.extend({}, apiUtil.request.defaults(), defaults || {}, options || {});
+          return _.clone(HTTP_REQUEST_OPTIONS);
         },
         // debug info object for requests
         debugInfo: function() {
@@ -115,7 +112,8 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
           if(apiUtil.request.optionEnabled(request, 'logErrors'))
             apiUtil.error.logger(response);
 
-          if(response.status !== 'InvalidLoginParameter') // don't log auth type-o to console.
+          // don't log these ones to console...
+          if(response.status !== 'InvalidLoginParameter' &&  response.status !== 'InvalidSession')
             $log.error('Whoops!', data, response);
 
           // display it?
@@ -185,13 +183,11 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
         },
         reject:function(response, defer){
           if(defer) return defer.reject(response);
-          return $q.reject(defer);
+          return $q.reject(response);
         },
-        catcher:function(defer){
-          return function (response){
-            apiUtil.error.handler(response);
-            return apiUtil.promise.reject(response, defer);
-          }
+        catcher:function(response){
+          apiUtil.error.handler(response);
+          return apiUtil.promise.reject(response);
         }
       },
 
@@ -927,8 +923,8 @@ angular.module('af.storage', [])
 
     // ensure options are in correct format: { expires:x }
     var checkOptions = function(options){
-      if(Object.isNumber(options)) return { expires:options };
-      if(Object.isObject(options) && Object.has(options, 'expires')) return options;
+      if(_.isNumber(options)) return { expires:options };
+      if(_.isObject(options) && _.has(options, 'expires')) return options;
       return null;
     };
 
@@ -955,7 +951,7 @@ angular.module('af.storage', [])
 
       clear: function() {
         sessionData = {};
-        Object.keys(amplify.store(), function(key, value){
+        _.keys(amplify.store(), function(key, value){
           if(service.isAppData(key)) amplify.store(key, null);
         });
       },
