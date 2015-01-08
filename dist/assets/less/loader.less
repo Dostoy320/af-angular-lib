@@ -23,15 +23,23 @@
   }
   .loader-mask{
     pointer-events:none;
-    background-color:#FFF;
+    background-color:transparent;
     z-index: 30000;
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-    opacity: 0.4;
+    //opacity: 0.4;
+    // no clicky
+    background: url('../img/transparent_bg.png');
+    //filter:progid:DXImageTransform.Microsoft.AlphaImageLoader(src='../img/transparent_bg.png.png', sizingMethod='scale');
+    //background: none !important;
   }
   .loader-text{
     z-index: 30002;
     text-align: center;
-    top:47%;
+    top:20%;
+    background-color:#EEE;
+    padding:40px 3px;
+    border-top:1px solid #DDD;
+    border-bottom:1px solid #DDD;
     font-weight:bold;
   }
 

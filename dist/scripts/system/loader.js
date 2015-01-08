@@ -24,25 +24,33 @@ angular.module('af.loader', ['af.event'])
     return srv;
   })
 
-  .directive('loaderHolder', function($event) {
+  .directive('loaderHolder', function($event, $interval) {
     return {
       restrict: 'A',
       scope: {},
       template: '<div class="ng-cloak">' +
                   '<div id="app-loader-bar" ng-cloak ng-show="loaderBar" class="ng-cloak progress progress-striped active">' +
+                  //'<div id="app-loader-bar" ng-cloak class="ng-cloak progress progress-striped active">' +
                     '<div class="progress-bar" style="width:100%"></div>' +
                   '</div>' +
                   '<div id="app-loader-mask" ng-show="loadMask">' +
+                  //'<div id="app-loader-mask">' +
                     '<div class="loader-mask"></div>' +
                     '<div class="loader-text">' +
-                      '<i class="icon-spinner icon-spin icon-3x"></i> &nbsp;<p ng-show="loaderText" ng-bind="loaderText"></p>' +
+                      '<i class="icon-spinner icon-spin icon-3x"></i> &nbsp;' +
+                      '<span ng-show="loaderText" ng-bind="loaderText"></span>' +
+                      '<span ng-show="loaderText" ng-bind="dots"></span>' +
                     '</div>' +
                   '</div>' +
                 '</div>',
       link: function(scope, element, attrs) {
+        scope.dots = '.';
         scope.loaderBar = null;
         scope.loadMask = null;
         scope.loaderText = null;
+
+        var timer = null;
+
         scope.start = function(options) {
           if(_.isString(options)){
             scope.loaderText = options;
@@ -53,6 +61,7 @@ angular.module('af.loader', ['af.event'])
             scope.loadMask = options.hasOwnProperty('mask') ? options.mask : scope.loaderText; // show mask if text
             scope.loaderBar = options.hasOwnProperty('bar') ? options.bar : true
           }
+          //timer = $interval(addDots, 750)
         };
         scope.stop = function() {
           scope.loaderBar = scope.loaderText = scope.loadMask = null;
