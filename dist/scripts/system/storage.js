@@ -28,16 +28,16 @@ angular.module('af.storage', [])
         var appData = {};
         var storedData = amplify.store();
         storedData.each(function(value, key){
-          if (service.isAppData(key)) appData[key] = value;
+          if (service.isAppData(key)) appData[key] = angular.copy(value);
         });
         return appData;
       },
 
       // data that will be gone if page refreshed.
-      session:function(key, value){
+      temp:function(key, value){
         if(arguments.length == 0) return sessionData;
         if(arguments.length == 1) return sessionData[key];
-        sessionData[key] = value;
+        sessionData[key] = angular.copy(value);
       },
 
       clear: function() {
