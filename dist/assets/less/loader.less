@@ -14,29 +14,33 @@
 #app-loader-mask{
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   z-index: 30001;
-  .loader-mask,
-  .loader-text{
+  .loader-mask{
     position:fixed;
     z-index: 30000;
     width:100%;
     margin:0 auto;
-  }
-  .loader-mask{
     pointer-events:none;
-    background-color:transparent;
+    background-color:#FFF;
     z-index: 30000;
     position: fixed; top: 0; left: 0; right: 0; bottom: 0;
     opacity: 0.4;
   }
   .loader-text{
+    position:fixed;
     z-index: 30002;
-    text-align: center;
-    top:20%;
+    top:@loadBarHeight - 2px;
+    width:100%;
+    margin:0 auto;
+    text-align:center;
+    padding:10px 20px;
     background-color:#EEE;
-    padding:40px 3px;
-    border-top:1px solid #DDD;
     border-bottom:1px solid #DDD;
-    font-weight:bold;
+    .loader-gear{
+      color:#CCC;
+      position:absolute;
+      left:10px;
+      top:10px;
+    }
   }
 
 }
