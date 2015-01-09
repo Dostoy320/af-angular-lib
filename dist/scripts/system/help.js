@@ -38,7 +38,7 @@ angular.module('af.help', ['af.event', 'af.modal'])
                 '</div>',
       link: function(scope, element, attrs) {
         scope.close = function() {
-          $('body').removeClass('modal-open');
+          $('body').removeClass('help-open');
           $("#helpHolder").children().removeClass("in");
           return scope.url = null;
         };
