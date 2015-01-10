@@ -36,7 +36,6 @@ angular.module('af.loader', ['af.event'])
                     '<div class="loader-mask"></div>' +
                     '<div class="loader-text" ng-show="loaderText">' +
                       '<div class="loader-gear"><span fa-icon="gear" class="fa-spin fa-2x" style="line-height:20px; vertical-align: middle;"></span></div>' +
-                      '<span class="icon-spinner icon-spin icon-3x"></span> &nbsp;' +
                       '<span ng-bind="loaderText"></span><span>...</span>' +
                     '</div>' +
                   '</div>' +
