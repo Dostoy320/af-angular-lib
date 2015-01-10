@@ -95,7 +95,7 @@
           if (!value) return '';
           if (!inputType) inputType = "utc";
           if (moment) {
-            if(!format) format = appConfig.get('app.dateFormat') || 'MM/DD/YY';
+            if(!format) format = appTenant.get('settings.date.format') || 'MM/DD/YY';
             if (typeof value === 'string') {
               switch (inputType.toLowerCase()) {
                 case 'utc':
