@@ -32,12 +32,10 @@ var appEnv = {
     appEnv.config.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
     // subDomain with no -dev on it
     appEnv.config.subDomainClean = appEnv.config.subDomain.split('-').shift();
-
     // isLocal?
     if(appEnv.config.subDomainClean === 'localhost')   appEnv.config.isLocal = true;
     if(appEnv.config.subDomainClean === 'dev')         appEnv.config.isLocal = true;
     if(appEnv.config.subDomainClean === 'development') appEnv.config.isLocal = true;
-
     // development?
     if(appEnv.config.isLocal)                        appEnv.config.env = 'development';
     if(appEnv.config.subDomain.indexOf('-dev') >= 0) appEnv.config.env = 'development';
