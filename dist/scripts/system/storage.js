@@ -12,38 +12,40 @@ angular.module('af.storage', [])
 
     var sessionData = {};
 
-    // ensure options are in correct format: { expires:x }
-    var checkOptions = function(options){
-      if(_.isNumber(options)) return { expires:options };
-      if(_.isObject(options) && _.has(options, 'expires')) return options;
-      return null;
-    };
+    var storage = {
 
-    var service = {
-
+      // LOCAL STORAGE
       // data stored with prefix pertaining to a particular application only
       store:function(key, value, options){
-        if(key) return amplify.store(STORAGE_PREFIX + '_' + key, value, checkOptions(options));
+        // ensure options are in correct format: { expires:x }
+        if(_.isNumber(options)) options = { expires:options };
+
+        // get or set a value
+        if(key) return amplify.store(STORAGE_PREFIX + '_' + key, angular.copy(value), options);
         // get all data
         var appData = {};
-        var storedData = amplify.store();
-        storedData.each(function(value, key){
-          if (service.isAppData(key)) appData[key] = angular.copy(value);
+        _.each(amplify.store(), function(value, key){
+          if(storage.isAppData(key)) appData[key] = angular.copy(value);
         });
         return appData;
       },
 
+      // THiS IS BASICALLY A SESSION STORAGE
       // data that will be gone if page refreshed.
-      temp:function(key, value){
+      logCachedData:true,
+      cache:function(key, value){
         if(arguments.length == 0) return sessionData;
-        if(arguments.length == 1) return sessionData[key];
+        if(arguments.length == 1) {
+          if(storage.logCachedData) $log.info('CACHED: ' + key, sessionData[key]);
+          return sessionData[key];
+        }
         sessionData[key] = angular.copy(value);
       },
 
       clear: function() {
         sessionData = {};
-        _.keys(amplify.store(), function(key, value){
-          if(service.isAppData(key)) amplify.store(key, null);
+        _.keys(amplify.store(), function(key){
+          if(storage.isAppData(key)) amplify.store(key, null);
         });
       },
 
@@ -51,7 +53,7 @@ angular.module('af.storage', [])
 
     };
 
-    return service;
+    return storage;
   })
 
 }).call(this);
