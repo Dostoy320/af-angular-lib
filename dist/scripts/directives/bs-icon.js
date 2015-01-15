@@ -14,6 +14,8 @@
   .directive("faIcon", function() {
     return {
       compile: function(elm, attrs) {
+        if(attrs.faIcon == 'roadmap') attrs.faIcon = 'road';//'map-marker';
+        if(attrs.faIcon == 'assessment') attrs.faIcon = 'check-circle-o';
         angular.element(elm).addClass('ng-show-inline fa fa-' + attrs.faIcon);
       }
     };
