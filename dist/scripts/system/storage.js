@@ -42,7 +42,11 @@ angular.module('af.storage', [])
         sessionData[key] = angular.copy(value);
       },
 
-      clear: function() {
+      clear: function(key) {
+        if(key){
+          delete sessionData[key];
+          return amplify.store(STORAGE_PREFIX+'_'+key, null);
+        }
         sessionData = {};
         _.keys(amplify.store(), function(key){
           if(storage.isAppData(key)) amplify.store(key, null);
