@@ -16,6 +16,7 @@
       compile: function(elm, attrs) {
         if(attrs.faIcon == 'roadmap') attrs.faIcon = 'road';//'map-marker';
         if(attrs.faIcon == 'assessment') attrs.faIcon = 'check-circle-o';
+        if(attrs.faIcon == 'quickContent') attrs.faIcon = 'text-o';
         angular.element(elm).addClass('ng-show-inline fa fa-' + attrs.faIcon);
       }
     };
