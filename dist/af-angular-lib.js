@@ -468,6 +468,9 @@ angular.module('ui.bootstrap.dropdown', [])
   .directive("faIcon", function() {
     return {
       compile: function(elm, attrs) {
+        if(attrs.faIcon == 'roadmap') attrs.faIcon = 'road';//'map-marker';
+        if(attrs.faIcon == 'assessment') attrs.faIcon = 'check-circle-o';
+        if(attrs.faIcon == 'quickContent') attrs.faIcon = 'file-text-o';
         angular.element(elm).addClass('ng-show-inline fa fa-' + attrs.faIcon);
       }
     };
@@ -583,7 +586,7 @@ angular.module('af.help', ['af.event', 'af.modal'])
                 '</div>',
       link: function(scope, element, attrs) {
         scope.close = function() {
-          $('body').removeClass('modal-open');
+          $('body').removeClass('help-open');
           $("#helpHolder").children().removeClass("in");
           return scope.url = null;
         };
@@ -636,15 +639,15 @@ angular.module('af.loader', ['af.event'])
 
       // util / quickies
       isLoading:function(){ return isRunning; },
-      saving: function() { srv.start('Saving...');    },
-      loading: function() { srv.start('Loading...');  },
+      saving: function() { srv.start('Saving');    },
+      loading: function() { srv.start('Loading');  },
       bar: function() { srv.start({bar:true, mask:false});  },
       mask: function() { srv.start({bar:false, mask:true});  }
     };
     return srv;
   })
 
-  .directive('loaderHolder', function($event) {
+  .directive('loaderHolder', function($event, $interval) {
     return {
       restrict: 'A',
       scope: {},
@@ -654,15 +657,36 @@ angular.module('af.loader', ['af.event'])
                   '</div>' +
                   '<div id="app-loader-mask" ng-show="loadMask">' +
                     '<div class="loader-mask"></div>' +
-                    '<div class="loader-text">' +
-                      '<i class="icon-spinner icon-spin icon-3x"></i> &nbsp;<p ng-show="loaderText" ng-bind="loaderText"></p>' +
+                    '<div class="loader-text" ng-show="loaderText">' +
+                      '<div class="loader-gear"><span fa-icon="gear" class="fa-spin fa-2x" style="line-height:20px; vertical-align: middle;"></span></div>' +
+                      '<span ng-bind="loaderText"></span><span>...</span>' +
                     '</div>' +
                   '</div>' +
                 '</div>',
       link: function(scope, element, attrs) {
+        scope.dots = 3;
         scope.loaderBar = null;
         scope.loadMask = null;
         scope.loaderText = null;
+
+        var timer = null;
+        var addDots = function(){
+          scope.dots += 1;
+          if(scope.dots == 4) scope.dots = 0;
+        }
+        var clearTick = function(){
+          if(timer) $interval.cancel(timer);
+        }
+        var startTick = function(){
+          clearTick();
+          if(!scope.loaderText) return;
+          scope.loaderText.replace('\.','');
+          if(scope.loaderText.substr(scope.loaderText.length - 3) == '...')
+            scope.loaderText = scope.loaderText.substring(0, scope.loaderText.length - 3);
+          addDots();
+          timer = $interval(addDots, 600);
+        }
+
         scope.start = function(options) {
           if(_.isString(options)){
             scope.loaderText = options;
@@ -673,14 +697,19 @@ angular.module('af.loader', ['af.event'])
             scope.loadMask = options.hasOwnProperty('mask') ? options.mask : scope.loaderText; // show mask if text
             scope.loaderBar = options.hasOwnProperty('bar') ? options.bar : true
           }
+          startTick();
         };
         scope.stop = function() {
           scope.loaderBar = scope.loaderText = scope.loadMask = null;
+          clearTick();
         };
         scope.$on($event.EVENT_loaderStart, function(event, txt) {
           scope.start(txt);
         });
         scope.$on($event.EVENT_loaderStop, scope.stop);
+
+        // kill any timer on destroy
+        element.on('$destroy', clearTick);
       }
     };
   })
@@ -921,38 +950,44 @@ angular.module('af.storage', [])
 
     var sessionData = {};
 
-    // ensure options are in correct format: { expires:x }
-    var checkOptions = function(options){
-      if(_.isNumber(options)) return { expires:options };
-      if(_.isObject(options) && _.has(options, 'expires')) return options;
-      return null;
-    };
+    var storage = {
 
-    var service = {
-
+      // LOCAL STORAGE
       // data stored with prefix pertaining to a particular application only
       store:function(key, value, options){
-        if(key) return amplify.store(STORAGE_PREFIX + '_' + key, value, checkOptions(options));
+        // ensure options are in correct format: { expires:x }
+        if(_.isNumber(options)) options = { expires:options };
+
+        // get or set a value
+        if(key) return amplify.store(STORAGE_PREFIX + '_' + key, angular.copy(value), options);
         // get all data
         var appData = {};
-        var storedData = amplify.store();
-        storedData.each(function(value, key){
-          if (service.isAppData(key)) appData[key] = value;
+        _.each(amplify.store(), function(value, key){
+          if(storage.isAppData(key)) appData[key] = angular.copy(value);
         });
         return appData;
       },
 
+      // THiS IS BASICALLY A SESSION STORAGE
       // data that will be gone if page refreshed.
-      session:function(key, value){
+      logCachedData:true,
+      cache:function(key, value){
         if(arguments.length == 0) return sessionData;
-        if(arguments.length == 1) return sessionData[key];
-        sessionData[key] = value;
+        if(arguments.length == 1) {
+          if(storage.logCachedData) $log.info('CACHED: ' + key, sessionData[key]);
+          return sessionData[key];
+        }
+        sessionData[key] = angular.copy(value);
       },
 
-      clear: function() {
+      clear: function(key) {
+        if(key){
+          delete sessionData[key];
+          return amplify.store(STORAGE_PREFIX+'_'+key, null);
+        }
         sessionData = {};
-        _.keys(amplify.store(), function(key, value){
-          if(service.isAppData(key)) amplify.store(key, null);
+        _.keys(amplify.store(), function(key){
+          if(storage.isAppData(key)) amplify.store(key, null);
         });
       },
 
@@ -960,7 +995,7 @@ angular.module('af.storage', [])
 
     };
 
-    return service;
+    return storage;
   })
 
 }).call(this);
@@ -1110,7 +1145,7 @@ _.mixin({
         if(!user) return '';
 
         // return preferred name if it exists...
-        var preferredDisplayName = appTenant.get('preferredDisplayName')
+        var preferredDisplayName = appTenant.get('settings.preferredDisplayName');
         if(preferredDisplayName && user[preferredDisplayName])
           return user[preferredDisplayName];
 
@@ -1126,7 +1161,7 @@ _.mixin({
           if (!value) return '';
           if (!inputType) inputType = "utc";
           if (moment) {
-            if(!format) format = appConfig.get('app.dateFormat') || 'MM/DD/YY';
+            if(!format) format = appTenant.get('settings.date.format') || 'MM/DD/YY';
             if (typeof value === 'string') {
               switch (inputType.toLowerCase()) {
                 case 'utc':

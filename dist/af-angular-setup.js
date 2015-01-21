@@ -34,12 +34,10 @@ var appEnv = {
     appEnv.config.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
     // subDomain with no -dev on it
     appEnv.config.subDomainClean = appEnv.config.subDomain.split('-').shift();
-
     // isLocal?
     if(appEnv.config.subDomainClean === 'localhost')   appEnv.config.isLocal = true;
     if(appEnv.config.subDomainClean === 'dev')         appEnv.config.isLocal = true;
     if(appEnv.config.subDomainClean === 'development') appEnv.config.isLocal = true;
-
     // development?
     if(appEnv.config.isLocal)                        appEnv.config.env = 'development';
     if(appEnv.config.subDomain.indexOf('-dev') >= 0) appEnv.config.env = 'development';
@@ -290,38 +288,47 @@ var appTrack = {
     enabled: true,
     uid: '',
     options: {
-      'cross_subdomain_cookie': false
-      //,'debug':true
-    },
-    logging: true
+      'cross_subdomain_cookie': false,
+      'debug':false
+    }
   },
+
+
 
   //
   // INITIALIZE
   //
-  init: function (settings) {
-    if(settings) appTrack.loadSettings(settings);
+  init: function (config) {
+    if(config) appTrack.loadConfig(config);
     // do once
     if (appTrack.loaded || !appTrack.config.enabled) return;
     // sanity checks
     if (typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
     if (!appTrack.config.uid) return alert('Sentry init error. Application Config not defined.');
 
+    appTrack.config.debug = appEnv.isDev();
+
     // init
     mixpanel.init(appTrack.config.uid, appTrack.config.options);
-    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.uid, appTrack.config.options);
-    appTrack.loaded = true;
-
     // always pass this with events:
-    appTrack.register({
+    mixpanel.register({
       domain: appEnv.subDomainClean(),
-      //env: appEnv.env(),
       app: appEnv.app()
     })
+    appTrack.loaded = true;
+    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.uid, appTrack.config.options);
   },
 
-  loadSettings: function (from) {
-    // populate config
+  // can disable/enable after init by setting a cached setting
+  trackUser:function(value){
+    if(amplify) amplify.store('trackUser', value);
+  },
+  isEnabled:function(){
+    if(!appTrack.loaded) return false;                        // don't track anything
+    if(amplify && !amplify.store('trackUser')) return false;  // don't track this user?
+    return true;
+  },
+  loadConfig: function (from) {
     if (!from) return;
     for (var key in from) {
       appTrack.config[key] = from[key];
@@ -332,65 +339,66 @@ var appTrack = {
   //
   // METHODS
   //
-  // allows us to track logged in users.... need to call right away.
   setUserId: function (id) {
-    if (!appTrack.loaded) return;
-    console.log('MIXPANEL.identify(): ', id);
+    if(!appTrack.loaded) return;
+    if(appEnv.isDev()) console.log('MIXPANEL.identify(): ', id);
     mixpanel.identify(id);
   },
-
-  // set info about identified user
   // { key:value }
   setProfile: function (object) {
-    if (!appTrack.loaded) return;
-    console.log('MIXPANEL.people.set():', object);
+    if(!appTrack.loaded) return;
+    if(appEnv.isDev()) console.log('MIXPANEL.people.set():', object);
     mixpanel.people.set(object);
   },
 
-  // track an event named "Registered":
-  // mixpanel.track("Registered", {"Gender": "Male", "Age": 21});
-  send: function (name, options) {
-    appTrack.track(name, options);
-  }, // alias
+  // track an event named "Register":
+  // mixpanel.track("Register", {"Gender": "Male", "Age": 21});
+  send: function (name, options) { appTrack.track(name, options); }, // alias
   track: function (name, options) {
-    if (!appTrack.loaded) return;
-    console.log('MIXPANEL.track:', name, options);
-    mixpanel.track(name, options); //
+    if(!appTrack.loaded) return;
+    if(appEnv.isDev()) console.log('MIXPANEL.track:', name, options);
+    mixpanel.track(name, options);
     // spenser's global usage
     if(name !== 'Login' && name !== 'Page View')
       mixpanel.track('Key Metrics', {'Metric Name':name})
   },
-  increment:function(name){
-    mixpanel.people.increment(name);
-  },
+  increment:function(name){ mixpanel.people.increment(name); },
+
 
   // Register a set of super properties, which are automatically included with all events.
   // { key:value }
   register: function (options) {
-    if (!appTrack.loaded) return;
-    console.log('MIXPANEL.register:', options);
+    if(!appTrack.loaded) return;
+    if(appEnv.isDev()) console.log('MIXPANEL.register:', options);
     mixpanel.register(options);
   },
   // removes a registered key
   unregister: function (key) {
-    if (!appTrack.loaded) return;
-    console.log('MIXPANEL.unregister: ', key);
+    if(!appTrack.loaded) return;
+    if(appEnv.isDev()) console.log('MIXPANEL.unregister: ', key);
     mixpanel.unregister(key);
   },
+
 
   //
   //  EVENTS we track
   //
-  TRACK_LOGIN: function () {
-    appTrack.track('Login')
+  TRACK_LOGIN: function (type, from, to) {
+    // eg: TRACK_LOGIN('SSO', 'Salesforce', 'Portal')
+    // types: ['Manual','SSO']
+    // from: ['ParameterSSO', 'Salesforce','Portal', ...]
+    // app: ['Portal', 'Reporting', 'Assessment', '...']
+    appTrack.track('Login', {'Login Type': type, 'Login Via': from, 'Login Destination':to} );
   },
-  TRACK_LOGOUT: function () {
-    appTrack.track('Logout')
-  },
+  TRACK_LOGOUT: function () { appTrack.track('Logout'); }
+
+
+  /*
   TRACK_PAGE_VIEW: function (pageName) {
     appTrack.track('PageView', {
       'page': pageName,
       'url': window.location.hash
     });
   }
+  */
 };

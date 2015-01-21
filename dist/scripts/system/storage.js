@@ -36,7 +36,7 @@ angular.module('af.storage', [])
       cache:function(key, value){
         if(arguments.length == 0) return sessionData;
         if(arguments.length == 1) {
-          if(storage.logCachedData) $log.info('CACHED: ' + key, sessionData[key]);
+          if(storage.logCachedData) $log.info('CACHED:' + key); //, sessionData[key]);
           return sessionData[key];
         }
         sessionData[key] = angular.copy(value);

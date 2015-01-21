@@ -79,7 +79,7 @@
         if(!user) return '';
 
         // return preferred name if it exists...
-        var preferredDisplayName = appTenant.get('preferredDisplayName')
+        var preferredDisplayName = appTenant.get('settings.preferredDisplayName');
         if(preferredDisplayName && user[preferredDisplayName])
           return user[preferredDisplayName];
 

@@ -8,6 +8,7 @@ var appTenant = {
   get:function(path, makePlural) {
     if (!path) return appTenant.config; // return whole config
     var value = appTenant.getPathValue(appTenant.config, path);
+    if(typeof value == 'undefined' || value === null) console.log('appTenant.get('+path+') MISSING!');
     if(makePlural) {
       var pluralValue = appTenant.getPathValue(appTenant.config, path + '_plural');
       if(pluralValue) return pluralValue;
