@@ -3,25 +3,23 @@
 angular.module('af.loader', ['af.event'])
 
   .service('$loader', function($event) {
-    var srv, isRunning = false;
-    srv = {
+    var $loader = {}, isLoading = false;
+    return $loader = {
       start: function(options) {
         isRunning = true;
         return $event.shout($event.EVENT_loaderStart, options);
       },
       stop: function() {
-        isRunning = false;
+        isLoading = false;
         return $event.shout($event.EVENT_loaderStop);
       },
-
       // util / quickies
-      isLoading:function(){ return isRunning; },
-      saving: function() { srv.start('Saving');    },
-      loading: function() { srv.start('Loading');  },
-      bar: function() { srv.start({bar:true, mask:false});  },
-      mask: function() { srv.start({bar:false, mask:true});  }
+      isLoading:function(){ return isLoading; },
+      saving: function() { $loader.start('Saving');    },
+      loading: function() { $loader.start('Loading');  },
+      bar: function() { $loader.start({bar:true, mask:false});  },
+      mask: function() { $loader.start({bar:false, mask:true});  }
     };
-    return srv;
   })
 
   .directive('loaderHolder', function($event, $interval, $log) {
@@ -67,7 +65,7 @@ angular.module('af.loader', ['af.event'])
         scope.start = function(options) {
           if(!options || _.isString(options)){
             // if just text was passed in... enable mask & load bar...
-            scope.loaderText = options || 'Loading...';
+            scope.loaderText = options || 'Meow, Loading...';
             scope.loadMask = true;
             scope.loaderBar = true;
           } else if(_.isPlainObject(options)){
