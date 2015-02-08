@@ -24,17 +24,17 @@ angular.module('af.loader', ['af.event'])
     return srv;
   })
 
-  .directive('loaderHolder', function($event, $interval) {
+  .directive('loaderHolder', function($event, $interval, $log) {
     return {
       restrict: 'A',
       scope: {},
       template: '<div class="ng-cloak">' +
-                  '<div id="app-loader-bar" ng-cloak ng-show="loaderBar" class="ng-cloak progress progress-striped active">' +
+                  '<div id="app-loader-bar" ng-cloak ng-if="loaderBar" class="ng-cloak progress progress-striped active">' +
                     '<div class="progress-bar" style="width:100%"></div>' +
                   '</div>' +
-                  '<div id="app-loader-mask" ng-show="loadMask">' +
+                  '<div id="app-loader-mask" ng-if="loadMask">' +
                     '<div class="loader-mask"></div>' +
-                    '<div class="loader-text" ng-show="loaderText">' +
+                    '<div class="loader-text" ng-if="loaderText">' +
                       '<div class="loader-gear"><span fa-icon="gear" class="fa-spin fa-2x" style="line-height:20px; vertical-align: middle;"></span></div>' +
                       '<span ng-bind="loaderText"></span><span>...</span>' +
                     '</div>' +
@@ -65,8 +65,9 @@ angular.module('af.loader', ['af.event'])
         }
 
         scope.start = function(options) {
-          if(_.isString(options)){
-            scope.loaderText = options;
+          if(!options || _.isString(options)){
+            // if just text was passed in... enable mask & load bar...
+            scope.loaderText = options || 'Loading...';
             scope.loadMask = true;
             scope.loaderBar = true;
           } else if(_.isPlainObject(options)){
@@ -75,9 +76,11 @@ angular.module('af.loader', ['af.event'])
             scope.loaderBar = options.hasOwnProperty('bar') ? options.bar : true
           }
           startTick();
+          $log.info('starting...', scope);
         };
         scope.stop = function() {
           scope.loaderBar = scope.loaderText = scope.loadMask = null;
+          $log.info('stopping');
           clearTick();
         };
         scope.$on($event.EVENT_loaderStart, function(event, txt) {
