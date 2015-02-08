@@ -6,7 +6,7 @@ angular.module('af.loader', ['af.event'])
     var $loader = {}, isLoading = false;
     return $loader = {
       start: function(options) {
-        isRunning = true;
+        isLoading = true;
         return $event.shout($event.EVENT_loaderStart, options);
       },
       stop: function() {
