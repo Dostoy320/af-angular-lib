@@ -24,6 +24,10 @@ _.mixin({
     return merged;
   },
 
+  pluckUnique:function(array, key){
+    return _.unique(_.pluck(array, key));
+  },
+
 
   //
   // COMMA SEPARATED ID JUNK

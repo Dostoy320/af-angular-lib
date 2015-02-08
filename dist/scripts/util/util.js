@@ -89,6 +89,10 @@
         return user.firstName || user.lastName || user.nameOfPractice || user.username || user.userId || '';
       },
 
+      protocolAndHost:function(){
+        return $window.location.protocol+'//'+$window.location.host;
+      },
+
       format: {
         date: function(value, format, inputType) {
           if (!value) return '';

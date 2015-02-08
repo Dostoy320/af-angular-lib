@@ -74,11 +74,9 @@ angular.module('af.loader', ['af.event'])
             scope.loaderBar = options.hasOwnProperty('bar') ? options.bar : true
           }
           startTick();
-          $log.info('starting...', scope);
         };
         scope.stop = function() {
           scope.loaderBar = scope.loaderText = scope.loadMask = null;
-          $log.info('stopping');
           clearTick();
         };
         scope.$on($event.EVENT_loaderStart, function(event, txt) {
