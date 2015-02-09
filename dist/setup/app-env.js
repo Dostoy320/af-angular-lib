@@ -30,6 +30,7 @@ var appEnv = {
     // 1 - Determine Environment
     // subDomain
     appEnv.config.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
+    if(window.location.hostname.indexOf('192.168.') == 0) appEnv.config.subDomain = 'localhost';
     // subDomain with no -dev on it
     appEnv.config.subDomainClean = appEnv.config.subDomain.split('-').shift();
     // isLocal?
