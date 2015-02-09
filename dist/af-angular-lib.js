@@ -626,38 +626,36 @@ angular.module('af.help', ['af.event', 'af.modal'])
 angular.module('af.loader', ['af.event'])
 
   .service('$loader', function($event) {
-    var srv, isRunning = false;
-    srv = {
+    var $loader = {}, isLoading = false;
+    return $loader = {
       start: function(options) {
-        isRunning = true;
+        isLoading = true;
         return $event.shout($event.EVENT_loaderStart, options);
       },
       stop: function() {
-        isRunning = false;
+        isLoading = false;
         return $event.shout($event.EVENT_loaderStop);
       },
-
       // util / quickies
-      isLoading:function(){ return isRunning; },
-      saving: function() { srv.start('Saving');    },
-      loading: function() { srv.start('Loading');  },
-      bar: function() { srv.start({bar:true, mask:false});  },
-      mask: function() { srv.start({bar:false, mask:true});  }
+      isLoading:function(){ return isLoading; },
+      saving: function() { $loader.start('Saving');    },
+      loading: function() { $loader.start('Loading');  },
+      bar: function() { $loader.start({bar:true, mask:false});  },
+      mask: function() { $loader.start({bar:false, mask:true});  }
     };
-    return srv;
   })
 
-  .directive('loaderHolder', function($event, $interval) {
+  .directive('loaderHolder', function($event, $interval, $log) {
     return {
       restrict: 'A',
       scope: {},
       template: '<div class="ng-cloak">' +
-                  '<div id="app-loader-bar" ng-cloak ng-show="loaderBar" class="ng-cloak progress progress-striped active">' +
+                  '<div id="app-loader-bar" ng-cloak ng-if="loaderBar" class="ng-cloak progress progress-striped active">' +
                     '<div class="progress-bar" style="width:100%"></div>' +
                   '</div>' +
-                  '<div id="app-loader-mask" ng-show="loadMask">' +
+                  '<div id="app-loader-mask" ng-if="loadMask">' +
                     '<div class="loader-mask"></div>' +
-                    '<div class="loader-text" ng-show="loaderText">' +
+                    '<div class="loader-text" ng-if="loaderText">' +
                       '<div class="loader-gear"><span fa-icon="gear" class="fa-spin fa-2x" style="line-height:20px; vertical-align: middle;"></span></div>' +
                       '<span ng-bind="loaderText"></span><span>...</span>' +
                     '</div>' +
@@ -688,8 +686,9 @@ angular.module('af.loader', ['af.event'])
         }
 
         scope.start = function(options) {
-          if(_.isString(options)){
-            scope.loaderText = options;
+          if(!options || _.isString(options)){
+            // if just text was passed in... enable mask & load bar...
+            scope.loaderText = options || 'Meow, Loading...';
             scope.loadMask = true;
             scope.loaderBar = true;
           } else if(_.isPlainObject(options)){
@@ -974,7 +973,7 @@ angular.module('af.storage', [])
       cache:function(key, value){
         if(arguments.length == 0) return sessionData;
         if(arguments.length == 1) {
-          if(storage.logCachedData) $log.info('CACHED: ' + key, sessionData[key]);
+          if(storage.logCachedData) $log.info('CACHED:' + key); //, sessionData[key]);
           return sessionData[key];
         }
         sessionData[key] = angular.copy(value);
@@ -1044,6 +1043,10 @@ _.mixin({
     return merged;
   },
 
+  pluckUnique:function(array, key){
+    return _.unique(_.pluck(array, key));
+  },
+
 
   //
   // COMMA SEPARATED ID JUNK
@@ -1107,9 +1110,8 @@ _.mixin({
 
       postToUrl: function(url, params, newWindow, method) {
         var date, form, winName;
-        if (!_.isBoolean(newWindow)) {
+        if (!_.isBoolean(newWindow))
           newWindow = true;
-        }
         method = method || 'post';
         form = document.createElement("form");
         form.setAttribute("method", method);
@@ -1133,11 +1135,11 @@ _.mixin({
           form.target = winName;
           document.body.appendChild(form);
           form.submit();
-          return document.body.removeChild(form);
         } else {
           document.body.appendChild(form);
-          return form.submit();
+          form.submit();
         }
+        return document.body.removeChild(form);
       },
 
       // creates a displayName for our user
@@ -1145,15 +1147,19 @@ _.mixin({
         if(!user) return '';
 
         // return preferred name if it exists...
-        var preferredDisplayName = appTenant.get('settings.preferredDisplayName');
-        if(preferredDisplayName && user[preferredDisplayName])
-          return user[preferredDisplayName];
+        //var preferredDisplayName = appTenant.get('settings.preferredDisplayName');
+        //if(preferredDisplayName && user[preferredDisplayName])
+        //  return user[preferredDisplayName];
 
         // return name
         if(user.firstName && user.lastName)
           return user.firstName + ' ' + user.lastName;
         // return whatever we can about this user
         return user.firstName || user.lastName || user.nameOfPractice || user.username || user.userId || '';
+      },
+
+      protocolAndHost:function(){
+        return $window.location.protocol+'//'+$window.location.host;
       },
 
       format: {
