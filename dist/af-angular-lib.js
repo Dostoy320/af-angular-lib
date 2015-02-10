@@ -1,4 +1,3 @@
-
 ;
 (function() {
 
@@ -688,7 +687,7 @@ angular.module('af.loader', ['af.event'])
         scope.start = function(options) {
           if(!options || _.isString(options)){
             // if just text was passed in... enable mask & load bar...
-            scope.loaderText = options || 'Meow, Loading...';
+            scope.loaderText = options || 'Loading';
             scope.loadMask = true;
             scope.loaderBar = true;
           } else if(_.isPlainObject(options)){
