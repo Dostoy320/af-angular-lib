@@ -67,10 +67,7 @@ angular.module('af.modal', ['af.event'])
         scope.close = function() {
           $('body').removeClass('modal-open');
           $("#modalHolder").children().removeClass("in");
-
-          //angular.element(element).unbind('resize');
           return scope.modalURL = null;
-
         };
         scope.$on("Modal.open", function() {
           scope.modalURL = $modal.url;
@@ -85,33 +82,8 @@ angular.module('af.modal', ['af.event'])
           $('body').addClass('modal-open');
           $timeout(function() {
             $("#modalHolder").children().addClass("in");
-
-            // refresh dom hack for after scroll for old ipads
-            var is_iPad = (navigator && navigator.userAgent && navigator.userAgent.match(/iPad/i) != null);
-            if(true || is_iPad){
-              var timer = null;
-              $("#modalHolder .modal .modal-dialog").bind('touchstart',function() {});
-              $("#modalHolder .modal").scroll(function(){
-                if(timer) $timeout.cancel(timer);
-                timer = $timeout(function(){
-                  timer = null;
-                  $('#modalHolder .iosModelScrollHack').text(Math.random())
-                  console.log('Resizing!!');
-                }, 100);
-              });
-
-            };
           }, 50);
-
-
-          //console.log('wtf');
-
-          //scope.$on("$destroy", function() {
-          //});
-
         });
-
-
 
         scope.$on("Modal.close", scope.close);
         scope.stopClickThrough = function(event) {

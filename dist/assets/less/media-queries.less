@@ -27,9 +27,9 @@
 }
 
 */
-
+@maxMobile:1024px;
 @media-desktop  : ~'min-width: @{screen-md}';      // desktop (md or larger) (md, lg)
-@media-mobile   : ~'max-width: @{screen-sm-max}';  // mobile (sm or lower) (sm, xs)
+@media-mobile   : ~'max-width: @{maxMobile}'; //@{screen-sm-max}';  // mobile (sm or lower) (sm, xs)
 @media-phone    : ~'max-width: @{screen-xs-max}';  // phone (xs)
 
 @media-tablet-min   : ~'min-width: @{screen-sm}';     // tablet (sm)
