@@ -47,16 +47,19 @@ angular.module('af.modal', ['af.event'])
     return service;
   })
 
-  .directive("modalHolder", function($modal, $timeout) {
+  .directive("modalHolder", function($modal, $timeout, $window) {
     return {
       restrict: "A",
       scope: {},
       template: '<div id="modalHolder" class="ng-cloak" ng-show="modalURL">' +
+                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1039;" ng-click="close()"></div>' +
                   '<div class="modal fade" ng-click="close()" style="display:block">' +
                     '<div class="modal-dialog" ng-click="stopClickThrough($event)" ' +
+                      // ios hack for rendering issues
+                      'style="-webkit-transition: -webkit-transform 0ms; -webkit-transform-origin: 0px 0px; -webkit-transform: translate3d(0px, 0px, 0px);" ' +
                       'ng-include="modalURL" ng-class="size"></div>' +
+                    '<div class="iosModelScrollHack" ></div>' +
                   '</div>' +
-                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1039;" ng-click="close()"></div>' +
                 '</div>',
       link: function(scope, element, attrs) {
         scope.modalURL = $modal.url;
@@ -64,7 +67,10 @@ angular.module('af.modal', ['af.event'])
         scope.close = function() {
           $('body').removeClass('modal-open');
           $("#modalHolder").children().removeClass("in");
+
+          //angular.element(element).unbind('resize');
           return scope.modalURL = null;
+
         };
         scope.$on("Modal.open", function() {
           scope.modalURL = $modal.url;
@@ -79,8 +85,34 @@ angular.module('af.modal', ['af.event'])
           $('body').addClass('modal-open');
           $timeout(function() {
             $("#modalHolder").children().addClass("in");
+
+            // refresh dom hack for after scroll for old ipads
+            var is_iPad = (navigator && navigator.userAgent && navigator.userAgent.match(/iPad/i) != null);
+            if(true || is_iPad){
+              var timer = null;
+              $("#modalHolder .modal .modal-dialog").bind('touchstart',function() {});
+              $("#modalHolder .modal").scroll(function(){
+                if(timer) $timeout.cancel(timer);
+                timer = $timeout(function(){
+                  timer = null;
+                  $('#modalHolder .iosModelScrollHack').text(Math.random())
+                  console.log('Resizing!!');
+                }, 100);
+              });
+
+            };
           }, 50);
+
+
+          //console.log('wtf');
+
+          //scope.$on("$destroy", function() {
+          //});
+
         });
+
+
+
         scope.$on("Modal.close", scope.close);
         scope.stopClickThrough = function(event) {
           event.stopImmediatePropagation();
