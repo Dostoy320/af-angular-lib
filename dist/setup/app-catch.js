@@ -21,14 +21,15 @@ var appCatch = {
   init:function(settings){
     if(settings) appCatch.loadSettings(settings);
     // do once
-    if(appCatch.loaded || !appCatch.config.enabled) return;
+    if(appCatch.loaded) return;
+    if(!appCatch.config.enabled) return console.log('SENTRY - disabled via config.');
     // sanity checks
     if(typeof Raven === "undefined") return alert('Cannot initialize Sentry. Missing Raven library.');
     if(!appCatch.config.uid) return alert('Sentry init error. Application Config not defined.');
 
     // init
     Raven.config(appCatch.config.uid, appCatch.config.options).install();
-    console.log('SENTRY LOADED - '+appEnv.env() + ' - ' + appCatch.config.uid, appCatch.config.options);
+    console.log('SENTRY - '+appEnv.env(), appCatch.config.uid, appCatch.config);
     appCatch.loaded = true;
   },
 
@@ -48,7 +49,7 @@ var appCatch = {
   send:function(message, extra, tags){ appCatch.error(message, extra, tags); }, // alias
   error:function(message, extra, tags){
     if(!appCatch.loaded) return;
-    console.log('MIXPANEL.error():', message);
+    console.log('appCatch.error():', message);
     extra = extra || {};
     tags = tags || {};
     // build options
@@ -68,7 +69,7 @@ var appCatch = {
     var user = {id:id};
     if(email) user.email = email;
     if(user) {
-      console.log('SENTRY.setUser():', user);
+      console.log('appCatch.setUser():', user);
       Raven.setUser(user);
     } else {
       appCatch.clearUser();
