@@ -6,11 +6,12 @@
   //
 angular.module('af.storage', [])
 
-  .constant('STORAGE_PREFIX', 'myApp')
+  .constant('$STORAGE_CONFIG', {persistent_prefix:'myApp'} )
 
-  .service('$storage', function(STORAGE_PREFIX, $log) {
+  .service('$storage', function($STORAGE_CONFIG, $log) {
 
     var sessionData = {};
+    var prefix = $STORAGE_CONFIG.persistent_prefix;
 
     var storage = {
 
@@ -21,7 +22,7 @@ angular.module('af.storage', [])
         if(_.isNumber(options)) options = { expires:options };
 
         // get or set a value
-        if(key) return amplify.store(STORAGE_PREFIX + '_' + key, angular.copy(value), options);
+        if(key) return amplify.store(prefix + '_' + key, angular.copy(value), options);
         // get all data
         var appData = {};
         _.each(amplify.store(), function(value, key){
@@ -45,7 +46,7 @@ angular.module('af.storage', [])
       clear: function(key) {
         if(key){
           delete sessionData[key];
-          return amplify.store(STORAGE_PREFIX+'_'+key, null);
+          return amplify.store(prefix+'_'+key, null);
         }
         sessionData = {};
         _.keys(amplify.store(), function(key){
@@ -53,7 +54,7 @@ angular.module('af.storage', [])
         });
       },
 
-      isAppData:function(key){ return key.indexOf(STORAGE_PREFIX+'_') === 0; }
+      isAppData:function(key){ return key.indexOf(prefix+'_') === 0; }
 
     };
 
