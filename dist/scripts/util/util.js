@@ -15,7 +15,8 @@
   angular.module('af.util', [])
   .service('$util', function($window, $location) {
 
-    var util = {
+    var $util = null;
+    return $util = {
 
       GET: function(key) {
         // quick check to see if key is even in url at all...
@@ -76,12 +77,10 @@
       // creates a displayName for our user
       createDisplayName:function(user){
         if(!user) return '';
-
         // return preferred name if it exists...
         //var preferredDisplayName = appTenant.get('settings.preferredDisplayName');
         //if(preferredDisplayName && user[preferredDisplayName])
         //  return user[preferredDisplayName];
-
         // return name
         if(user.firstName && user.lastName)
           return user.firstName + ' ' + user.lastName;
@@ -91,6 +90,13 @@
 
       protocolAndHost:function(){
         return $window.location.protocol+'//'+$window.location.host;
+      },
+
+      string: {
+        nl2br: function (str) {
+          if (!str || typeof str != 'string') return str;
+          return str.replace(/\n\r?/g, '<br />');
+        }
       },
 
       format: {
@@ -118,15 +124,24 @@
           return parseFloat(value).formatNumber(precision);
         },
         currency: function(value, precision) {
-          return '$' + util.format.number(value, precision);
+          return '$' + $util.format.number(value, precision);
         },
         percent: function(value, precision) {
-          return util.format.number(value * 100, precision) + '%';
+          return $util.format.number(value * 100, precision) + '%';
+        },
+        targetValue:function(value, type, precision){
+          switch((''+type).toLowerCase()){
+            case 'hours':
+            case 'number':    return $util.format.number(value, precision);
+            case 'currency':  return $util.format.currency(value, precision);
+            case 'percent':   return $util.format.percent(value, precision);
+            case 'textarea':  return $util.string.nl2br(value);
+            case 'text':      return value;
+          }
+          return value;
         }
       }
     };
-
-    return util;
   });
 
 }).call(this);
