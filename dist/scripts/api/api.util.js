@@ -146,7 +146,10 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
         },
         // attempts to get a humanized response from an error.
         getMessage: function(response) {
-          if(response.status === 502) return 'Unable to communicate with server. Please check your internet connection.';
+          if(response.status === 502)
+            return 'Unable to communicate with server. Please check your internet connection.';
+          if(response.status === 503 && (response.body+'').indexOf('Application Error') >= 0)
+            return 'Service Unavailable. An Application Error Has occurred. Please try again.';
           return response.data || response.statusText || apiUtil.getHttpCodeString(response.status);
         }
       },
