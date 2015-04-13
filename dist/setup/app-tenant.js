@@ -3,29 +3,45 @@
 //
 var appTenant = {
 
-  config:{}, // holds config (loaded from db or php, or whatever)
+  _config:{}, // holds config (loaded from db or php, or whatever)
 
-  get:function(path, makePlural) {
-    if (!path) return appTenant.config; // return whole config
-    var value = appTenant.getPathValue(appTenant.config, path);
-    if(typeof value == 'undefined' || value === null) console.log('appTenant.get('+path+') MISSING!');
+
+  config:function(path, makePlural) {
+    if (!path) return appTenant._config; // return whole config
+    var value = appTenant.get(path);
+    if(!appTenant._hasValue(value)) {
+      console.log('appTenant.get(' + path + ') MISSING!');
+      return '';
+    }
     if(makePlural) {
-      var pluralValue = appTenant.getPathValue(appTenant.config, path + '_plural');
-      if(pluralValue) return pluralValue;
-      return appTenant.makePlural(value);
+      var pluralValue = appTenant.get(path + '_plural');
+      if(appTenant._hasValue(pluralValue)) return pluralValue;
+      return appTenant._makePlural(value);
     }
     return value;
+  },
+
+  // get value from objects using dot notation..
+  // eg: get('name.first')
+  get:function(path, parent) {
+    if(!parent) parent = appTenant._config;
+    var parts = (''+path).split('.');
+    var part = parts[0];
+    if(!parent[part]) return null;
+    if (parts.length === 1) return parent[part];
+    var child = parent[parts.shift()];
+    if (!child) return null;
+    return appTenant.get(child, parts.join('.'));
   },
 
 
   //
   // UTIL
   //
-  // checks if enabled flag is true on an object
-  enabled:function(path){
-    return appTenant.get(path+'.enabled') === true
+  _hasValue:function(value){
+    return typeof value !== 'undefined' && value !== null;
   },
-  makePlural:function(value){
+  _makePlural:function(value){
     if(!value) return value;
     if(typeof value !== 'string') return value;
     var lastChar = value.charAt(value.length - 1).toLowerCase();
@@ -34,15 +50,7 @@ var appTenant = {
     if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
     if (lastTwoChar === 'ch') return value + 'es';
     return value + 's';
-  },
-
-  // easily get nested value from objects
-  // eg: getPathValue({ name:{ first:'John', last:'Doe'}}, 'name.first')
-  getPathValue:function(object, path) {
-    var parts = (''+path).split('.');
-    if (parts.length === 1) return object[parts[0]];
-    var child = object[parts.shift()];
-    if (!child) return child;
-    return appTenant.getPathValue(child, parts.join('.'));
   }
+
+
 }
