@@ -4,14 +4,16 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
 
   // DEFAULT HTTP REQUEST OPTIONS
   .constant('HTTP_REQUEST_OPTIONS', {
-    disableHttpInterceptor:false, // disable the http interceptor completely
-    // request options:
     method:'POST',
     url:'',
+    data:{},
+    disableHttpInterceptor:false, // disable the http interceptor completely
     urlEncode:false,              // send as application/x-www-form-urlencoded
-    // response options:
+    applySession:false,           // auto apply sessionToken to data
+    applyIndex:false,             // auto apply tenant for node services
+    applyDebug:false,             // auto apply debug info for node services
     logErrors:true,               // on error, log to sentry (or whatever)
-    displayErrors:true            // on error, display error to user
+    displayErrors:true            // on error, display it to user
   })
 
 
@@ -39,8 +41,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
         // debug info object for requests
         debugInfo: function() {
           return {
-            url: $window.location.href,
-            env: appEnv.env()
+            url: $window.location.href
           }
         },
         isFile:function(request){
@@ -80,11 +81,10 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
             data = responseOrData.data;
 
           // check for our two jsend formats
-          if(_.has(data, 'code') && _.has(data, 'message')) return true;
-          if(_.has(data, 'data')) return true;
+          if(_.has(data, 'status') && _.has(data, 'code') && _.has(data, 'message')) return true;
+          if(_.has(data, 'status') && _.has(data, 'data')) return true;
           return false;
         }
-
       },
 
 
@@ -99,7 +99,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
           // stop any loaders on error
           $loader.stop();
 
-          // only handle this once
+          // ensure only handled once
           if(response.handled === true) return;
 
           var request = response.config;
@@ -122,8 +122,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
           response.handled = true;
         },
         logger:function(response){
-          if(!response) return appCatch.send('Unable To Log. No Response');
-
+          if(!response) return appCatch.send('Unable To Log Error. No Response');
           // if its a string.. just send that.
           if(_.isString(response)) return appCatch.send(response);
 
@@ -211,6 +210,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
       },
       // HTTP CODES
       isHttpCode: function(code) {
+        if(!_.isNumber(code)) return false;
         return _.isString(apiUtil.getHttpCodeString(code));
       },
       getHttpCodeString: function(code) {
@@ -276,7 +276,6 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
       509: 'Bandwidth Limit Exceeded',
       510: 'Not Extended'
     };
-
     return apiUtil;
 
   });

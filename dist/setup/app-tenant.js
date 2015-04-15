@@ -5,6 +5,9 @@ var appTenant = {
 
   _config:{}, // holds config (loaded from db or php, or whatever)
 
+  init:function(config){
+    appTenant._config = config;
+  },
 
   config:function(path, makePlural) {
     if (!path) return appTenant._config; // return whole config
@@ -16,14 +19,16 @@ var appTenant = {
     if(makePlural) {
       var pluralValue = appTenant.get(path + '_plural');
       if(appTenant._hasValue(pluralValue)) return pluralValue;
-      return appTenant._makePlural(value);
+      return appTenant.makePlural(value);
     }
     return value;
   },
 
+
   // get value from objects using dot notation..
   // eg: get('name.first')
   get:function(path, parent) {
+    if(!path) return appTenant._config;
     if(!parent) parent = appTenant._config;
     var parts = (''+path).split('.');
     var part = parts[0];
@@ -41,7 +46,7 @@ var appTenant = {
   _hasValue:function(value){
     return typeof value !== 'undefined' && value !== null;
   },
-  _makePlural:function(value){
+  makePlural:function(value){
     if(!value) return value;
     if(typeof value !== 'string') return value;
     var lastChar = value.charAt(value.length - 1).toLowerCase();
@@ -53,4 +58,4 @@ var appTenant = {
   }
 
 
-}
+};

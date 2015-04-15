@@ -1,23 +1,19 @@
-(function() {
 
-
-//
-// ANGULAR wrapper for appConfig
-//
 angular.module('af.filters', [])
 
-  // plural filter for config
-  .filter('plural', function($config) {
-    return function(value){
-      return appTenant.makePlural(value)
-    }
+  .filter('plural', function() {
+    return appTenant.makePlural;
   })
 
-  // label filter
-  .filter('label', function($config) {
-    return function(path, makePlural){
-      return appTenant.get(path, makePlural)
-    }
+  // eg {{'user.label' | label}}
+  // <span ng-bind="'user.label' | tenantLabel | plural"></span>
+  .filter('tenantLabel', function() {
+    return appTenant.config;
   })
 
-}).call(this);
+  .filter('tenantImage', function($filter) {
+    return function(file) {
+      var tnt = appTenant.get('tenant');
+      return '/tenant/' + tnt + '/images/' + tnt + '_' + file;
+    };
+  });

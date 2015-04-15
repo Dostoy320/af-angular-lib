@@ -31,8 +31,8 @@ var appTrack = {
   loaded: false,
 
   config: {
+    uid:'',
     enabled: true,
-    uid: '',
     options: {
       'cross_subdomain_cookie': false,
       'debug':false
@@ -41,37 +41,38 @@ var appTrack = {
     globalUsageDelay:3600000 // 1 per an hour
   },
 
+
   //
   // INITIALIZE
   //
-  init: function (config) {
-    if(config) appTrack.loadConfig(config);
-    // do once
-    if (appTrack.loaded) return;
-    if (!appTrack.config.enabled) return console.log('MixPanel - disabled via config.');
+  init:function(settings){
+    // load settings
+    if(settings){
+      for(var key in settings){
+        appTrack.config[key] = settings[key];
+      }
+    }
+
     // sanity checks
+    if(appTrack.loaded) return;
+    if(!appTrack.config.enabled) return console.log('MixPanel - Disabled via config.', appCatch.config);
     if (typeof mixpanel === "undefined") return appCatch.send('Cannot initialize AppTrack. Missing MixPanel library.');
     if (!appTrack.config.uid) return appCatch.send('Cannot initialize AppTrack. AppTrack.config not defined.');
 
-    appTrack.config.debug = appEnv.isDev(); // debug on dev
+    appTrack.config.debug = appEnv.isDev;
+
     // init
     mixpanel.init(appTrack.config.uid, appTrack.config.options);
     // always pass these with events:
     appTrack.config.globals = {
-      'Domain': appEnv.subDomainClean(),
-      'Tenant': appEnv.tenant(),
+      'Domain': appEnv.host,
+      'Tenant': appEnv.tenant,
       'Browser Version':navigator.sayswho,
-      'App': appEnv.app()
+      'App': appEnv.app
     };
     mixpanel.register(appTrack.config.globals);
+    console.log('MIXPANEL - Enabled', appTrack.config);
     appTrack.loaded = true;
-    console.log('MIXPANEL - ' + appEnv.env(), appTrack.config.uid, appTrack.config);
-  },
-  loadConfig: function (from) {
-    if (!from) return;
-    for (var key in from) {
-      appTrack.config[key] = from[key];
-    }
   },
 
   isEnabled:function(){
@@ -84,7 +85,6 @@ var appTrack = {
   // can disable/enable after init by setting a cached setting
   trackUserStats:function(value){
     amplify.store('mixpanel_trackUserStats', value);
-    console.log('MixPanel - User Allowed:' + value);
   },
   setUserId: function (userId) {
     if(!appTrack.loaded) return;
@@ -109,17 +109,17 @@ var appTrack = {
   track: function (name, tags, globalModule) {
     if(!appTrack.isEnabled()) return;
     mixpanel.track(name, tags);
-    console.log('MIXPANEL.track('+name+')', tags);
     if(globalModule) appTrack.trackGlobalUsage(globalModule);
   },
   trackGlobalUsage:function(module){
     module = module || 'Other';
     if(!appTrack.isEnabled() || !appTrack.getUserId()) return;
-    var trackedToday = amplify.store('mixpanel_globalUsage_'+module+'-'+appTrack.getUserId());
-    if(trackedToday) return;
+    var key = 'mixpanel_globalUsage_'+module+'-'+appTrack.getUserId();
+    if(amplify.store(key)) return; // tracked recently?
     appTrack.send('Global Usage', { Module:module });
     appTrack.increment('Global Usage');
-    amplify.store('mixpanel_globalUsage_'+module+'-'+appTrack.getUserId(), true, { expires:appTrack.config.globalUsageDelay });
+    // cache so we don't send again right away...
+    amplify.store(key, true, { expires:appTrack.config.globalUsageDelay });
   },
   increment:function(name){
     if(!appTrack.isEnabled() || !appTrack.getUserId()) return;
