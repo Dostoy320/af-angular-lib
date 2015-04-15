@@ -76,7 +76,6 @@ angular.module('af.msg', ['af.event'])
           if (timer) $timeout.cancel(timer);
         };
         scope.$on($event.EVENT_msgShow, function(event, data) {
-          console.log('MESSAGE HEARD!');
           scope.show(data.message, data.type, data.closable, data.delay);
         });
         return scope.$on($event.EVENT_msgClear, scope.clear);

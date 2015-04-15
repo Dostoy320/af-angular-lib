@@ -136,5 +136,17 @@ var appTrack = {
   unregister: function (key) {
     if(!appTrack.isEnabled()) return;
     mixpanel.unregister(key);
+  },
+
+
+
+  //
+  // METHODS
+  //
+  TRACK_LOGIN:function(type, from, to){
+    appTrack.send('Login', {'Login Type':type, 'Login Via':_.capitalize(from), 'Login To':_.capitalize(to) });
+  },
+  PageView:function(name){
+    appTrack.send('Page View');
   }
 };
