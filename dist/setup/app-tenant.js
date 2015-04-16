@@ -9,43 +9,21 @@ var appTenant = {
     appTenant._config = config;
   },
 
-  config:function(path, makePlural) {
-    if (!path) return appTenant._config; // return whole config
-    var value = appTenant.get(path);
-    if(!appTenant._hasValue(value)) {
-      console.log('appTenant.get(' + path + ') MISSING!');
+  config:function(path, makePlural){
+    if(!path) return appTenant._config; // return entire config if no path
+    var value = _.getPathValue(appTenant._config, path);
+    if(!_.hasValue(value)) {
+      console.log('appTenant.config(' + path + ') MISSING!');
       return '';
     }
     if(makePlural) {
-      var pluralValue = appTenant.get(path + '_plural');
-      if(appTenant._hasValue(pluralValue)) return pluralValue;
+      var customPluralValue = _.getPathValue(appTenant._config, path + '_plural');
+      if(_.hasValue(customPluralValue)) return customPluralValue;
       return appTenant.makePlural(value);
     }
     return value;
   },
 
-
-  // get value from objects using dot notation..
-  // eg: get('name.first')
-  get:function(path, parent) {
-    if(!path) return appTenant._config;
-    if(!parent) parent = appTenant._config;
-    var parts = (''+path).split('.');
-    var part = parts[0];
-    if(!parent[part]) return null;
-    if (parts.length === 1) return parent[part];
-    var child = parent[parts.shift()];
-    if (!child) return null;
-    return appTenant.get(child, parts.join('.'));
-  },
-
-
-  //
-  // UTIL
-  //
-  _hasValue:function(value){
-    return typeof value !== 'undefined' && value !== null;
-  },
   makePlural:function(value){
     if(!value) return value;
     if(typeof value !== 'string') return value;
@@ -56,6 +34,5 @@ var appTenant = {
     if (lastTwoChar === 'ch') return value + 'es';
     return value + 's';
   }
-
 
 };

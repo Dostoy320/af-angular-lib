@@ -13,7 +13,7 @@ angular.module('af.filters', [])
 
   .filter('tenantImage', function($filter) {
     return function(file) {
-      var tnt = appTenant.get('tenant');
+      var tnt = appTenant.config('tenant');
       return '/tenant/' + tnt + '/images/' + tnt + '_' + file;
     };
   });

@@ -28,6 +28,25 @@ _.mixin({
     return _.unique(_.pluck(array, key));
   },
 
+  hasValue:function(value){
+    return !_.isUndefined(value) && !_.isNull(value) && !_.isNaN(value) && value !== ''
+  },
+
+  // allows you to get a nested value from an object using dot notation.
+  // eg: _getPathValue( { user:{name:'nate'} , 'user.name') => 'nate'
+  getPathValue:function(object, path){
+    if(!path) return null;
+    var parts = (''+path).split('.');
+    var parent = object;
+    for(var i = 0; i < parts.length; i++){
+      var nextPart = parts[i];
+      if(!_.has(parent, nextPart)) return null;
+      // keep drilling down
+      parent = parent[nextPart];
+    }
+    return parent;
+  },
+
 
   //
   // COMMA SEPARATED ID JUNK
