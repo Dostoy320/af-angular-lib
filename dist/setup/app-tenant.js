@@ -33,6 +33,10 @@ var appTenant = {
     if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
     if (lastTwoChar === 'ch') return value + 'es';
     return value + 's';
-  }
+  },
+
+  // quickie makers
+  label:function(value, plural){ return appTenant.config('labels.'+value, plural)},
+  enabled:function(value){ return appTenant.config('enabled.'+value)}
 
 };
