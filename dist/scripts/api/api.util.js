@@ -145,8 +145,11 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
         },
         // attempts to get a humanized response from an error.
         getMessage: function(response) {
-          if(response.status === 404)
+          if(response.status === 404){
+            if(('' + response.data).indexOf('Heroku | No such app'))
+              return 'Unable to communicate with server.';
             return 'The requested page could not be found.';
+          }
           if(response.status === 502)
             return 'Unable to communicate with server. Please check your internet connection.';
           if(response.status === 503 && (response.body+'').indexOf('Application Error') >= 0)
