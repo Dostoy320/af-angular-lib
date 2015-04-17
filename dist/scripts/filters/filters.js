@@ -2,7 +2,7 @@
 angular.module('af.filters', [])
 
 
-  // eg {{'user.label' | label}}
+  // eg {{'user.name' | label}}
   // <span ng-bind="'user' | tenantLabel | plural"></span>
   .filter('tenantConfig', function() {  return appTenant.config; })
   .filter('tenantLabel', function() {   return appTenant.label; })
