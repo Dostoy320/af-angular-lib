@@ -31,12 +31,12 @@ angular.module('af.help', ['af.event', 'af.modal'])
       restrict: "A",
       scope: {},
       template: '<div id="helpHolder" class="ng-cloak" ng-if="url">'+
-                  '<div class="modal fade" ng-click="close()" style="display:block; z-index:1042;">' +
+                  '<div class="modal fade" ng-click="close()" style="display:block; z-index:1052;">' +
                     '<div class="modal-dialog" ng-click="stopClickThrough($event)" ng-include="url" ' +
                     // ios hack for rendering issues
                     'style="-webkit-transition: -webkit-transform 0ms; -webkit-transform-origin: 0px 0px; -webkit-transform: translate3d(0px, 0px, 0px);"></div>' +
                   '</div>' +
-                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1041;" ng-click="close()"></div>' +
+                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1051;" ng-click="close()"></div>' +
                 '</div>',
       link: function(scope, element, attrs) {
         scope.close = function() {
