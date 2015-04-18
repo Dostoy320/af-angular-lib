@@ -25,12 +25,13 @@ var appTenant = {
   },
 
   makePlural:function(value){
-    if(!value) return value;
-    if(typeof value !== 'string') return value;
+    if(typeof value !== 'string' || value === '') return value;
     var lastChar = value.charAt(value.length - 1).toLowerCase();
     var lastTwoChar = value.slice(value.length - 2).toLowerCase();
     // special cases...
-    if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
+    // If the word ends in a vowel (a,e,i,o,u) + y then just add s.
+    if (lastChar === 'y' && lastTwoChar !== 'ay' && lastTwoChar !== 'ey' && lastTwoChar !== 'iy' && lastTwoChar !== 'oy' && lastTwoChar !== 'uy')
+      return value.slice(0, value.length - 1) + 'ies';
     if (lastTwoChar === 'ch') return value + 'es';
     return value + 's';
   },
