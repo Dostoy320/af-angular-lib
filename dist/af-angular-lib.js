@@ -511,13 +511,13 @@ angular.module('af.filters', [])
 
 angular.module('af.event', [])
 
-  .service('$event', function($rootScope, $log) {
+  .service('$events', function($rootScope, $log) {
     var logEvent, service;
 
     logEvent = function(type, eventName, data) {
       var suppress = [service.EVENT_loaderStart, service.EVENT_loaderStop, service.EVENT_msgClear];
       if (!_.contains(suppress, eventName))
-        $log.debug('$event.' + type + ': ' + eventName, data);
+        $log.debug('$events.' + type + ': ' + eventName, data);
     };
 
     return service = {
@@ -553,7 +553,7 @@ angular.module('af.help', ['af.event', 'af.modal'])
     genericHelpPath:'src/views/templates/generic.help.view.html'
   })
 
-  .service("$help", function($event) {
+  .service("$help", function($events) {
     var service;
     service = {
       isOpen:false,
@@ -561,13 +561,13 @@ angular.module('af.help', ['af.event', 'af.modal'])
       open: function(title, body) {
         service.controller.title = title;
         service.controller.body = body;
-        $event.shout("Help.open", service.controller);
+        $events.shout("Help.open", service.controller);
         service.isOpen = true;
       },
       close: function(data) {
         if(!service.isOpen) return;
         service.isOpen = false;
-        $event.shout("Help.close");
+        $events.shout("Help.close");
       }
     };
     return service;
@@ -624,16 +624,16 @@ angular.module('af.help', ['af.event', 'af.modal'])
 
 angular.module('af.loader', ['af.event'])
 
-  .service('$loader', function($event) {
+  .service('$loader', function($events) {
     var $loader = {}, isLoading = false;
     return $loader = {
       start: function(options) {
         isLoading = true;
-        return $event.shout($event.EVENT_loaderStart, options);
+        return $events.shout($events.EVENT_loaderStart, options);
       },
       stop: function() {
         isLoading = false;
-        return $event.shout($event.EVENT_loaderStop);
+        return $events.shout($events.EVENT_loaderStop);
       },
       // util / quickies
       isLoading:function(){ return isLoading; },
@@ -644,7 +644,7 @@ angular.module('af.loader', ['af.event'])
     };
   })
 
-  .directive('loaderHolder', function($event, $interval, $log) {
+  .directive('loaderHolder', function($events, $interval, $log) {
     return {
       restrict: 'A',
       scope: {},
@@ -701,10 +701,10 @@ angular.module('af.loader', ['af.event'])
           scope.loaderBar = scope.loaderText = scope.loadMask = null;
           clearTick();
         };
-        scope.$on($event.EVENT_loaderStart, function(event, txt) {
+        scope.$on($events.EVENT_loaderStart, function(event, txt) {
           scope.start(txt);
         });
-        scope.$on($event.EVENT_loaderStop, scope.stop);
+        scope.$on($events.EVENT_loaderStop, scope.stop);
 
         // kill any timer on destroy
         element.on('$destroy', clearTick);
@@ -723,7 +723,7 @@ angular.module('af.modal', ['af.event'])
     genericModalPath:'src/views/templates/generic.modal.view.html'
   })
 
-  .service("$modal", function($event, $MODAL_CONFIG) {
+  .service("$modal", function($events, $MODAL_CONFIG) {
     var service;
     service = {
       isOpen:false,
@@ -735,7 +735,7 @@ angular.module('af.modal', ['af.event'])
         service.controller = ctrl;
         service.size = size; // lg, md, sm
         if (!service.url) service.url = $MODAL_CONFIG.genericModalPath;
-        $event.shout("Modal.open", {
+        $events.shout("Modal.open", {
           url: service.url,
           controller: service.controller,
           size: service.size
@@ -744,7 +744,7 @@ angular.module('af.modal', ['af.event'])
       },
       close: function(data) {
         if(!service.isOpen) return;
-        $event.shout("Modal.close", data);
+        $events.shout("Modal.close", data);
         service.isOpen = false;
         service.url = null;
         service.size = null;
@@ -849,7 +849,7 @@ angular.module('af.modal', ['af.event'])
 
 angular.module('af.msg', ['af.event'])
 
-  .service('$msg', function($event) {
+  .service('$msg', function($events) {
     var msg;
     return msg = {
       shownAt: null,
@@ -864,7 +864,7 @@ angular.module('af.msg', ['af.event'])
 
         msg.shownAt = new Date().getTime();
 
-        return $event.shout($event.EVENT_msgShow, {
+        return $events.shout($events.EVENT_msgShow, {
           message: message,
           type: type,
           delay: delay,
@@ -875,7 +875,7 @@ angular.module('af.msg', ['af.event'])
       clear: function(force) {
         var now = new Date().getTime();
         if (force || (msg.shownAt && (now - msg.shownAt) > msg.minVisible))
-          return $event.shout($event.EVENT_msgClear);
+          return $events.shout($events.EVENT_msgClear);
       },
 
       alert: function(message, closable, delay) {   return msg.show(message, 'warning', closable, delay); },
@@ -885,7 +885,7 @@ angular.module('af.msg', ['af.event'])
     };
   })
 
-  .directive('msgHolder', function($timeout, $window, $event) {
+  .directive('msgHolder', function($timeout, $window, $events) {
     var timer = null;
     return {
       restrict: 'A',
@@ -922,11 +922,11 @@ angular.module('af.msg', ['af.event'])
           scope.visible = false;
           if (timer) $timeout.cancel(timer);
         };
-        scope.$on($event.EVENT_msgShow, function(event, data) {
+        scope.$on($events.EVENT_msgShow, function(event, data) {
           console.log('MESSAGE HEARD!');
           scope.show(data.message, data.type, data.closable, data.delay);
         });
-        return scope.$on($event.EVENT_msgClear, scope.clear);
+        return scope.$on($events.EVENT_msgClear, scope.clear);
       }
     };
   })
