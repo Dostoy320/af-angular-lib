@@ -9,6 +9,10 @@ var appTenant = {
     appTenant._config = config;
   },
 
+  // quickie makers
+  label:function(value, plural){ return appTenant.config('labels.'+value, plural)},
+  enabled:function(value){ return appTenant.config('enabled.'+value)},
+
   config:function(path, makePlural){
     if(!path) return appTenant._config; // return entire config if no path
     var value = _.getPathValue(appTenant._config, path);
@@ -34,10 +38,6 @@ var appTenant = {
       return value.slice(0, value.length - 1) + 'ies';
     if (lastTwoChar === 'ch') return value + 'es';
     return value + 's';
-  },
-
-  // quickie makers
-  label:function(value, plural){ return appTenant.config('labels.'+value, plural)},
-  enabled:function(value){ return appTenant.config('enabled.'+value)}
+  }
 
 };
