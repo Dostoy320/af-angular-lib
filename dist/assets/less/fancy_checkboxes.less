@@ -13,7 +13,9 @@ label.fancy.fancy-radio {
   cursor: pointer;
   font-weight:normal;
   // create area to display label
-  min-height:@fancyRadioH;
+  min-height:@fancyRadioH + 1px;
+  line-height:@fancyRadioH + 1px;
+  vertical-align: middle;
   padding-left: @fancyRadioW + 10px;
   input{ // hides checkbox
     margin-right: 5px;
