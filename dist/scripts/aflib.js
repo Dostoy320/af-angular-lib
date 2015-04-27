@@ -521,24 +521,8 @@
       QuickContent: {
         serviceUrl: '/quick-content',
         execute: function(method, params, onSuccess, onError) {
-          var req;
-          if (params == null) {
-            params = {};
-          }
-          if (params.index == null) {
-            params.index = $config.getTenantIndex();
-          }
-          if (autoApplySession) {
-            if (params.sessionToken == null) {
-              params.sessionToken = authManager.findSessionToken(autoApplySessionPriority);
-            }
-          }
-          req = {
-            url: node.QuickContent.serviceUrl + method,
-            data: params
-          };
-          req = api.addDebugInfo(req);
-          return api.execute(req, onSuccess, onError);
+          method = '/quick-content/' + method;
+          return node.RoadmapNode.execute(method, params, onSuccess, onError);
         },
         mget: function(body, onSuccess, onError) {
           var params;

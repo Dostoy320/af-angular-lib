@@ -52,14 +52,15 @@ myApp.service 'node', ($http, api, authManager, $config) ->
       serviceUrl:'/quick-content'
       execute:(method, params, onSuccess, onError) ->
         # all calls require index and sessionToken
-        params ?= {}
-        params.index ?= $config.getTenantIndex()
-        if autoApplySession then params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
-        req =
-          url: node.QuickContent.serviceUrl + method
-          data: params
-        req = api.addDebugInfo(req)
-        api.execute(req, onSuccess, onError)
+        #params ?= {}
+        # params.index ?= $config.getTenantIndex()
+        #if autoApplySession then params.sessionToken ?= authManager.findSessionToken(autoApplySessionPriority)
+        #req =
+        #  url: node.QuickContent.serviceUrl + method
+        #  data: params
+        #req = api.addDebugInfo(req)
+        method = '/quick-content/' + method;
+        node.RoadmapNode.execute(method, params, onSuccess, onError)
 
       mget:(body, onSuccess, onError) ->
         params = { type:'recommendations', body:body }
