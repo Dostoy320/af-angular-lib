@@ -52,7 +52,7 @@ myApp.service 'node', ($http, api, authManager, $config) ->
       serviceUrl:'/quick-content'
       execute:(method, params, onSuccess, onError) ->
         # quick content is now on Roadmap node... so just pass it to that..
-        method = '/quick-content' + method; # -> /roadmap-node/api/quick-content/ + method
+        method = '/api/quick-content' + method; # -> /roadmap-node/api/quick-content/ + method
         node.RoadmapNode.execute(method, params, onSuccess, onError)
 
       mget:(body, onSuccess, onError) ->
@@ -60,20 +60,18 @@ myApp.service 'node', ($http, api, authManager, $config) ->
         node.QuickContent.execute('/mget', params, (data) ->
           if not onSuccess then return
           # try to move id onto source and return _source
-          if data and data.docs
-            data.docs = node.QuickContent.flatten(data.docs)
-            onSuccess(data.docs)
-          else
-            onSuccess(data)
+          if data and data.length > 0
+            data = node.QuickContent.flatten(data)
+          onSuccess(data)
         , onError)
 
       search:(body, onSuccess, onError) ->
         params = { type:'recommendations', body:body }
         node.QuickContent.execute('/search', params, (data) ->
           if not onSuccess then return
-          if data and data.hits and data.hits.hits
-            data.hits.hits = node.QuickContent.flatten(data.hits.hits)
-            onSuccess(data.hits)
+          if data and data.hits
+            data.hits = node.QuickContent.flatten(data.hits)
+            onSuccess(data)
           else
             onSuccess(data)
         , onError)

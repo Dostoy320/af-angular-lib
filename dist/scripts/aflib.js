@@ -521,7 +521,7 @@
       QuickContent: {
         serviceUrl: '/quick-content',
         execute: function(method, params, onSuccess, onError) {
-          method = '/quick-content' + method;
+          method = '/api/quick-content' + method;
           return node.RoadmapNode.execute(method, params, onSuccess, onError);
         },
         mget: function(body, onSuccess, onError) {
@@ -534,12 +534,10 @@
             if (!onSuccess) {
               return;
             }
-            if (data && data.docs) {
-              data.docs = node.QuickContent.flatten(data.docs);
-              return onSuccess(data.docs);
-            } else {
-              return onSuccess(data);
+            if (data && data.length > 0) {
+              data = node.QuickContent.flatten(data);
             }
+            return onSuccess(data);
           }, onError);
         },
         search: function(body, onSuccess, onError) {
@@ -552,9 +550,9 @@
             if (!onSuccess) {
               return;
             }
-            if (data && data.hits && data.hits.hits) {
-              data.hits.hits = node.QuickContent.flatten(data.hits.hits);
-              return onSuccess(data.hits);
+            if (data && data.hits) {
+              data.hits = node.QuickContent.flatten(data.hits);
+              return onSuccess(data);
             } else {
               return onSuccess(data);
             }
