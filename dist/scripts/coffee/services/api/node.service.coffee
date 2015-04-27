@@ -52,7 +52,7 @@ myApp.service 'node', ($http, api, authManager, $config) ->
       serviceUrl:'/quick-content'
       execute:(method, params, onSuccess, onError) ->
         # quick content is now on Roadmap node... so just pass it to that..
-        method = '/quick-content/' + method; # -> /roadmap-node/api/quick-content/ + method
+        method = '/quick-content' + method; # -> /roadmap-node/api/quick-content/ + method
         node.RoadmapNode.execute(method, params, onSuccess, onError)
 
       mget:(body, onSuccess, onError) ->

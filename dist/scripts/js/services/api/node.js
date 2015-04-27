@@ -74,7 +74,7 @@
       QuickContent: {
         serviceUrl: '/quick-content',
         execute: function(method, params, onSuccess, onError) {
-          method = '/quick-content/' + method;
+          method = '/quick-content' + method;
           return node.RoadmapNode.execute(method, params, onSuccess, onError);
         },
         mget: function(body, onSuccess, onError) {
