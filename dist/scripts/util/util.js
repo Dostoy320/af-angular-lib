@@ -20,7 +20,7 @@
 
       GET: function(key) {
         // quick check to see if key is even in url at all...
-        if($location.absUrl().indexOf(key) < 0) return null;
+        if(key && $location.absUrl().indexOf(key) < 0) return null;
 
         var vars = $location.search();
         var search = $window.location.search;

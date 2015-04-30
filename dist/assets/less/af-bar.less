@@ -1,0 +1,59 @@
+
+@afBarHeight:26px;
+#af-bar{
+
+  @actifiBlue : #336699;
+
+  height:@afBarHeight;
+  background-color:#EEE;
+  border-top:1px solid #BBB;
+  padding:0;
+  margin:0;
+
+  position: fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  .af-bar-title{
+    line-height: @afBarHeight;
+    vertical-align: middle;
+    text-shadow: 0px 1px 1px rgba(0,0,0,0.4);
+    font-size:10pt;
+    letter-spacing:6pt;
+    span:first-child{ color:@actifiBlue; }
+    span{ color:#003366; }
+    /* mediaMobile */
+    @media (@media-mobile) {
+      font-size:8pt;
+      letter-spacing:5pt;
+    }
+    /* iPad and loader */
+    @media (max-width: 1024px) {
+      text-shadow: none;
+    }
+  }
+  .af-bar-logo-link:hover{
+    text-decoration: none;
+  }
+  .af-bar-logo{
+    margin-right:8px;
+    height: @afBarHeight;
+    width:  @afBarHeight;
+  }
+  .af-bar-poweredBy{
+    line-height: @afBarHeight;
+    float:right;
+    font-size:8pt;
+    padding:0 10px 0 0;
+    a{ color:@actifiBlue; }
+  }
+}
+
+/*
+#rightPane{
+  #af-bar{
+    left:-10px;
+    right:-10px;
+  }
+}
+*/
