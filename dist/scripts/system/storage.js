@@ -10,19 +10,31 @@ angular.module('af.storage', [])
 
   .service('$storage', function($STORAGE_CONFIG, $log) {
 
-    var sessionData = {};
+    var tempData = {}; // cleared if page refreshed..
     var prefix = $STORAGE_CONFIG.persistent_prefix;
 
     var storage = {
+      logCachedData:true, // dev
 
-      // LOCAL STORAGE
-      // data stored with prefix pertaining to a particular application only
-      store:function(key, value, options){
-        // ensure options are in correct format: { expires:x }
+      // amplify wrapper
+      amplify:function(key, value, options){
         if(_.isNumber(options)) options = { expires:options };
+        return amplify.store(key, value, options);
+      },
 
-        // get or set a value
-        if(key) return amplify.store(prefix + '_' + key, angular.copy(value), options);
+
+      //
+      // STORE
+      //
+      // store till cleared... (amplify alias)
+      local:function(key, value, options){
+        return storage.amplify(key, value, options);
+      },
+
+      // store till cleared or next login...
+      session:function(key, value, options){
+        // get or set
+        if(arguments.length > 0) return storage.amplify(prefix+'_'+key, value, options);
         // get all data
         var appData = {};
         _.each(amplify.store(), function(value, key){
@@ -31,26 +43,38 @@ angular.module('af.storage', [])
         return appData;
       },
 
-      // THiS IS BASICALLY A SESSION STORAGE
-      // data that will be gone if page refreshed.
-      logCachedData:true,
-      cache:function(key, value){
-        if(arguments.length == 0) return sessionData;
+      // store till cleared, next login, or page refresh...
+      temp:function(key, value){
+        if(arguments.length == 0) return tempData;
         if(arguments.length == 1) {
-          if(storage.logCachedData) $log.info('CACHED:' + key); //, sessionData[key]);
-          return sessionData[key];
+          if(storage.logCachedData) $log.info('TEMP CACHE:' + key);
+          return tempData[key];
         }
-        sessionData[key] = angular.copy(value);
+        tempData[key] = angular.copy(value);
       },
 
+      
+      
+      //
+      // EMPTY
+      //
       clear: function(key) {
+        // clear one thing
         if(key){
-          delete sessionData[key];
+          delete tempData[key];
           return amplify.store(prefix+'_'+key, null);
         }
-        sessionData = {};
+        // clear all
+        tempData = {};
         _.keys(amplify.store(), function(key){
           if(storage.isAppData(key)) amplify.store(key, null);
+        });
+      },
+
+      // clear everything
+      nuke:function(){
+        _.keys(amplify.store(), function(key){
+          amplify.store(key, null);
         });
       },
 
