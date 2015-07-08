@@ -140,7 +140,15 @@
           }
           return value;
         }
+      },
+
+      unFormat:{
+        number:function(value, precision){
+
+        }
       }
+
+
     };
   });
 
