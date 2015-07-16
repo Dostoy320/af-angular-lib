@@ -92,6 +92,7 @@
         return $window.location.protocol+'//'+$window.location.host;
       },
 
+
       number:{
         // floating point error fix
         nc:function(number, precision){ return $util.number.floatFix(number, precision); },
@@ -113,6 +114,9 @@
           var pattern = /[^\.\d]/g,
               cleaned = (''+value).replace(pattern,'');
           return parseFloat(negativeSign + cleaned);
+        },
+        isTruthy:function(value){
+          return (value === 'true' || value === true || value == '1' || value === 1)
         }
       },
 
@@ -137,7 +141,7 @@
           }
           return value;
         },
-        number: function(value, precision, type) {
+        number: function(value, precision, type, showSymbol) {
           if(!_.isFinite(value)) return '';
           // save if its negative...
           var negativeSign = (''+value).substr(0,1) === '-' ? '-':'';
@@ -147,22 +151,30 @@
           // format it
           cleaned = parseFloat(cleaned);
           cleaned.formatNumber(precision || 0);
-
-          //if(isNegative) cleaned = cleaned * -1;
+          // show symbol?
+          showSymbol = $util.string.isTruthy(showSymbol);
+          var symbol = '';
+          if(showSymbol){
+            switch((''+type).toLowerCase()){
+              case 'currency': symbol = '$'; break;
+              case 'percent': symbol = '%'; break;
+            }
+          }
+          // return it all
           switch((''+type).toLowerCase()){
             case 'currency':
-              return negativeSign + '$' + parseFloat(cleaned).formatNumber(precision || 0);
+              return negativeSign + symbol + parseFloat(cleaned).formatNumber(precision || 0);
             case 'percent':
-              return negativeSign + parseFloat(cleaned * 100).formatNumber(precision || 0) + '%';
+              return negativeSign + parseFloat(cleaned * 100).formatNumber(precision || 0) + symbol;
             default :
               return negativeSign + parseFloat(cleaned).formatNumber(precision || 0);
           }
         },
-        currency: function(value, precision) {
-          return $util.format.number(value, precision, 'currency');
+        currency: function(value, precision, showSymbol) {
+          return $util.format.number(value, precision, 'currency', showSymbol);
         },
-        percent: function(value, precision) {
-          return $util.format.number(value, precision, 'percent');
+        percent: function(value, precision, showSymbol) {
+          return $util.format.number(value, precision, 'percent', showSymbol);
         },
         targetValue:function(value, type, precision){
           switch((''+type).toLowerCase()){
