@@ -92,10 +92,27 @@
         return $window.location.protocol+'//'+$window.location.host;
       },
 
+      number:{
+        // floating point error fix
+        nc:function(number, precision){ return $util.number.floatFix(number, precision); },
+        floatFix:function(number, precision){
+          var precision = precision || 2,
+              correction = Math.pow(10, precision);
+          return Math.round(correction * number)/correction;
+        }
+      },
+
       string: {
         nl2br: function (str) {
           if (!str || typeof str != 'string') return str;
           return str.replace(/\n\r?/g, '<br />');
+        },
+        // clean junk from a string to get the number out...
+        getNumber:function(value){
+          var negativeSign = (''+value).substr(0,1) === '-' ? '-':'';
+          var pattern = /[^\.\d]/g,
+              cleaned = (''+value).replace(pattern,'');
+          return parseFloat(negativeSign + cleaned);
         }
       },
 
@@ -120,14 +137,32 @@
           }
           return value;
         },
-        number: function(value, precision) {
-          return parseFloat(value).formatNumber(precision);
+        number: function(value, precision, type) {
+          if(!_.isFinite(value)) return '';
+          // save if its negative...
+          var negativeSign = (''+value).substr(0,1) === '-' ? '-':'';
+          // strip everything except periods and numbers
+          var pattern = /[^\.\d]/g,
+              cleaned = (''+value).replace(pattern,'');
+          // format it
+          cleaned = parseFloat(cleaned);
+          cleaned.formatNumber(precision || 0);
+
+          //if(isNegative) cleaned = cleaned * -1;
+          switch((''+type).toLowerCase()){
+            case 'currency':
+              return negativeSign + '$' + parseFloat(cleaned).formatNumber(precision || 0);
+            case 'percent':
+              return negativeSign + parseFloat(cleaned * 100).formatNumber(precision || 0) + '%';
+            default :
+              return negativeSign + parseFloat(cleaned).formatNumber(precision || 0);
+          }
         },
         currency: function(value, precision) {
-          return '$' + $util.format.number(value, precision);
+          return $util.format.number(value, precision, 'currency');
         },
         percent: function(value, precision) {
-          return $util.format.number(value * 100, precision) + '%';
+          return $util.format.number(value, precision, 'percent');
         },
         targetValue:function(value, type, precision){
           switch((''+type).toLowerCase()){
@@ -143,8 +178,49 @@
       },
 
       unFormat:{
-        number:function(value, precision){
+        percent:function(value, precision){
+          return $util.unFormat.number(value, precision, 'percent');
+        },
+        currency:function(value, precision){
+          return $util.unFormat.number(value, precision, 'currency');
+        },
+        number:function(value, precision, type){
 
+          if(_.isNull(value) || _.isUndefined(value) || value === '') return null;
+
+          // sanity checks
+          if(!precision) precision = 0;
+          if(!type) type = 'number'; // number or percent
+          type = (''+type).toLowerCase();
+
+          var showDecimal = precision > 0 ? true:false;
+          var negativeSign = (''+value).substr(0,1) === '-' ? '-':'';
+
+          // strip everything except periods and numbers
+          var pattern = /[^\.\d]/g,
+              cleaned = (''+value).replace(pattern,'');
+
+          // has decimal?
+          var decimalPlace = cleaned.indexOf('.');
+          if(decimalPlace >= 0){
+            var split = cleaned.split('.');
+            cleaned = split[0];
+            if(showDecimal){
+              // if percent... need to add 2 to precision for correct rounding
+              var numDecimals = type == 'percent' ? precision+2 : precision;
+              var decimal = split[1].substr(0, numDecimals); // no rounding currently.
+              cleaned += '.' + decimal;
+            }
+          }
+
+          // replace negative sign
+          cleaned = negativeSign + cleaned;
+          var final = parseFloat(cleaned);
+
+          // get correct value if its a percent
+          if(type == 'percent') final = $util.number.floatFix(final / 100, precision+2);
+          if(_.isNaN(final) || _.isUndefined(final)) return null;
+          return final;
         }
       }
 
