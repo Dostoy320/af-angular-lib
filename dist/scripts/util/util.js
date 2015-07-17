@@ -142,6 +142,7 @@
           return value;
         },
         number: function(value, precision, type, showSymbol) {
+          if(_.isString(value)) value = parseFloat(value);
           if(!_.isFinite(value)) return '';
           // save if its negative...
           var negativeSign = (''+value).substr(0,1) === '-' ? '-':'';
@@ -152,6 +153,7 @@
           cleaned = parseFloat(cleaned);
           cleaned.formatNumber(precision || 0);
           // show symbol?
+          showSymbol = showSymbol || true;
           showSymbol = $util.string.isTruthy(showSymbol);
           var symbol = '';
           if(showSymbol){
