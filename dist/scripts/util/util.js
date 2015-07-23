@@ -91,7 +91,9 @@
       protocolAndHost:function(){
         return $window.location.protocol+'//'+$window.location.host;
       },
-
+      isTruthy:function(value){
+        return (value === 'true' || value === true || value == '1' || value === 1)
+      },
 
       number:{
         // floating point error fix
@@ -114,9 +116,6 @@
           var pattern = /[^\.\d]/g,
               cleaned = (''+value).replace(pattern,'');
           return parseFloat(negativeSign + cleaned);
-        },
-        isTruthy:function(value){
-          return (value === 'true' || value === true || value == '1' || value === 1)
         }
       },
 
@@ -153,8 +152,8 @@
           cleaned = parseFloat(cleaned);
           cleaned.formatNumber(precision || 0);
           // show symbol?
-          showSymbol = showSymbol || true;
-          showSymbol = $util.string.isTruthy(showSymbol);
+          if(_.isUndefined(showSymbol) || _.isNull(showSymbol)) showSymbol = true;
+          showSymbol = $util.isTruthy(showSymbol);
           var symbol = '';
           if(showSymbol){
             switch((''+type).toLowerCase()){
