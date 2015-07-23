@@ -78,7 +78,7 @@
       createDisplayName:function(user){
         if(!user) return '';
         // return preferred name if it exists...
-        //var preferredDisplayName = appTenant.get('settings.preferredDisplayName');
+        //var preferredDisplayName = appTenant.config('settings.preferredDisplayName');
         //if(preferredDisplayName && user[preferredDisplayName])
         //  return user[preferredDisplayName];
         // return name
@@ -124,7 +124,7 @@
           if (!value) return '';
           if (!inputType) inputType = "utc";
           if (moment) {
-            if(!format) format = appTenant.get('settings.date.format') || 'MM/DD/YY';
+            if(!format) format = appTenant.config('settings.dates.format') || 'MM/DD/YY';
             if (typeof value === 'string') {
               switch (inputType.toLowerCase()) {
                 case 'utc':
