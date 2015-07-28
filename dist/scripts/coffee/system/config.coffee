@@ -62,6 +62,7 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
       #if subDomain.indexOf('-dev') > -1 then subDomain = subDomain.split("-dev").shift()
       switch subDomain
         when 'localhost', 'dev' then return 'alpha2'
+        when 'apps'    then return 'actifi'
         when 'waddell' then return 'wr'
         when 'tdai'    then return 'td'
       # check dev domains

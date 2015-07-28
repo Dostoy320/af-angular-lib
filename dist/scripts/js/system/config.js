@@ -87,6 +87,8 @@
           case 'localhost':
           case 'dev':
             return 'alpha2';
+          case 'apps':
+            return 'actifi';
           case 'waddell':
             return 'wr';
           case 'tdai':
