@@ -56,19 +56,18 @@ myApp.service '$config', ($window, $log, DEV_DOMAINS) ->
       return env;
 
     getTenantIndex:() ->
-      index = config.getTenant() # default to tenant
+      #index = config.getTenant() # default to tenant
       subDomain = config.getSubDomain()
       # strip dev to get indexes...
-      if subDomain.indexOf('-dev') > -1 then subDomain = subDomain.split("-dev").shift()
+      #if subDomain.indexOf('-dev') > -1 then subDomain = subDomain.split("-dev").shift()
       switch subDomain
-        when 'alpha'   then index = 'alpha'
-        when 'alpha2'  then index = 'alpha2'
-        when 'waddell' then index = 'wr'
-        when 'tdai'    then index = 'td'
+        when 'localhost', 'dev' then return 'alpha2'
+        when 'waddell' then return 'wr'
+        when 'tdai'    then return 'td'
       # check dev domains
-      _.each DEV_DOMAINS, (devNodeIndex, devDomain) ->
-        if subDomain is devDomain then index = devNodeIndex
-      return index
+      #_.each DEV_DOMAINS, (devNodeIndex, devDomain) ->
+      #  if subDomain is devDomain then index = devNodeIndex
+      return subDomain
 
 
     # DOMAIN / URL DATA

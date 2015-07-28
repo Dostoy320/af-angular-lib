@@ -710,31 +710,18 @@
         return env;
       },
       getTenantIndex: function() {
-        var index, subDomain;
-        index = config.getTenant();
+        var subDomain;
         subDomain = config.getSubDomain();
-        if (subDomain.indexOf('-dev') > -1) {
-          subDomain = subDomain.split("-dev").shift();
-        }
         switch (subDomain) {
-          case 'alpha':
-            index = 'alpha';
-            break;
-          case 'alpha2':
-            index = 'alpha2';
-            break;
+          case 'localhost':
+          case 'dev':
+            return 'alpha2';
           case 'waddell':
-            index = 'wr';
-            break;
+            return 'wr';
           case 'tdai':
-            index = 'td';
+            return 'td';
         }
-        _.each(DEV_DOMAINS, function(devNodeIndex, devDomain) {
-          if (subDomain === devDomain) {
-            return index = devNodeIndex;
-          }
-        });
-        return index;
+        return subDomain;
       },
       getSubDomain: function() {
         return window.location.host.split('.').shift().toLowerCase();
