@@ -28,9 +28,9 @@ var appCatch = {
     }
     // sanity checks
     if(appCatch.loaded) return;
-    if(!appCatch.config.enabled) return console.log('SENTRY - Disabled via config.', appCatch.config);
-    if(typeof Raven === "undefined") return alert('Cannot initialize Sentry. Missing Raven library.');
-    if(!appCatch.config.uid) return alert('Sentry init error. Application Config not defined.');
+    if(!appCatch.config.enabled)     return console.log('SENTRY - Disabled via config.', appCatch.config);
+    if(typeof Raven === "undefined") return console.log('ERROR!! Cannot initialize Sentry. Missing Raven library.');
+    if(!appCatch.config.uid)         return console.log('ERROR!! Sentry init error. Application Config not defined.');
     // init
     Raven.config(appCatch.config.uid, appCatch.config.options).install();
     console.log('SENTRY - Enabled', appCatch.config);
@@ -52,12 +52,12 @@ var appCatch = {
     tags = tags || {};
     // build options
     var options = { extra:extra, tags:tags };
-    // url error occurred
+    // url of error
     options.extra.url = extra.href || window.location.href;
     // tags
-    options.tags.app = tags.app || appEnv.app();
-    options.tags.env = tags.env || appEnv.env();
-    options.tags.subDomain = tags.subDomain || tags.host || appEnv.host();
+    options.tags.app = tags.app || serverConfig.app;
+    options.tags.env = tags.env || serverConfig.env;
+    options.tags.subDomain = tags.subDomain || tags.host || serverConfig.host;
     Raven.captureMessage(message, options)
   },
 

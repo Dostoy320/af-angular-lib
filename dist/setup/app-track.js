@@ -18,7 +18,7 @@ navigator.sayswho= (function(){
     return 'IE '+(tem[1] || '');
   }
   if(M[1]=== 'Chrome'){
-    tem= ua.match(/\bOPR\/(\d+)/)
+    tem= ua.match(/\bOPR\/(\d+)/);
     if(tem!= null) return 'Opera '+tem[1];
   }
   M= M[2]? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
@@ -59,16 +59,16 @@ var appTrack = {
     if (typeof mixpanel === "undefined") return appCatch.send('Cannot initialize AppTrack. Missing MixPanel library.');
     if (!appTrack.config.uid) return appCatch.send('Cannot initialize AppTrack. AppTrack.config not defined.');
 
-    appTrack.config.debug = appEnv.isDev;
+    appTrack.config.debug = serverConfig.isDev;
 
     // init
     mixpanel.init(appTrack.config.uid, appTrack.config.options);
     // always pass these with events:
     appTrack.config.globals = {
-      'Domain': appEnv.host,
-      'Tenant': appEnv.tenant,
+      'Domain': serverConfig.host,
+      'Tenant': serverConfig.tenant,
       'Browser Version':navigator.sayswho,
-      'App': appEnv.app
+      'App': serverConfig.app
     };
     mixpanel.register(appTrack.config.globals);
     console.log('MIXPANEL - Enabled', appTrack.config);

@@ -1,3 +1,4 @@
+
 ;
 (function() {
 
@@ -5,14 +6,16 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
 
   // DEFAULT HTTP REQUEST OPTIONS
   .constant('HTTP_REQUEST_OPTIONS', {
-    disableHttpInterceptor:false, // disable the http interceptor completely
-    // request options:
     method:'POST',
     url:'',
+    data:{},
+    disableHttpInterceptor:false, // disable the http interceptor completely
     urlEncode:false,              // send as application/x-www-form-urlencoded
-    // response options:
+    applySession:false,           // auto apply sessionToken to data
+    applyIndex:false,             // auto apply tenant for node services
+    applyDebug:false,             // auto apply debug info for node services
     logErrors:true,               // on error, log to sentry (or whatever)
-    displayErrors:true            // on error, display error to user
+    displayErrors:true            // on error, display it to user
   })
 
 
@@ -40,8 +43,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
         // debug info object for requests
         debugInfo: function() {
           return {
-            url: $window.location.href,
-            env: appEnv.env()
+            url: $window.location.href
           }
         },
         isFile:function(request){
@@ -81,11 +83,10 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
             data = responseOrData.data;
 
           // check for our two jsend formats
-          if(_.has(data, 'code') && _.has(data, 'message')) return true;
-          if(_.has(data, 'data')) return true;
+          if(_.has(data, 'status') && _.has(data, 'code') && _.has(data, 'message')) return true;
+          if(_.has(data, 'status') && _.has(data, 'data')) return true;
           return false;
         }
-
       },
 
 
@@ -100,7 +101,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
           // stop any loaders on error
           $loader.stop();
 
-          // only handle this once
+          // ensure only handled once
           if(response.handled === true) return;
 
           var request = response.config;
@@ -123,8 +124,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
           response.handled = true;
         },
         logger:function(response){
-          if(!response) return appCatch.send('Unable To Log. No Response');
-
+          if(!response) return appCatch.send('Unable To Log Error. No Response');
           // if its a string.. just send that.
           if(_.isString(response)) return appCatch.send(response);
 
@@ -147,7 +147,16 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
         },
         // attempts to get a humanized response from an error.
         getMessage: function(response) {
-          if(response.status === 502) return 'Unable to communicate with server. Please check your internet connection.';
+          if(_.isString(response)) return response;
+          if(response.status === 404){
+            if(('' + response.data).indexOf('Heroku | No such app') >= 0)
+              return 'Unable to communicate with server.';
+            return 'The requested page could not be found.';
+          }
+          if(response.status === 502)
+            return 'Unable to communicate with server. Please check your internet connection.';
+          if(response.status === 503 && (response.body+'').indexOf('Application Error') >= 0)
+            return 'Service Unavailable. An Application Error Has occurred. Please try again.';
           return response.data || response.statusText || apiUtil.getHttpCodeString(response.status);
         }
       },
@@ -209,6 +218,7 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
       },
       // HTTP CODES
       isHttpCode: function(code) {
+        if(!_.isNumber(code)) return false;
         return _.isString(apiUtil.getHttpCodeString(code));
       },
       getHttpCodeString: function(code) {
@@ -274,7 +284,6 @@ angular.module('af.apiUtil', ['af.msg', 'af.loader'])
       509: 'Bandwidth Limit Exceeded',
       510: 'Not Extended'
     };
-
     return apiUtil;
 
   });
@@ -467,43 +476,98 @@ angular.module('ui.bootstrap.dropdown', [])
   .directive("faIcon", function() {
     return {
       compile: function(elm, attrs) {
-        if(attrs.faIcon == 'roadmap') attrs.faIcon = 'road';//'map-marker';
-        if(attrs.faIcon == 'assessment') attrs.faIcon = 'check-circle-o';
-        if(attrs.faIcon == 'quickContent') attrs.faIcon = 'file-text-o';
+        switch((''+attrs.faIcon).toLowerCase()){
+          case 'roadmap': attrs.faIcon = 'road'; break; //'map-marker';
+          case 'assessment': attrs.faIcon = 'check-circle-o'; break;
+          case 'quickcontent':
+          case 'quick content':
+            attrs.faIcon = 'file-text-o'; break;
+          case 'export':  attrs.faIcon = 'file'; break;
+          case 'pdf':     attrs.faIcon = 'file-pdf-o'; break;
+          case 'rtf':     attrs.faIcon = 'file-word-o'; break;
+          case 'csv':     attrs.faIcon = 'file-excel-o'; break;
+        }
         angular.element(elm).addClass('ng-show-inline fa fa-' + attrs.faIcon);
       }
     };
   })
 
 }).call(this);
+;
 
+angular.module('af.validators', [])
+
+  .directive('validateMatches', function() {
+    return {
+      require: 'ngModel',
+      link : function(scope, element, attrs, ngModel) {
+        ngModel.$parsers.push(function(value) {
+          var scope2 = scope;
+          var attr2 = attrs;
+          var value2 = scope.$eval(attrs.validateMatches)
+          ngModel.$setValidity('matches', value == scope.$eval(attrs.validateMatches));
+          return value;
+        });
+      }
+    }
+  })
+  .directive('validatePasswordCharacters', function() {
+
+    var PASSWORD_FORMATS = [
+      /[A-Z]+/,     //uppercase letters
+      /\d+/         //numbers
+      ///[^\w\s]+/, //special characters
+      ///\w+/,      //other letters
+    ];
+    return {
+      require: 'ngModel',
+      link : function(scope, element, attrs, ngModel) {
+        ngModel.$parsers.push(function(value) {
+          var status = true;
+          angular.forEach(PASSWORD_FORMATS, function(regex) {
+            status = status && regex.test(value);
+          });
+          ngModel.$setValidity('password-characters', status);
+          return value;
+        });
+      }
+    }
+  })
 ;
 
 ;
-(function() {
 
-
-//
-// ANGULAR wrapper for appConfig
-//
 angular.module('af.filters', [])
 
-  // plural filter for config
-  .filter('plural', function($config) {
-    return function(value){
-      return appTenant.makePlural(value)
+
+  // eg {{'user.name' | label}}
+  // <span ng-bind="'user' | tenantLabel | plural"></span>
+  .filter('tenantConfig', function() {  return appTenant.config; })
+  .filter('tenantLabel', function() {   return appTenant.label; })
+  .filter('tenantEnabled', function() { return appTenant.enabled; })
+
+  .filter('plural', function() {        return appTenant.makePlural; })
+
+  .filter('tenantImage', function($filter) {
+    return function(file) {
+      var tnt = appTenant.config('tenant');
+      return '/tenant/' + tnt + '/images/' + tnt + '_' + file;
+    };
+  })
+  .filter('activeItems', function($filter){
+    return function(items) {
+      return $filter('propertyIsTrue')(items, 'active');
     }
   })
-
-  // label filter
-  .filter('label', function($config) {
-    return function(path, makePlural){
-      return appTenant.get(path, makePlural)
-    }
+  .filter('propertyIsTrue', function() {
+    return function(items, property) {
+      if(_.isArray(items))
+        return _.filter(items, function(item){
+          return item[property] === true;
+        });
+      return item[property] === true;
+    };
   })
-
-}).call(this);
-
 ;
 
 ;
@@ -511,13 +575,13 @@ angular.module('af.filters', [])
 
 angular.module('af.event', [])
 
-  .service('$events', function($rootScope, $log) {
+  .service('$event', function($rootScope, $log) {
     var logEvent, service;
 
     logEvent = function(type, eventName, data) {
       var suppress = [service.EVENT_loaderStart, service.EVENT_loaderStop, service.EVENT_msgClear];
       if (!_.contains(suppress, eventName))
-        $log.debug('$events.' + type + ': ' + eventName, data);
+        $log.debug('$event.' + type + ': ' + eventName, data);
     };
 
     return service = {
@@ -553,7 +617,7 @@ angular.module('af.help', ['af.event', 'af.modal'])
     genericHelpPath:'src/views/templates/generic.help.view.html'
   })
 
-  .service("$help", function($events) {
+  .service("$help", function($event) {
     var service;
     service = {
       isOpen:false,
@@ -561,13 +625,13 @@ angular.module('af.help', ['af.event', 'af.modal'])
       open: function(title, body) {
         service.controller.title = title;
         service.controller.body = body;
-        $events.shout("Help.open", service.controller);
+        $event.shout("Help.open", service.controller);
         service.isOpen = true;
       },
       close: function(data) {
         if(!service.isOpen) return;
         service.isOpen = false;
-        $events.shout("Help.close");
+        $event.shout("Help.close");
       }
     };
     return service;
@@ -577,11 +641,13 @@ angular.module('af.help', ['af.event', 'af.modal'])
     return {
       restrict: "A",
       scope: {},
-      template: '<div id="helpHolder" class="ng-cloak" ng-if="url">' +
-                  '<div class="modal fade" ng-click="close()" style="display:block; z-index:1042;">' +
-                    '<div class="modal-dialog" ng-click="stopClickThrough($event)" ng-include="url"></div>' +
+      template: '<div id="helpHolder" class="ng-cloak" ng-if="url">'+
+                  '<div class="modal fade" ng-click="close()" style="display:block; z-index:1052;">' +
+                    '<div class="modal-dialog" ng-click="stopClickThrough($event)" ng-include="url" ' +
+                    // ios hack for rendering issues
+                    'style="-webkit-transition: -webkit-transform 0ms; -webkit-transform-origin: 0px 0px; -webkit-transform: translate3d(0px, 0px, 0px);"></div>' +
                   '</div>' +
-                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1041;" ng-click="close()"></div>' +
+                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1051;" ng-click="close()"></div>' +
                 '</div>',
       link: function(scope, element, attrs) {
         scope.close = function() {
@@ -624,16 +690,16 @@ angular.module('af.help', ['af.event', 'af.modal'])
 
 angular.module('af.loader', ['af.event'])
 
-  .service('$loader', function($events) {
+  .service('$loader', function($event) {
     var $loader = {}, isLoading = false;
     return $loader = {
       start: function(options) {
         isLoading = true;
-        return $events.shout($events.EVENT_loaderStart, options);
+        return $event.shout($event.EVENT_loaderStart, options);
       },
       stop: function() {
         isLoading = false;
-        return $events.shout($events.EVENT_loaderStop);
+        return $event.shout($event.EVENT_loaderStop);
       },
       // util / quickies
       isLoading:function(){ return isLoading; },
@@ -644,7 +710,7 @@ angular.module('af.loader', ['af.event'])
     };
   })
 
-  .directive('loaderHolder', function($events, $interval, $log) {
+  .directive('loaderHolder', function($event, $interval, $log) {
     return {
       restrict: 'A',
       scope: {},
@@ -701,10 +767,10 @@ angular.module('af.loader', ['af.event'])
           scope.loaderBar = scope.loaderText = scope.loadMask = null;
           clearTick();
         };
-        scope.$on($events.EVENT_loaderStart, function(event, txt) {
+        scope.$on($event.EVENT_loaderStart, function(event, txt) {
           scope.start(txt);
         });
-        scope.$on($events.EVENT_loaderStop, scope.stop);
+        scope.$on($event.EVENT_loaderStop, scope.stop);
 
         // kill any timer on destroy
         element.on('$destroy', clearTick);
@@ -723,7 +789,7 @@ angular.module('af.modal', ['af.event'])
     genericModalPath:'src/views/templates/generic.modal.view.html'
   })
 
-  .service("$modal", function($events, $MODAL_CONFIG) {
+  .service("$modal", function($event, $MODAL_CONFIG) {
     var service;
     service = {
       isOpen:false,
@@ -735,7 +801,7 @@ angular.module('af.modal', ['af.event'])
         service.controller = ctrl;
         service.size = size; // lg, md, sm
         if (!service.url) service.url = $MODAL_CONFIG.genericModalPath;
-        $events.shout("Modal.open", {
+        $event.shout("Modal.open", {
           url: service.url,
           controller: service.controller,
           size: service.size
@@ -744,7 +810,7 @@ angular.module('af.modal', ['af.event'])
       },
       close: function(data) {
         if(!service.isOpen) return;
-        $events.shout("Modal.close", data);
+        $event.shout("Modal.close", data);
         service.isOpen = false;
         service.url = null;
         service.size = null;
@@ -764,16 +830,19 @@ angular.module('af.modal', ['af.event'])
     return service;
   })
 
-  .directive("modalHolder", function($modal, $timeout) {
+  .directive("modalHolder", function($modal, $timeout, $window) {
     return {
       restrict: "A",
       scope: {},
       template: '<div id="modalHolder" class="ng-cloak" ng-show="modalURL">' +
+                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1039;" ng-click="close()"></div>' +
                   '<div class="modal fade" ng-click="close()" style="display:block">' +
                     '<div class="modal-dialog" ng-click="stopClickThrough($event)" ' +
+                      // ios hack for rendering issues
+                      'style="-webkit-transition: -webkit-transform 0ms; -webkit-transform-origin: 0px 0px; -webkit-transform: translate3d(0px, 0px, 0px);" ' +
                       'ng-include="modalURL" ng-class="size"></div>' +
+                    '<div class="iosModelScrollHack" ></div>' +
                   '</div>' +
-                  '<div class="modal-backdrop fade" style="bottom:0; z-index: 1039;" ng-click="close()"></div>' +
                 '</div>',
       link: function(scope, element, attrs) {
         scope.modalURL = $modal.url;
@@ -798,6 +867,7 @@ angular.module('af.modal', ['af.event'])
             $("#modalHolder").children().addClass("in");
           }, 50);
         });
+
         scope.$on("Modal.close", scope.close);
         scope.stopClickThrough = function(event) {
           event.stopImmediatePropagation();
@@ -849,7 +919,7 @@ angular.module('af.modal', ['af.event'])
 
 angular.module('af.msg', ['af.event'])
 
-  .service('$msg', function($events) {
+  .service('$msg', function($event) {
     var msg;
     return msg = {
       shownAt: null,
@@ -864,7 +934,7 @@ angular.module('af.msg', ['af.event'])
 
         msg.shownAt = new Date().getTime();
 
-        return $events.shout($events.EVENT_msgShow, {
+        return $event.shout($event.EVENT_msgShow, {
           message: message,
           type: type,
           delay: delay,
@@ -875,7 +945,7 @@ angular.module('af.msg', ['af.event'])
       clear: function(force) {
         var now = new Date().getTime();
         if (force || (msg.shownAt && (now - msg.shownAt) > msg.minVisible))
-          return $events.shout($events.EVENT_msgClear);
+          return $event.shout($event.EVENT_msgClear);
       },
 
       alert: function(message, closable, delay) {   return msg.show(message, 'warning', closable, delay); },
@@ -885,7 +955,7 @@ angular.module('af.msg', ['af.event'])
     };
   })
 
-  .directive('msgHolder', function($timeout, $window, $events) {
+  .directive('msgHolder', function($timeout, $window, $event) {
     var timer = null;
     return {
       restrict: 'A',
@@ -922,11 +992,10 @@ angular.module('af.msg', ['af.event'])
           scope.visible = false;
           if (timer) $timeout.cancel(timer);
         };
-        scope.$on($events.EVENT_msgShow, function(event, data) {
-          console.log('MESSAGE HEARD!');
+        scope.$on($event.EVENT_msgShow, function(event, data) {
           scope.show(data.message, data.type, data.closable, data.delay);
         });
-        return scope.$on($events.EVENT_msgClear, scope.clear);
+        return scope.$on($event.EVENT_msgClear, scope.clear);
       }
     };
   })
@@ -942,22 +1011,35 @@ angular.module('af.msg', ['af.event'])
   //
 angular.module('af.storage', [])
 
-  .constant('STORAGE_PREFIX', 'myApp')
+  .constant('$STORAGE_CONFIG', {persistent_prefix:'myApp'} )
 
-  .service('$storage', function(STORAGE_PREFIX, $log) {
+  .service('$storage', function($STORAGE_CONFIG, $log) {
 
-    var sessionData = {};
+    var tempData = {}; // cleared if page refreshed..
+    var prefix = $STORAGE_CONFIG.persistent_prefix;
 
     var storage = {
+      logCachedData:true, // dev
 
-      // LOCAL STORAGE
-      // data stored with prefix pertaining to a particular application only
-      store:function(key, value, options){
-        // ensure options are in correct format: { expires:x }
+      // amplify wrapper
+      amplify:function(key, value, options){
         if(_.isNumber(options)) options = { expires:options };
+        return amplify.store(key, value, options);
+      },
 
-        // get or set a value
-        if(key) return amplify.store(STORAGE_PREFIX + '_' + key, angular.copy(value), options);
+
+      //
+      // STORE
+      //
+      // store till cleared... (amplify alias)
+      local:function(key, value, options){
+        return storage.amplify(key, value, options);
+      },
+
+      // store till cleared or next login...
+      session:function(key, value, options){
+        // get or set
+        if(arguments.length > 0) return storage.amplify(prefix+'_'+key, value, options);
         // get all data
         var appData = {};
         _.each(amplify.store(), function(value, key){
@@ -966,30 +1048,42 @@ angular.module('af.storage', [])
         return appData;
       },
 
-      // THiS IS BASICALLY A SESSION STORAGE
-      // data that will be gone if page refreshed.
-      logCachedData:true,
-      cache:function(key, value){
-        if(arguments.length == 0) return sessionData;
+      // store till cleared, next login, or page refresh...
+      temp:function(key, value){
+        if(arguments.length == 0) return tempData;
         if(arguments.length == 1) {
-          if(storage.logCachedData) $log.info('CACHED:' + key); //, sessionData[key]);
-          return sessionData[key];
+          if(storage.logCachedData) $log.info('TEMP CACHE:' + key);
+          return tempData[key];
         }
-        sessionData[key] = angular.copy(value);
+        tempData[key] = angular.copy(value);
       },
 
+      
+      
+      //
+      // EMPTY
+      //
       clear: function(key) {
+        // clear one thing
         if(key){
-          delete sessionData[key];
-          return amplify.store(STORAGE_PREFIX+'_'+key, null);
+          delete tempData[key];
+          return amplify.store(prefix+'_'+key, null);
         }
-        sessionData = {};
+        // clear all
+        tempData = {};
         _.keys(amplify.store(), function(key){
           if(storage.isAppData(key)) amplify.store(key, null);
         });
       },
 
-      isAppData:function(key){ return key.indexOf(STORAGE_PREFIX+'_') === 0; }
+      // clear everything
+      nuke:function(){
+        _.keys(amplify.store(), function(key){
+          amplify.store(key, null);
+        });
+      },
+
+      isAppData:function(key){ return key.indexOf(prefix+'_') === 0; }
 
     };
 
@@ -1046,6 +1140,25 @@ _.mixin({
     return _.unique(_.pluck(array, key));
   },
 
+  hasValue:function(value){
+    return !_.isUndefined(value) && !_.isNull(value) && !_.isNaN(value) && value !== ''
+  },
+
+  // allows you to get a nested value from an object using dot notation.
+  // eg: _getPathValue( { user:{name:'nate'} , 'user.name') => 'nate'
+  getPathValue:function(object, path){
+    if(!path) return null;
+    var parts = (''+path).split('.');
+    var parent = object;
+    for(var i = 0; i < parts.length; i++){
+      var nextPart = parts[i];
+      if(!_.has(parent, nextPart)) return null;
+      // keep drilling down
+      parent = parent[nextPart];
+    }
+    return parent;
+  },
+
 
   //
   // COMMA SEPARATED ID JUNK
@@ -1083,11 +1196,12 @@ _.mixin({
   angular.module('af.util', [])
   .service('$util', function($window, $location) {
 
-    var util = {
+    var $util = null;
+    return $util = {
 
       GET: function(key) {
         // quick check to see if key is even in url at all...
-        if($location.absUrl().indexOf(key) < 0) return null;
+        if(key && $location.absUrl().indexOf(key) < 0) return null;
 
         var vars = $location.search();
         var search = $window.location.search;
@@ -1144,12 +1258,10 @@ _.mixin({
       // creates a displayName for our user
       createDisplayName:function(user){
         if(!user) return '';
-
         // return preferred name if it exists...
-        //var preferredDisplayName = appTenant.get('settings.preferredDisplayName');
+        //var preferredDisplayName = appTenant.config('settings.preferredDisplayName');
         //if(preferredDisplayName && user[preferredDisplayName])
         //  return user[preferredDisplayName];
-
         // return name
         if(user.firstName && user.lastName)
           return user.firstName + ' ' + user.lastName;
@@ -1160,13 +1272,40 @@ _.mixin({
       protocolAndHost:function(){
         return $window.location.protocol+'//'+$window.location.host;
       },
+      isTruthy:function(value){
+        return (value === 'true' || value === true || value == '1' || value === 1)
+      },
+
+      number:{
+        // floating point error fix
+        nc:function(number, precision){ return $util.number.floatFix(number, precision); },
+        floatFix:function(number, precision){
+          var precision = precision || 2,
+              correction = Math.pow(10, precision);
+          return Math.round(correction * number)/correction;
+        }
+      },
+
+      string: {
+        nl2br: function (str) {
+          if (!str || typeof str != 'string') return str;
+          return str.replace(/\n\r?/g, '<br />');
+        },
+        // clean junk from a string to get the number out...
+        getNumber:function(value){
+          var negativeSign = (''+value).substr(0,1) === '-' ? '-':'';
+          var pattern = /[^\.\d]/g,
+              cleaned = (''+value).replace(pattern,'');
+          return parseFloat(negativeSign + cleaned);
+        }
+      },
 
       format: {
         date: function(value, format, inputType) {
           if (!value) return '';
           if (!inputType) inputType = "utc";
           if (moment) {
-            if(!format) format = appTenant.get('settings.date.format') || 'MM/DD/YY';
+            if(!format) format = appTenant.config('settings.dates.format') || 'MM/DD/YY';
             if (typeof value === 'string') {
               switch (inputType.toLowerCase()) {
                 case 'utc':
@@ -1182,19 +1321,105 @@ _.mixin({
           }
           return value;
         },
-        number: function(value, precision) {
-          return parseFloat(value).formatNumber(precision);
+        number: function(value, precision, type, showSymbol) {
+          if(_.isString(value)) value = parseFloat(value);
+          if(!_.isFinite(value)) return '';
+          // save if its negative...
+          var negativeSign = (''+value).substr(0,1) === '-' ? '-':'';
+          // strip everything except periods and numbers
+          var pattern = /[^\.\d]/g,
+              cleaned = (''+value).replace(pattern,'');
+          // format it
+          cleaned = parseFloat(cleaned);
+          cleaned.formatNumber(precision || 0);
+          // show symbol?
+          if(_.isUndefined(showSymbol) || _.isNull(showSymbol)) showSymbol = true;
+          showSymbol = $util.isTruthy(showSymbol);
+          var symbol = '';
+          if(showSymbol){
+            switch((''+type).toLowerCase()){
+              case 'currency': symbol = '$'; break;
+              case 'percent': symbol = '%'; break;
+            }
+          }
+          // return it all
+          switch((''+type).toLowerCase()){
+            case 'currency':
+              return negativeSign + symbol + parseFloat(cleaned).formatNumber(precision || 0);
+            case 'percent':
+              return negativeSign + parseFloat(cleaned * 100).formatNumber(precision || 0) + symbol;
+            default :
+              return negativeSign + parseFloat(cleaned).formatNumber(precision || 0);
+          }
         },
-        currency: function(value, precision) {
-          return '$' + util.format.number(value, precision);
+        currency: function(value, precision, showSymbol) {
+          return $util.format.number(value, precision, 'currency', showSymbol);
         },
-        percent: function(value, precision) {
-          return util.format.number(value * 100, precision) + '%';
+        percent: function(value, precision, showSymbol) {
+          return $util.format.number(value, precision, 'percent', showSymbol);
+        },
+        targetValue:function(value, type, precision){
+          switch((''+type).toLowerCase()){
+            case 'hours':
+            case 'number':    return $util.format.number(value, precision);
+            case 'currency':  return $util.format.currency(value, precision);
+            case 'percent':   return $util.format.percent(value, precision);
+            case 'textarea':  return $util.string.nl2br(value);
+            case 'text':      return value;
+          }
+          return value;
+        }
+      },
+
+      unFormat:{
+        percent:function(value, precision){
+          return $util.unFormat.number(value, precision, 'percent');
+        },
+        currency:function(value, precision){
+          return $util.unFormat.number(value, precision, 'currency');
+        },
+        number:function(value, precision, type){
+
+          if(_.isNull(value) || _.isUndefined(value) || value === '') return null;
+
+          // sanity checks
+          if(!precision) precision = 0;
+          if(!type) type = 'number'; // number or percent
+          type = (''+type).toLowerCase();
+
+          var showDecimal = precision > 0 ? true:false;
+          var negativeSign = (''+value).substr(0,1) === '-' ? '-':'';
+
+          // strip everything except periods and numbers
+          var pattern = /[^\.\d]/g,
+              cleaned = (''+value).replace(pattern,'');
+
+          // has decimal?
+          var decimalPlace = cleaned.indexOf('.');
+          if(decimalPlace >= 0){
+            var split = cleaned.split('.');
+            cleaned = split[0];
+            if(showDecimal){
+              // if percent... need to add 2 to precision for correct rounding
+              var numDecimals = type == 'percent' ? precision+2 : precision;
+              var decimal = split[1].substr(0, numDecimals); // no rounding currently.
+              cleaned += '.' + decimal;
+            }
+          }
+
+          // replace negative sign
+          cleaned = negativeSign + cleaned;
+          var final = parseFloat(cleaned);
+
+          // get correct value if its a percent
+          if(type == 'percent') final = $util.number.floatFix(final / 100, precision+2);
+          if(_.isNaN(final) || _.isUndefined(final)) return null;
+          return final;
         }
       }
-    };
 
-    return util;
+
+    };
   });
 
 }).call(this);

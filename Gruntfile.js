@@ -9,7 +9,9 @@ module.exports = function(grunt) {
       js: {
         options: {separator: grunt.util.linefeed + ';' + grunt.util.linefeed },
         files: {
-          'dist/af-angular-lib.js':['dist/scripts/**/*'],
+          'dist/af-angular-lib.js':[
+            'dist/scripts/**/*'
+          ],
           'dist/af-angular-setup.js':[
             'dist/setup/console-fix.js',
             'dist/setup/app-env.js',
@@ -21,7 +23,7 @@ module.exports = function(grunt) {
 
     watch: {
       js: {
-        files: ['dist/scripts/**/*.js', 'afAngularLib.js'],
+        files: ['dist/scripts/**/*.js', 'dist/setup/**/*.js'],
         tasks: ['concat'],
         options: { livereload: true }
       }

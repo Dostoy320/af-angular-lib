@@ -1,141 +1,6 @@
 if (typeof console === "undefined") { var console = { log : function(){} }; }
 ;
 //
-// CLIENT ENVIRONMENT
-// provides client with setup information
-//
-
-var appEnv = {
-
-  // this gets filled out once per page load...
-  loaded:false,
-
-  // stores result
-  config:{
-    subDomain:'',       // domain, includes -dev
-    subDomainClean:'',  // domain, strips off -dev
-    env:'production',   // development / production.
-    isLocal:false,      // running locally? (http://localhost/ or http://development/
-    app:'',
-    tenant:'',
-    index:''
-  },
-
-
-
-  //
-  // INIT
-  //
-  init:function(clientConfig){
-    if(appEnv.loaded) return; // do once.
-
-    // 1 - Determine Environment
-    // subDomain
-    appEnv.config.subDomain = (window.location.hostname).split('.').shift().toLowerCase();
-    // subDomain with no -dev on it
-    appEnv.config.subDomainClean = appEnv.config.subDomain.split('-').shift();
-    // isLocal?
-    if(appEnv.config.subDomainClean === 'localhost')   appEnv.config.isLocal = true;
-    if(appEnv.config.subDomainClean === 'dev')         appEnv.config.isLocal = true;
-    if(appEnv.config.subDomainClean === 'development') appEnv.config.isLocal = true;
-    // development?
-    if(appEnv.config.isLocal)                        appEnv.config.env = 'development';
-    if(appEnv.config.subDomain.indexOf('-dev') >= 0) appEnv.config.env = 'development';
-
-    // 2 - Merge in Config from client
-    // merge in properties passed in from client during setup
-    if(clientConfig && clientConfig.hasOwnProperty(appEnv.config.env)){
-      // get Production/Development config...
-      var conf = clientConfig[appEnv.config.env];
-      // if local... merge with localhost config
-      if(appEnv.config.isLocal && clientConfig.hasOwnProperty('localhost'))
-        conf = appEnv.mergeConfigs(conf, clientConfig['localhost']);
-      // merge specific domain configs on top of that
-      if(clientConfig.hasOwnProperty(appEnv.config.subDomainClean))
-        conf = appEnv.mergeConfigs(conf, clientConfig[appEnv.config.subDomainClean]);
-
-      // set config
-      appEnv.config = appEnv.mergeConfigs(appEnv.config, conf);
-    }
-
-
-    // set app... mainly for logging/sentry/tagging etc...
-    var parts = window.location.pathname.split('/');
-    if (parts.length >= 2) appEnv.config.app = parts[1].toLowerCase();
-
-    // load tenant
-    if(appEnv.config.subDomainClean == 'tdai')       appEnv.config.tenant = 'td';     // special case
-    if(appEnv.config.subDomainClean == 'apps')       appEnv.config.tenant = 'actifi'; // special case
-    if(!appEnv.config.tenant) appEnv.config.tenant = appEnv.config.subDomainClean;    // defaults to subDomain
-
-    // load tenant index for node (db uid)
-    if(appEnv.config.subDomainClean == 'tdai')       appEnv.config.index = 'td'; // special case
-    if(appEnv.config.subDomainClean == 'waddell')    appEnv.config.index = 'wr'; // special case
-    if(!appEnv.config.index) appEnv.config.index =  appEnv.config.tenant; // defaults to tenant
-
-    // log
-    console.log(appEnv.config.env.toUpperCase()+' Env Loaded', appEnv.config);
-    appEnv.loaded = true;
-  },
-
-
-  //
-  // GETTERS
-  //
-  isProd : function(){
-    appEnv.init();
-    return appEnv.config.env !== 'development';
-  },
-  isDev : function(){
-    appEnv.init();
-    return appEnv.config.env === 'development';
-  },
-  isLocal : function(){
-    appEnv.init();
-    return appEnv.config.isLocal;
-  },
-  subDomain : function(){
-    appEnv.init();
-    return appEnv.config.subDomain;
-  },
-  // returns domain with -dev stripped off
-  subDomainClean:function(){
-    appEnv.init();
-    return appEnv.config.subDomainClean;
-  },
-  env : function(){
-    appEnv.init();
-    return appEnv.config.env;
-  },
-  tenant : function() {
-    appEnv.init();
-    return appEnv.config.tenant;
-  },
-  index : function() {
-    appEnv.init();
-    return appEnv.config.index;
-  },
-  app : function() {
-    appEnv.init();
-    return appEnv.config.app;
-  },
-
-  // merges configs
-  mergeConfigs:function(target, source){
-    for (var prop in source) {
-      if (typeof source[prop] == 'object'){
-        if(!target[prop]) target[prop] = {};
-        target[prop] = appEnv.mergeConfigs(target[prop], source[prop]);
-      } else {
-        target[prop] = source[prop];
-      }
-    }
-    return target;
-  }
-};
-
-;
-//
 // THIS IS GLOBALLY scoped on window because we need it before angular even loads..
 //
 var appCatch = {
@@ -152,40 +17,39 @@ var appCatch = {
     }
   },
 
+
   //
   // INITIALIZE
   //
   init:function(settings){
-    if(settings) appCatch.loadSettings(settings);
-    // do once
-    if(appCatch.loaded || !appCatch.config.enabled) return;
+    // load settings
+    if(settings){
+      for(var key in settings){
+        appCatch.config[key] = settings[key];
+      }
+    }
     // sanity checks
+    if(appCatch.loaded) return;
+    if(!appCatch.config.enabled) return console.log('SENTRY - Disabled via config.', appCatch.config);
     if(typeof Raven === "undefined") return alert('Cannot initialize Sentry. Missing Raven library.');
     if(!appCatch.config.uid) return alert('Sentry init error. Application Config not defined.');
-
     // init
     Raven.config(appCatch.config.uid, appCatch.config.options).install();
-    console.log('SENTRY LOADED - '+appEnv.env() + ' - ' + appCatch.config.uid, appCatch.config.options);
+    console.log('SENTRY - Enabled', appCatch.config);
     appCatch.loaded = true;
-  },
-
-  loadSettings:function(settings){
-    // populate config
-    if(!settings) return;
-    for(var key in settings){
-      appCatch.config[key] = settings[key];
-    }
   },
 
 
   //
   // METHODS
   //
-  // send error
-  send:function(message, extra, tags){ appCatch.error(message, extra, tags); }, // alias
+  // alias
+  send:function(message, extra, tags){
+    appCatch.error(message, extra, tags);
+  },
   error:function(message, extra, tags){
     if(!appCatch.loaded) return;
-    console.log('MIXPANEL.error():', message);
+    console.log('SENTRY - error()', message);
     extra = extra || {};
     tags = tags || {};
     // build options
@@ -193,31 +57,25 @@ var appCatch = {
     // url error occurred
     options.extra.url = extra.href || window.location.href;
     // tags
-    options.tags.app = tags.app || appEnv.app();
-    options.tags.env = tags.env || appEnv.env();
-    options.tags.subDomain = tags.subDomain || appEnv.subDomainClean();
+    options.tags.app = tags.app || serverConfig.app();
+    options.tags.env = tags.env || serverConfig.env();
+    options.tags.subDomain = tags.subDomain || tags.host || serverConfig.host;
     Raven.captureMessage(message, options)
   },
 
   // additional info about the user that threw error...
   setUser:function(id, email){
     if(!appCatch.loaded) return;
-    var user = {id:id};
+    var user = { id:id };
     if(email) user.email = email;
-    if(user) {
-      console.log('SENTRY.setUser():', user);
-      Raven.setUser(user);
-    } else {
-      appCatch.clearUser();
-    }
+    console.log('SENTRY - setUser()', user);
+    Raven.setUser(user);
   },
-
   clearUser:function(){
     if(!appCatch.loaded) return;
-    console.log('SENTRY.clearUser():');
+    console.log('SENTRY - clearUser()');
     Raven.setUser(); // this clears out any current user
   }
-
 };
 ;
 //
@@ -225,49 +83,44 @@ var appCatch = {
 //
 var appTenant = {
 
-  config:{}, // holds config (loaded from db or php, or whatever)
+  _config:{}, // holds config (loaded from db or php, or whatever)
 
-  get:function(path, makePlural) {
-    if (!path) return appTenant.config; // return whole config
-    var value = appTenant.getPathValue(appTenant.config, path);
-    if(typeof value == 'undefined' || value === null) console.log('appTenant.get('+path+') MISSING!');
+  init:function(config){
+    appTenant._config = config;
+  },
+
+  // quickie makers
+  label:function(value, plural){ return appTenant.config('labels.'+value, plural)},
+  enabled:function(value){ return appTenant.config('enabled.'+value)},
+
+  config:function(path, makePlural){
+    if(!path) return appTenant._config; // return entire config if no path
+    var value = _.getPathValue(appTenant._config, path);
+    if(!_.hasValue(value)) {
+      console.log('appTenant.config(' + path + ') MISSING!');
+      return '';
+    }
     if(makePlural) {
-      var pluralValue = appTenant.getPathValue(appTenant.config, path + '_plural');
-      if(pluralValue) return pluralValue;
+      var customPluralValue = _.getPathValue(appTenant._config, path + '_plural');
+      if(_.hasValue(customPluralValue)) return customPluralValue;
       return appTenant.makePlural(value);
     }
     return value;
   },
 
-
-  //
-  // UTIL
-  //
-  // checks if enabled flag is true on an object
-  enabled:function(path){
-    return appTenant.get(path+'.enabled') === true
-  },
   makePlural:function(value){
-    if(!value) return value;
-    if(typeof value !== 'string') return value;
+    if(typeof value !== 'string' || value === '') return value;
     var lastChar = value.charAt(value.length - 1).toLowerCase();
     var lastTwoChar = value.slice(value.length - 2).toLowerCase();
     // special cases...
-    if (lastChar === 'y')     return value.slice(0, value.length - 1) + 'ies';
+    // If the word ends in a vowel (a,e,i,o,u) + y then just add s.
+    if (lastChar === 'y' && lastTwoChar !== 'ay' && lastTwoChar !== 'ey' && lastTwoChar !== 'iy' && lastTwoChar !== 'oy' && lastTwoChar !== 'uy')
+      return value.slice(0, value.length - 1) + 'ies';
     if (lastTwoChar === 'ch') return value + 'es';
     return value + 's';
-  },
-
-  // easily get nested value from objects
-  // eg: getPathValue({ name:{ first:'John', last:'Doe'}}, 'name.first')
-  getPathValue:function(object, path) {
-    var parts = (''+path).split('.');
-    if (parts.length === 1) return object[parts[0]];
-    var child = object[parts.shift()];
-    if (!child) return child;
-    return appTenant.getPathValue(child, parts.join('.'));
   }
-}
+
+};
 ;
 //
 // THIS IS GLOBALLY scoped on window because we need it before angular even loads..
@@ -280,126 +133,144 @@ var appTenant = {
 (function(f,b){if(!b.__SV){var a,e,i,g;window.mixpanel=b;b._i=[];b.init=function(a,e,d){function f(b,h){var a=h.split(".");2==a.length&&(b=b[a[0]],h=a[1]);b[h]=function(){b.push([h].concat(Array.prototype.slice.call(arguments,0)))}}var c=b;"undefined"!==typeof d?c=b[d]=[]:d="mixpanel";c.people=c.people||[];c.toString=function(b){var a="mixpanel";"mixpanel"!==d&&(a+="."+d);b||(a+=" (stub)");return a};c.people.toString=function(){return c.toString(1)+".people (stub)"};i="disable track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config people.set people.set_once people.increment people.append people.track_charge people.clear_charges people.delete_user".split(" ");
     for(g=0;g<i.length;g++)f(c,i[g]);b._i.push([a,e,d])};b.__SV=1.2;a=f.createElement("script");a.type="text/javascript";a.async=!0;a.src="//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";e=f.getElementsByTagName("script")[0];e.parentNode.insertBefore(a,e)}})(document,window.mixpanel||[]);
 
+// gets browser version
+navigator.sayswho= (function(){
+  var ua= navigator.userAgent, tem,
+      M= ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || [];
+  if(/trident/i.test(M[1])){
+    tem=  /\brv[ :]+(\d+)/g.exec(ua) || [];
+    return 'IE '+(tem[1] || '');
+  }
+  if(M[1]=== 'Chrome'){
+    tem= ua.match(/\bOPR\/(\d+)/)
+    if(tem!= null) return 'Opera '+tem[1];
+  }
+  M= M[2]? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
+  if((tem= ua.match(/version\/(\d+)/i))!= null) M.splice(1, 1, tem[1]);
+  return M.join(' ');
+})();
 
 var appTrack = {
 
   loaded: false,
 
   config: {
+    uid:'',
     enabled: true,
-    uid: '',
     options: {
       'cross_subdomain_cookie': false,
       'debug':false
-    }
+    },
+    globals:{},
+    globalUsageDelay:3600000 // 1 per an hour
   },
-
 
 
   //
   // INITIALIZE
   //
-  init: function (config) {
-    if(config) appTrack.loadConfig(config);
-    // do once
-    if (appTrack.loaded || !appTrack.config.enabled) return;
-    // sanity checks
-    if (typeof mixpanel === "undefined") return alert('Cannot initialize MixPanel. Missing MixPanel library.');
-    if (!appTrack.config.uid) return alert('Sentry init error. Application Config not defined.');
+  init:function(settings){
+    // load settings
+    if(settings){
+      for(var key in settings){
+        appTrack.config[key] = settings[key];
+      }
+    }
 
-    appTrack.config.debug = appEnv.isDev();
+    // sanity checks
+    if(appTrack.loaded) return;
+    if(!appTrack.config.enabled) return console.log('MixPanel - Disabled via config.', appCatch.config);
+    if (typeof mixpanel === "undefined") return appCatch.send('Cannot initialize AppTrack. Missing MixPanel library.');
+    if (!appTrack.config.uid) return appCatch.send('Cannot initialize AppTrack. AppTrack.config not defined.');
+
+    appTrack.config.debug = serverConfig.isDev;
 
     // init
     mixpanel.init(appTrack.config.uid, appTrack.config.options);
-    // always pass this with events:
-    mixpanel.register({
-      domain: appEnv.subDomainClean(),
-      app: appEnv.app()
-    })
+    // always pass these with events:
+    appTrack.config.globals = {
+      'Domain': serverConfig.host,
+      'Tenant': serverConfig.tenant,
+      'Browser Version':navigator.sayswho,
+      'App': serverConfig.app
+    };
+    mixpanel.register(appTrack.config.globals);
+    console.log('MIXPANEL - Enabled', appTrack.config);
     appTrack.loaded = true;
-    console.log('MIXPANEL LOADED - ' + appEnv.env() + ' - ' + appTrack.config.uid, appTrack.config.options);
   },
 
-  // can disable/enable after init by setting a cached setting
-  trackUser:function(value){
-    if(amplify) amplify.store('trackUser', value);
-  },
   isEnabled:function(){
-    if(!appTrack.loaded) return false;                        // don't track anything
-    if(amplify && !amplify.store('trackUser')) return false;  // don't track this user?
-    return true;
+    return (appTrack.loaded && appTrack.config.enabled && amplify.store('mixpanel_trackUserStats')) ? true:false;
   },
-  loadConfig: function (from) {
-    if (!from) return;
-    for (var key in from) {
-      appTrack.config[key] = from[key];
-    }
+
+  //
+  // WHO stats are tracked for
+  //
+  // can disable/enable after init by setting a cached setting
+  trackUserStats:function(value){
+    amplify.store('mixpanel_trackUserStats', value);
+  },
+  setUserId: function (userId) {
+    if(!appTrack.loaded) return;
+    amplify.store('mixpanel_trackUserId', userId);
+    mixpanel.identify(userId);
+  },
+  getUserId:function(){
+    if(!appTrack.loaded) return;
+    return amplify.store('mixpanel_trackUserId');
+  },
+  setProfile: function (object) {
+    if(!appTrack.loaded) return;
+    mixpanel.people.set(object);
   },
 
 
   //
   // METHODS
   //
-  setUserId: function (id) {
-    if(!appTrack.loaded) return;
-    if(appEnv.isDev()) console.log('MIXPANEL.identify(): ', id);
-    mixpanel.identify(id);
+  // mixpanel.track("Register", {"Gender": "Male", "Age": 21}, 'Auth');
+  send: function (name, tags, globalModule) { appTrack.track(name, tags, globalModule); }, // alias
+  track: function (name, tags, globalModule) {
+    if(!appTrack.isEnabled()) return;
+    mixpanel.track(name, tags);
+    if(globalModule) appTrack.trackGlobalUsage(globalModule);
   },
-  // { key:value }
-  setProfile: function (object) {
-    if(!appTrack.loaded) return;
-    if(appEnv.isDev()) console.log('MIXPANEL.people.set():', object);
-    mixpanel.people.set(object);
+  trackGlobalUsage:function(module){
+    module = module || 'Other';
+    if(!appTrack.isEnabled() || !appTrack.getUserId()) return;
+    var key = 'mixpanel_globalUsage_'+module+'-'+appTrack.getUserId();
+    if(amplify.store(key)) return; // tracked recently?
+    appTrack.send('Global Usage', { Module:module });
+    appTrack.increment('Global Usage');
+    // cache so we don't send again right away...
+    amplify.store(key, true, { expires:appTrack.config.globalUsageDelay });
   },
-
-  // track an event named "Register":
-  // mixpanel.track("Register", {"Gender": "Male", "Age": 21});
-  send: function (name, options) { appTrack.track(name, options); }, // alias
-  track: function (name, options) {
-    if(!appTrack.loaded) return;
-    if(appEnv.isDev()) console.log('MIXPANEL.track:', name, options);
-    mixpanel.track(name, options);
-    // spenser's global usage
-    if(name !== 'Login' && name !== 'Page View')
-      mixpanel.track('Key Metrics', {'Metric Name':name})
+  increment:function(name){
+    if(!appTrack.isEnabled() || !appTrack.getUserId()) return;
+    mixpanel.people.increment(name);
   },
-  increment:function(name){ mixpanel.people.increment(name); },
-
 
   // Register a set of super properties, which are automatically included with all events.
   // { key:value }
   register: function (options) {
-    if(!appTrack.loaded) return;
-    if(appEnv.isDev()) console.log('MIXPANEL.register:', options);
+    if(!appTrack.isEnabled()) return;
     mixpanel.register(options);
   },
   // removes a registered key
   unregister: function (key) {
-    if(!appTrack.loaded) return;
-    if(appEnv.isDev()) console.log('MIXPANEL.unregister: ', key);
+    if(!appTrack.isEnabled()) return;
     mixpanel.unregister(key);
   },
 
 
+
   //
-  //  EVENTS we track
+  // METHODS
   //
-  TRACK_LOGIN: function (type, from, to) {
-    // eg: TRACK_LOGIN('SSO', 'Salesforce', 'Portal')
-    // types: ['Manual','SSO']
-    // from: ['ParameterSSO', 'Salesforce','Portal', ...]
-    // app: ['Portal', 'Reporting', 'Assessment', '...']
-    appTrack.track('Login', {'Login Type': type, 'Login Via': from, 'Login Destination':to} );
+  TRACK_LOGIN:function(type, from, to){
+    appTrack.send('Login', {'Login Type':type, 'Login Via':_.capitalize(from), 'Login To':_.capitalize(to) });
   },
-  TRACK_LOGOUT: function () { appTrack.track('Logout'); }
-
-
-  /*
-  TRACK_PAGE_VIEW: function (pageName) {
-    appTrack.track('PageView', {
-      'page': pageName,
-      'url': window.location.hash
-    });
+  PageView:function(name){
+    appTrack.send('Page View');
   }
-  */
 };
