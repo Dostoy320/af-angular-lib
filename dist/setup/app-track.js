@@ -28,75 +28,107 @@ navigator.sayswho= (function(){
 
 var appTrack = {
 
-  loaded: false,
+  loaded:false,
 
   config: {
     uid:'',
     enabled: true,
+    logging: true,
     options: {
       'cross_subdomain_cookie': false,
       'debug':false
     },
-    globals:{},
-    globalUsageDelay:3600000 // 1 per an hour
+    globals:{
+      // App
+      // Tenant (no longer sent, use domain)
+      // Domain
+      // Browser Version
+    },
+    globalUsageDelay:3600000, // 1 per an hour
+    subDomain:(''+window.location.hostname).split('.').shift().toLowerCase()
   },
-
 
   //
   // INITIALIZE
   //
   init:function(settings){
+
+    if(appTrack.loaded) return; // do once
+
+    var domain = appCatch.config.subDomain;
+    if( domain.indexOf('-dev') > 0 ||
+        domain.indexOf('localhost') == 0 ||
+        domain.indexOf('dev') == 0 ||
+        domain.indexOf('alpha') == 0 ||
+        domain.indexOf('192.168.') == 0) {
+      return appCatch.error('Failed to load.  Does not load on development servers.');
+    }
+
     // load settings
-    if(settings){
-      for(var key in settings){
-        appTrack.config[key] = settings[key];
-      }
+    if(!settings) return appTrack.error('Failed to load. Settings not defined.');
+    for(var key in settings){
+      appTrack.config[key] = settings[key];
     }
 
     // sanity checks
-    if(appTrack.loaded) return;
-    if(!appTrack.config.enabled) return console.log('MixPanel - Disabled via config.', appCatch.config);
-    if (typeof mixpanel === "undefined") return appCatch.send('Cannot initialize AppTrack. Missing MixPanel library.');
-    if (!appTrack.config.uid) return appCatch.send('Cannot initialize AppTrack. AppTrack.config not defined.');
-
-    appTrack.config.debug = serverConfig.isDev;
+    if(!appTrack.config.enabled) 	       return console.log('Mixpanel - Disabled via config.', appCatch.config);
+    if (typeof mixpanel === "undefined") return console.log('Mixpanel - Cannot initialize. Missing MixPanel library.');
+    if (!appTrack.config.uid) 		       return console.log('Mixpanel - Init error. Uid not defined.');
 
     // init
     mixpanel.init(appTrack.config.uid, appTrack.config.options);
-    // always pass these with events:
-    appTrack.config.globals = {
-      'Domain': serverConfig.host,
-      'Tenant': serverConfig.tenant,
-      'Browser Version':navigator.sayswho,
-      'App': serverConfig.app
-    };
+
+    appTrack.config.globals['Browser Version'] = navigator.sayswho;
+    appTrack.config.globals['Domain'] = appTrack.config.subDomain;
+
+    if(!appTrack.config.globals['App'])
+      appTrack.error('"App" global not defined!!');
+
     mixpanel.register(appTrack.config.globals);
-    console.log('MIXPANEL - Enabled', appTrack.config);
+    console.log('Mixpanel Init:', appTrack.config);
     appTrack.loaded = true;
   },
 
-  isEnabled:function(){
-    return (appTrack.loaded && appTrack.config.enabled && amplify.store('mixpanel_trackUserStats')) ? true:false;
+
+  // HELPERS
+  amplifyExists:function(){
+    return typeof amplify !== 'undefined';
   },
+  isEnabled:function(){
+    return appTrack.loaded && appTrack.config.enabled;
+  },
+  userShouldBeTracked:function(){
+    if(appTrack.amplifyExists())
+      return amplify.store('mixpanel_trackUserStats') === true;
+    return true;
+  },
+
+  shouldTrack:function(){
+    return appTrack.isEnabled() && appTrack.userShouldBeTracked();
+  },
+
 
   //
   // WHO stats are tracked for
   //
   // can disable/enable after init by setting a cached setting
   trackUserStats:function(value){
+    if(!appTrack.isEnabled() || !appTrack.amplifyExists()) return;
     amplify.store('mixpanel_trackUserStats', value);
   },
   setUserId: function (userId) {
-    if(!appTrack.loaded) return;
-    amplify.store('mixpanel_trackUserId', userId);
+    if(!appTrack.isEnabled()) return;
     mixpanel.identify(userId);
+    // cache for later
+    if(appTrack.amplifyExists())
+      amplify.store('mixpanel_trackUserId', userId);
   },
   getUserId:function(){
-    if(!appTrack.loaded) return;
+    if(!appTrack.isEnabled() || !appTrack.amplifyExists()) return null;
     return amplify.store('mixpanel_trackUserId');
   },
   setProfile: function (object) {
-    if(!appTrack.loaded) return;
+    if(!appTrack.isEnabled()) return;
     mixpanel.people.set(object);
   },
 
@@ -105,36 +137,42 @@ var appTrack = {
   // METHODS
   //
   // mixpanel.track("Register", {"Gender": "Male", "Age": 21}, 'Auth');
-  send: function (name, tags, globalModule) { appTrack.track(name, tags, globalModule); }, // alias
+  send: function (name, tags, globalModule) {
+    appTrack.track(name, tags, globalModule); // alias
+  },
+
   track: function (name, tags, globalModule) {
-    if(!appTrack.isEnabled()) return;
+    if(!appTrack.shouldTrack()) return;
     mixpanel.track(name, tags);
     if(globalModule) appTrack.trackGlobalUsage(globalModule);
   },
+
   trackGlobalUsage:function(module){
+    if(!appTrack.shouldTrack() || !appTrack.getUserId() || !appTrack.amplifyExists()) return;
     module = module || 'Other';
-    if(!appTrack.isEnabled() || !appTrack.getUserId()) return;
     var key = 'mixpanel_globalUsage_'+module+'-'+appTrack.getUserId();
-    if(amplify.store(key)) return; // tracked recently?
+    if(amplify.store(key))
+      return; // tracked recently?
     appTrack.send('Global Usage', { Module:module });
     appTrack.increment('Global Usage');
     // cache so we don't send again right away...
     amplify.store(key, true, { expires:appTrack.config.globalUsageDelay });
   },
+
   increment:function(name){
-    if(!appTrack.isEnabled() || !appTrack.getUserId()) return;
+    if(!appTrack.shouldTrack() || !appTrack.getUserId()) return;
     mixpanel.people.increment(name);
   },
 
   // Register a set of super properties, which are automatically included with all events.
   // { key:value }
   register: function (options) {
-    if(!appTrack.isEnabled()) return;
+    if(!appTrack.shouldTrack()) return;
     mixpanel.register(options);
   },
   // removes a registered key
   unregister: function (key) {
-    if(!appTrack.isEnabled()) return;
+    if(!appTrack.shouldTrack()) return;
     mixpanel.unregister(key);
   },
 
@@ -144,9 +182,9 @@ var appTrack = {
   // METHODS
   //
   TRACK_LOGIN:function(type, from, to){
-    appTrack.send('Login', {'Login Type':type, 'Login Via':_.capitalize(from), 'Login To':_.capitalize(to) });
+    appTrack.send('Login', {'Login Type':type, 'Login Via':from, 'Login To':to }, 'Auth');
   },
-  PageView:function(name){
+  PageView:function(){
     appTrack.send('Page View');
   }
 };

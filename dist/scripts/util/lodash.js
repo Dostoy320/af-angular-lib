@@ -29,40 +29,24 @@ _.mixin({
   },
 
   hasValue:function(value){
-    return !_.isUndefined(value) && !_.isNull(value) && !_.isNaN(value) && value !== ''
-  },
+    return !_.isUndefined(value) && !_.isNull(value) && !_.isNaN(value) && value !== '';
+  }
 
+
+  // USE _.get(object, 'a.b.c', defaultValue);
   // allows you to get a nested value from an object using dot notation.
   // eg: _getPathValue( { user:{name:'nate'} , 'user.name') => 'nate'
-  getPathValue:function(object, path){
-    if(!path) return null;
-    var parts = (''+path).split('.');
-    var parent = object;
-    for(var i = 0; i < parts.length; i++){
-      var nextPart = parts[i];
-      if(!_.has(parent, nextPart)) return null;
-      // keep drilling down
-      parent = parent[nextPart];
-    }
-    return parent;
-  },
-
-
-  //
-  // COMMA SEPARATED ID JUNK
-  //
-  commaSeparate:function(array){
-    if(!array || !_.isArray(array) || array.length == 0) return '';
-    return ','+array.join(',')+',';
-  },
-  commaSeparateDecode:function(string){
-    if(!string || !_.isString(string)) return [];
-    // remove empty items
-    var items = _.reject(string.split(','), function(item){
-      return (item === '');
-    });
-    // convert to numbers
-    return _.map(items, function(item){ return parseFloat(item); })
-  }
+  //getPathValue:function(object, path){
+  //  if(!path) return null;
+  //  var parts = (''+path).split('.');
+  //  var parent = object;
+  //  for(var i = 0; i < parts.length; i++){
+  //    var nextPart = parts[i];
+  //    if(!_.has(parent, nextPart)) return null;
+  //    // keep drilling down
+  //    parent = parent[nextPart];
+  //  }
+  //  return parent;
+  //},
 
 });

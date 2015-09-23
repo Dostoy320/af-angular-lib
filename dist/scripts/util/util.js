@@ -13,6 +13,7 @@
   };
 
   angular.module('af.util', [])
+
   .service('$util', function($window, $location) {
 
     var $util = null;
@@ -27,8 +28,7 @@
         if (search) {
           var params = search.split('&');
           _.each(params, function(param, i) {
-            var parts;
-            parts = param.replace('#', '').replace('/', '').replace('?', '').split('=');
+            var parts = param.replace('#', '').replace('/', '').replace('?', '').split('=');
             return vars[parts[0]] = decodeURIComponent(parts[1]);
           });
         }
@@ -91,8 +91,9 @@
       protocolAndHost:function(){
         return $window.location.protocol+'//'+$window.location.host;
       },
+
       isTruthy:function(value){
-        return (value === 'true' || value === true || value == '1' || value === 1)
+        return (value === 'true' || value === true || value == '1' || value === 1);
       },
 
       number:{

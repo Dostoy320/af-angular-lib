@@ -5,27 +5,34 @@ var appTenant = {
 
   _config:{}, // holds config (loaded from db or php, or whatever)
 
-  init:function(config){
-    appTenant._config = config;
-  },
+  init:function(config){ appTenant._config = config; },
 
   // quickie makers
-  label:function(value, plural){ return appTenant.config('labels.'+value, plural)},
-  enabled:function(value){ return appTenant.config('enabled.'+value)},
+  label:function(value, plural){
+    return appTenant.get('labels.'+value, plural)
+  },
+  enabled:function(value){
+    return appTenant.get('enabled.'+value)
+  },
 
-  config:function(path, makePlural){
-    if(!path) return appTenant._config; // return entire config if no path
-    var value = _.getPathValue(appTenant._config, path);
-    if(!_.hasValue(value)) {
+  get:function(path, makePlural) {
+    if (!path) return appTenant._config; // return entire config if no path
+    var value = appTenant.getPath(path);
+    if (value === ''){
       console.log('appTenant.config(' + path + ') MISSING!');
       return '';
     }
     if(makePlural) {
-      var customPluralValue = _.getPathValue(appTenant._config, path + '_plural');
-      if(_.hasValue(customPluralValue)) return customPluralValue;
+      var pluralValue = _.get(appTenant._config, path + '_plural', '');
+      if(pluralValue !== '') return pluralValue;
       return appTenant.makePlural(value);
     }
     return value;
+  },
+
+  // Helpers
+  getPath:function(path){
+    return _.get(appTenant._config, path, '');
   },
 
   makePlural:function(value){

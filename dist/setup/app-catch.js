@@ -12,28 +12,53 @@ var appCatch = {
     options: {
       whitelistUrls:[ 'actifi.com/' ],
       ignoreUrls: [ /extensions\//i, /^chrome:\/\//i ]
-    }
+    },
+    tags:{
+      //app:''
+      //env:''
+    },
+    subDomain:(''+window.location.hostname).split('.').shift().toLowerCase()
   },
 
+  error:function(msg){
+    appCatch.log('ERROR: ' + msg, true);
+  },
+  log:function(msg, force){
+    if(typeof console === "undefined") return;
+    if(force || appCatch.config.logging)
+      console.log('SENTRY', msg);
+  },
 
   //
   // INITIALIZE
   //
   init:function(settings){
-    // load settings
-    if(settings){
-      for(var key in settings){
-        appCatch.config[key] = settings[key];
-      }
+
+    if(appCatch.loaded) return; // do once
+
+    var domain = appCatch.config.subDomain;
+    if( domain.indexOf('-dev') > 0 ||
+        domain.indexOf('localhost') == 0 ||
+        domain.indexOf('dev') == 0 ||
+        domain.indexOf('alpha') == 0 ||
+        domain.indexOf('192.168.') == 0) {
+      return appCatch.error('Failed to load.  Does not load on development servers.');
     }
+
+    // load settings
+    if(!settings) return appCatch.error('Failed to load. Settings not defined.');
+    for(var key in settings){
+      appCatch.config[key] = settings[key];
+    }
+
     // sanity checks
-    if(appCatch.loaded) return;
-    if(!appCatch.config.enabled)     return console.log('SENTRY - Disabled via config.', appCatch.config);
-    if(typeof Raven === "undefined") return console.log('ERROR!! Cannot initialize Sentry. Missing Raven library.');
-    if(!appCatch.config.uid)         return console.log('ERROR!! Sentry init error. Application Config not defined.');
-    // init
+    if(!appCatch.config.enabled)     return console.error('Sentry - Disabled via config.', appCatch.config);
+    if(typeof Raven === "undefined") return console.error('Sentry - Cannot initialize. Missing Raven library.');
+    if(!appCatch.config.uid)         return console.error('Sentry - Init error. Uid not defined.');
+
+    // INIT
     Raven.config(appCatch.config.uid, appCatch.config.options).install();
-    console.log('SENTRY - Enabled', appCatch.config);
+    console.log('Sentry Init:', appCatch.config);
     appCatch.loaded = true;
   },
 
@@ -47,7 +72,7 @@ var appCatch = {
   },
   error:function(message, extra, tags){
     if(!appCatch.loaded) return;
-    console.log('SENTRY - error()', message);
+    appCatch.log('error() -> '+message);
     extra = extra || {};
     tags = tags || {};
     // build options
@@ -55,9 +80,13 @@ var appCatch = {
     // url of error
     options.extra.url = extra.href || window.location.href;
     // tags
-    options.tags.app = tags.app || serverConfig.app;
-    options.tags.env = tags.env || serverConfig.env;
-    options.tags.subDomain = tags.subDomain || tags.host || serverConfig.host;
+    for(var key in appCatch.config.tags){
+      options.tags[key] = appCatch.config.tags[key];
+    }
+    for(var key in tags){
+      options.tags[key] = tags[key];
+    }
+    options.tags.subDomain = (''+window.location.host).split('.').shift().split('-').shift();
     Raven.captureMessage(message, options)
   },
 
@@ -66,12 +95,12 @@ var appCatch = {
     if(!appCatch.loaded) return;
     var user = { id:id };
     if(email) user.email = email;
-    console.log('SENTRY - setUser()', user);
+    appCatch.log('setUser():' + id + ', email:'+email);
     Raven.setUser(user);
   },
   clearUser:function(){
     if(!appCatch.loaded) return;
-    console.log('SENTRY - clearUser()');
+    appCatch.log('clearUser()');
     Raven.setUser(); // this clears out any current user
   }
 };
