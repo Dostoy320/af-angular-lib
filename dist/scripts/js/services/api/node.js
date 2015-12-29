@@ -35,7 +35,7 @@
           };
           if(amplify.store('webToken')){
             req.headers = {
-              authorization: 'Bearer ' + amplify.store('webToken')
+              Authorization: 'Bearer ' + amplify.store('webToken')
             }
           }
           req = api.addDebugInfo(req);
