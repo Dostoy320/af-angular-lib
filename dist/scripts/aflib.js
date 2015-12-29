@@ -523,7 +523,9 @@
             data: params
           };
           if(amplify.store('webToken')){
-            req['headers'].authorization = 'Bearers ' + amplify.store('webToken');
+            req.headers = {
+              authorization: 'Bearers ' + amplify.store('webToken')
+            }
           }
           req = api.addDebugInfo(req);
           return api.execute(req, onSuccess, onError);
