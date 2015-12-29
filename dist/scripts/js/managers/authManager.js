@@ -139,7 +139,7 @@
         return (auth.sessionToken || auth.webToken) && auth.loggedInUser.userId;
       },
       hasWebToken: function() {
-        return auth.webToken ? true:false;
+        return auth.webToken;
       }
     };
   });
