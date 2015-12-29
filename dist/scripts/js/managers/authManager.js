@@ -47,7 +47,7 @@
             default:
               throw 'Illegal base64url string!';
           }
-          return window.atob(output);
+          return Base64.atob(output);
         }
 
         if(!token) return false;
