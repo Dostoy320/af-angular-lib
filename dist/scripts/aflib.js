@@ -55,21 +55,60 @@
         authorities: amplify.store("authorities")
       },
       sessionToken: amplify.store('sessionToken'),
+      webToken: amplify.store('webToken'),
       clearUser: function() {
         amplify.store('username', null);
         amplify.store('userId', null);
         amplify.store('userEmail', null);
         amplify.store('authorities', null);
         amplify.store('sessionToken', null);
+        amplify.store('webToken', null);
         auth.loggedInUser.username = null;
         auth.loggedInUser.userId = null;
         auth.loggedInUser.userEmail = null;
         auth.loggedInUser.authorities = null;
+        auth.webToken = null;
         return auth.sessionToken = null;
       },
       setSessionToken: function(token) {
         amplify.store('sessionToken', token);
         return auth.sessionToken = token;
+      },
+      setWebToken: function(token) {
+        function urlBase64Decode(str) {
+          var output = str.replace('-', '+').replace('_', '/');
+          switch (output.length % 4) {
+            case 0:
+              break;
+            case 2:
+              output += '==';
+              break;
+            case 3:
+              output += '=';
+              break;
+            default:
+              throw 'Illegal base64url string!';
+          }
+          return window.atob(output);
+        }
+
+        if(!token) return false;
+
+        var encoded = token.split('.')[1];
+        var user = JSON.parse(urlBase64Decode(encoded));
+
+        amplify.store('username', user.username);
+        amplify.store('userId', user.userId);
+        amplify.store('userEmail', user.email);
+        amplify.store('authorities', user.roles);
+        amplify.store('webToken', token);
+        auth.loggedInUser.username = user.username;
+        auth.loggedInUser.userId = user.userId;
+        auth.loggedInUser.userEmail = user.email;
+        auth.loggedInUser.authorities = user.roles;
+        auth.webToken = token;
+
+        return user;
       },
       setLoggedInUser: function(user) {
         var fields;
@@ -139,7 +178,10 @@
         return auth.hasAnyRole(['Role_AccessKeyManager']);
       },
       loggedIn: function() {
-        return auth.sessionToken && auth.loggedInUser.userId;
+        return (auth.sessionToken || auth.webToken) && auth.loggedInUser.userId;
+      },
+      hasWebToken: function() {
+        return auth.webToken ? true:false;
       }
     };
   });
@@ -480,6 +522,9 @@
             url: node.RoadmapNode.serviceUrl + method,
             data: params
           };
+          if(amplify.store('webToken')){
+            req.headers.authorization = 'Bearers ' + amplify.store('webToken');
+          }
           req = api.addDebugInfo(req);
           return api.execute(req, onSuccess, onError);
         },

@@ -1,18 +1,8 @@
 module.exports = (grunt) ->
 
-  grunt.registerTask 'default', ['coffee','concat','watch']
+  grunt.registerTask 'default', ['concat','watch']
 
   grunt.initConfig({
-    coffee: {
-      glob_to_multiple: {
-        expand: true,
-        flatten: false,
-        cwd: 'dist/scripts/coffee',
-        src: '**/*.coffee',
-        dest:'dist/scripts/js/',
-        ext: '.js'
-      }
-    }
     concat:{
       js:{
         options:{
@@ -26,13 +16,12 @@ module.exports = (grunt) ->
       }
     }
     watch: {
-      coffee: {
-        files: ['dist/**/*.coffee']
-        tasks: ['coffee','concat']
+      scripts: {
+        files: ['dist/scripts/js/**/*.js']
+        tasks: ['concat']
       }
     }
   })
 
-  grunt.loadNpmTasks('grunt-contrib-coffee')
   grunt.loadNpmTasks('grunt-contrib-concat')
   grunt.loadNpmTasks('grunt-contrib-watch')

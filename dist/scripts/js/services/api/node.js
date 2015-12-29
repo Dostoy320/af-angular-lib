@@ -33,8 +33,8 @@
             url: node.RoadmapNode.serviceUrl + method,
             data: params
           };
-          if(amplify.store('webToken')) {
-            req.headers.authorization = 'Bearer ' + amplify.store('webToken');
+          if(amplify.store('webToken')){
+            req.headers.authorization = 'Bearers ' + amplify.store('webToken');
           }
           req = api.addDebugInfo(req);
           return api.execute(req, onSuccess, onError);

@@ -33,7 +33,6 @@
         return auth.sessionToken = token;
       },
       setWebToken: function(token) {
-
         function urlBase64Decode(str) {
           var output = str.replace('-', '+').replace('_', '/');
           switch (output.length % 4) {
